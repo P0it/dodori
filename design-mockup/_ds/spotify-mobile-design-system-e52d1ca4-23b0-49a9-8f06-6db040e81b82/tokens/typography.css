@@ -1,0 +1,48 @@
+/* ==========================================================================
+   Spotify Mobile — Typography tokens
+   Source font is "Avenir Next" (the file's stand-in for Spotify's
+   proprietary "Circular"). Neither ships freely, so the design system
+   substitutes "Figtree" — a geometric humanist sans that closely matches
+   Circular's proportions. SUBSTITUTION — flag to user, swap real fonts in.
+   Weights used in source: 400 Regular, 500 Medium, 600 Demi Bold, 700 Bold.
+   ========================================================================== */
+:root {
+  /* Font families
+     Per the kit's own guidance: "use the default sans-serif font for the
+     platform you are working on" — Helvetica Neue → Helvetica → Arial.
+     No webfont is loaded, so there is NO licensing dependency. */
+  --font-sans: -apple-system, BlinkMacSystemFont, "Helvetica Neue",
+               Helvetica, Arial, sans-serif;
+  --font-display: var(--font-sans);
+
+  /* Weights */
+  --fw-regular: 400; /* @kind font */
+  --fw-medium:  500; /* @kind font */
+  --fw-semibold: 600; /* @kind font */
+  --fw-bold: 700; /* @kind font */
+
+  /* Type scale — exact px values observed in the kit
+     (do not snap to a grid; the source uses 13/13.5/10.5 etc.) */
+  --fs-screen-title: 34px;   /* "Search" page title */
+  --fs-h1: 28px;             /* big screen headings */
+  --fs-section: 24px;        /* "Editor's picks", "Recently played" */
+  --fs-album-title: 22px;    /* album/playlist name on detail views */
+  --fs-title-md: 16px;       /* row titles / bold labels */
+  --fs-body: 15px;           /* primary body / button labels */
+  --fs-body-sm: 14px;
+  --fs-meta: 13px;           /* metadata, secondary rows */
+  --fs-meta-sm: 13.5px;      /* now-playing track title */
+  --fs-caption: 12px;
+  --fs-micro: 11px;
+  --fs-micro-sm: 10.5px;
+  --fs-tab: 10px;            /* bottom-nav labels */
+
+  /* Line-heights */
+  --lh-tight: 100%; /* @kind font */
+  --lh-snug: 1.15; /* @kind font */
+  --lh-normal: 1.4; /* @kind font */
+
+  /* Letter-spacing (source uses slight negative tracking on titles) */
+  --ls-tight: -0.01em;
+  --ls-title: -0.03em;
+}

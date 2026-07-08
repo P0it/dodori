@@ -1,0 +1,92 @@
+import {
+  addDays,
+  dday,
+  daysSince,
+  diffDays,
+  formatDday,
+  isISODate,
+  isReleased,
+  monthKey,
+  todayKST,
+  toKSTDate,
+} from '../date';
+
+// KST 자정 경계: UTC 15:00 = KST 다음날 00:00
+describe('todayKST / toKSTDate', () => {
+  it('UTC 14:59는 KST 같은 날 23:59', () => {
+    expect(toKSTDate(new Date('2026-07-08T14:59:00Z'))).toBe('2026-07-08');
+  });
+  it('UTC 15:00은 KST 다음날 00:00', () => {
+    expect(toKSTDate(new Date('2026-07-08T15:00:00Z'))).toBe('2026-07-09');
+  });
+  it('연말 경계', () => {
+    expect(toKSTDate(new Date('2026-12-31T15:00:00Z'))).toBe('2027-01-01');
+  });
+});
+
+describe('isReleased (PRD §7.2: date < today(KST))', () => {
+  const now = new Date('2026-07-08T03:00:00Z'); // KST 07-08 12:00
+  it('어제 트랙은 released', () => {
+    expect(isReleased('2026-07-07', now)).toBe(true);
+  });
+  it('오늘 트랙은 아직 upcoming', () => {
+    expect(isReleased('2026-07-08', now)).toBe(false);
+  });
+  it('내일 트랙은 upcoming', () => {
+    expect(isReleased('2026-07-09', now)).toBe(false);
+  });
+  it('KST 자정 직후엔 전날이 released로 뒤집힘', () => {
+    const justAfterMidnightKST = new Date('2026-07-08T15:00:30Z'); // KST 07-09 00:00:30
+    expect(isReleased('2026-07-08', justAfterMidnightKST)).toBe(true);
+  });
+});
+
+describe('dday / formatDday', () => {
+  const now = new Date('2026-07-08T03:00:00Z'); // KST 2026-07-08
+  it('D-3', () => {
+    expect(dday('2026-07-11', now)).toBe(3);
+    expect(formatDday('2026-07-11', now)).toBe('D-3');
+  });
+  it('D-Day', () => {
+    expect(formatDday('2026-07-08', now)).toBe('D-Day');
+  });
+  it('D+5', () => {
+    expect(formatDday('2026-07-03', now)).toBe('D+5');
+  });
+  it('목업 기준값: 200일(07.23)은 D-15', () => {
+    expect(formatDday('2026-07-23', now)).toBe('D-15');
+  });
+});
+
+describe('daysSince (시작일 = 1일째)', () => {
+  it('목업 기준값: 2026.01.05 시작 → 07.08은 185일째', () => {
+    const now = new Date('2026-07-08T03:00:00Z');
+    expect(daysSince('2026-01-05', now)).toBe(185);
+  });
+  it('시작 당일은 1일째', () => {
+    const now = new Date('2026-01-05T03:00:00Z');
+    expect(daysSince('2026-01-05', now)).toBe(1);
+  });
+});
+
+describe('date arithmetic', () => {
+  it('addDays 월 경계', () => {
+    expect(addDays('2026-01-31', 1)).toBe('2026-02-01');
+  });
+  it('addDays 윤년', () => {
+    expect(addDays('2028-02-28', 1)).toBe('2028-02-29');
+    expect(addDays('2026-02-28', 1)).toBe('2026-03-01');
+  });
+  it('diffDays', () => {
+    expect(diffDays('2026-01-05', '2026-07-08')).toBe(184);
+  });
+  it('monthKey', () => {
+    expect(monthKey('2026-07-08')).toBe('2026-07');
+  });
+  it('isISODate', () => {
+    expect(isISODate('2026-07-08')).toBe(true);
+    expect(isISODate('2026-2-8')).toBe(false);
+    expect(isISODate('2026-13-01')).toBe(false);
+    expect(isISODate('2026-02-30')).toBe(false);
+  });
+});

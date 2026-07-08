@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="design_doc_mode" content="canvas">
+<title>Duet — 커플 캘린더·아카이브 목업</title>
+
+<link rel="stylesheet" href="_ds/spotify-mobile-design-system-e52d1ca4-23b0-49a9-8f06-6db040e81b82/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/spotify-mobile-design-system-e52d1ca4-23b0-49a9-8f06-6db040e81b82/tokens/colors.css">
+<link rel="stylesheet" href="_ds/spotify-mobile-design-system-e52d1ca4-23b0-49a9-8f06-6db040e81b82/tokens/typography.css">
+<link rel="stylesheet" href="_ds/spotify-mobile-design-system-e52d1ca4-23b0-49a9-8f06-6db040e81b82/tokens/spacing.css">
+<link rel="stylesheet" href="_ds/spotify-mobile-design-system-e52d1ca4-23b0-49a9-8f06-6db040e81b82/components/kit/fig-assets.css">
+<link rel="stylesheet" href="_ds/spotify-mobile-design-system-e52d1ca4-23b0-49a9-8f06-6db040e81b82/styles.css">
+
+<style>
+  html, body { margin: 0; background: #0a0a0a; }
+  #root { position: relative; }
+  .scrolly::-webkit-scrollbar { width: 0; height: 0; }
+  .scrolly { scrollbar-width: none; -ms-overflow-style: none; }
+  .frame-cap {
+    font-family: var(--font-sans);
+    font-size: 15px; font-weight: 600; color: #cfcfcf;
+    letter-spacing: -0.01em;
+  }
+  .group-title {
+    font-family: var(--font-sans);
+    font-weight: 800; letter-spacing: -0.02em; color: #fff;
+  }
+  a { color: var(--green-bright); text-decoration: none; }
+  a:hover { color: #21e065; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="_ds/spotify-mobile-design-system-e52d1ca4-23b0-49a9-8f06-6db040e81b82/_ds_bundle.js"></script>
+
+<script type="text/babel" src="app/shared.jsx"></script>
+<script type="text/babel" src="app/onboarding.jsx"></script>
+<script type="text/babel" src="app/playlist.jsx"></script>
+<script type="text/babel" src="app/places.jsx"></script>
+<script type="text/babel" src="app/track.jsx"></script>
+<script type="text/babel" src="app/calendar.jsx"></script>
+<script type="text/babel" src="app/create.jsx"></script>
+<script type="text/babel" src="app/studio.jsx"></script>
+
+<script type="text/babel">
+const { useRef, useEffect } = React;
+
+const ORDER = ['onboarding', 'playlist', 'places', 'track', 'calendar', 'create', 'studio'];
+const FRAME_W = 375, FRAME_H = 812, COL_GAP = 44, LABEL_H = 70, CAP_H = 34, GROUP_GAP = 96, PAD = 88;
+
+function FrameHost({ node }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const r = ReactDOM.createRoot(ref.current);
+    r.render(node);
+    return () => r.render(null);
+  }, []);
+  return <div ref={ref} style={{ width: FRAME_W, height: FRAME_H }} />;
+}
+
+function Canvas() {
+  const groups = ORDER.map((k) => window.SCREENS && window.SCREENS[k]).filter(Boolean);
+  let y = 150;
+  let maxRight = 0;
+  const blocks = [];
+
+  // intro
+  blocks.push(
+    <div key="intro" style={{ position: 'absolute', left: PAD, top: 54, width: 900 }}>
+      <div style={{ fontFamily: 'var(--font-sans)', fontWeight: 800, fontSize: 34, letterSpacing: '-0.03em', color: '#fff' }}>
+        Duet <span style={{ color: '#666', fontWeight: 600, fontSize: 20 }}>— 커플 캘린더 · 아카이브</span>
+      </div>
+      <div style={{ fontFamily: 'var(--font-sans)', fontSize: 14, color: '#8a8a8a', marginTop: 6 }}>
+        데이트 = 트랙 · 한 달 = 플레이리스트 · 기념일 = 싱글 · Hyunwoo &amp; Jihyun · since 2026.01.05
+      </div>
+    </div>
+  );
+
+  groups.forEach((g) => {
+    blocks.push(
+      <div key={'t-' + g.title} style={{ position: 'absolute', left: PAD, top: y, display: 'flex', alignItems: 'center', gap: 16, width: 2000 }}>
+        <span className="group-title" style={{ fontSize: 22 }}>{g.title}</span>
+        <span style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.10)' }} />
+      </div>
+    );
+    const rowTop = y + LABEL_H;
+    g.items.forEach((it, i) => {
+      const x = PAD + i * (FRAME_W + COL_GAP);
+      blocks.push(
+        <div key={g.title + i} style={{ position: 'absolute', left: x, top: rowTop, width: FRAME_W }}>
+          <div className="frame-cap" style={{ marginBottom: 12 }}>{it.label}</div>
+          <FrameHost node={it.node} />
+        </div>
+      );
+      maxRight = Math.max(maxRight, x + FRAME_W);
+    });
+    y = rowTop + CAP_H + FRAME_H + GROUP_GAP;
+  });
+
+  useEffect(() => {
+    const root = document.getElementById('root');
+    root.style.width = (maxRight + PAD) + 'px';
+    root.style.height = (y + 60) + 'px';
+  });
+
+  return <>{blocks}</>;
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<Canvas />);
+</script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+import { Text, type TextStyle, type StyleProp } from 'react-native';
+import { color } from '@/theme/tokens';
+
+type Props = { children: React.ReactNode; style?: StyleProp<TextStyle> };
+
+/** 보조 메타 텍스트 (목업 Meta) */
+export function Meta({ children, style }: Props) {
+  return (
+    <Text style={[{ fontWeight: '500', fontSize: 13, color: color.sub }, style]}>{children}</Text>
+  );
+}

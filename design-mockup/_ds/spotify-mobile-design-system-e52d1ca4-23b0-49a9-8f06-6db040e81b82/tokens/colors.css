@@ -1,0 +1,61 @@
+/* ==========================================================================
+   Spotify Mobile — Color tokens
+   Values transcribed verbatim from the Figma UI kit (rgb → hex).
+   ========================================================================== */
+:root {
+  /* --- Brand green (multiple greens appear in the source) --- */
+  --green-bright: #1ED760;      /* rgb(30,215,96)  — primary brand / CTA accent */
+  --green-core:   #1DB954;      /* rgb(29,185,84)  — classic play button green */
+  --green-logo:   #57B65F;      /* rgb(87,182,95)  — logo & Button/M fill in file */
+  --green-press:  #17B54E;      /* rgb(23,181,78)  — pressed / darker green */
+  --green-alt:    #1ABA54;      /* rgb(26,186,84) */
+
+  /* --- Greyscale surfaces (dark theme is primary) --- */
+  --black:        #000000;      /* rgb(0,0,0) */
+  --bg-base:      #121212;      /* rgb(18,18,18)  — main app background */
+  --bg-spotify:   #191414;      /* rgb(25,20,20)  — Spotify near-black */
+  --surface-1:    #181818;      /* rgb(24,24,24)  — raised surface */
+  --surface-2:    #282828;      /* rgb(40,40,40)  — cards, search field, chips */
+  --surface-3:    #333333;      /* rgb(51,51,51) */
+  --surface-4:    #3E3F3F;      /* rgb(62,63,63)  — pill button on photo */
+  --hairline:     #47464B;      /* rgb(71,70,75)  — icon stroke / divider */
+
+  /* --- Text --- */
+  --text-white:   #FFFFFF;      /* rgb(255,255,255) — primary text on dark */
+  --text-sub:     #B3B3B3;      /* rgb(179,179,179) — secondary / metadata text */
+  --text-muted:   #777777;      /* rgb(119,119,119) — tertiary / disabled */
+  --text-faint:   #B2B2B2;      /* rgb(178,178,178) */
+  --text-c4:      #C4C4C4;      /* rgb(196,196,196) */
+  --text-e5:      #E5E5E5;      /* rgb(229,229,229) — near-white text */
+  --text-f5:      #F5F5F5;      /* rgb(245,245,245) */
+  --text-black:   #191414;      /* rgb(25,20,20)   — text on green/light */
+
+  /* --- Category / genre tile colors (Search "Browse all") --- */
+  --tile-purple:  #9854B2;      /* rgb(152,84,178) */
+  --tile-olive:   #678026;      /* rgb(103,128,38) */
+  --tile-blue:    #2A6FDB;      /* rgb(42,111,219) approx from screens */
+  --tile-orange:  #D9401F;      /* warm red-orange podcast tile */
+  --tile-navy:    #0F1929;      /* rgb(15,25,41) */
+  --tile-plum:    #5E3B7A;      /* rgb(94,59,122) */
+
+  /* --- Shadows --- */
+  --shadow-card:  0px 4px 4px 0px rgba(0,0,0,0.25);
+  --shadow-cover: -1px 2px 3px 0px rgba(0,0,0,0.25);
+
+  /* --- Liked Songs gradient (verbatim from file) --- */
+  --grad-liked: linear-gradient(134.351deg, #4A39EA 13.16%, #868AE1 56.47%, #B9D4DB 98.68%); /* @kind color */
+
+  /* ---------------------------------------------------------------
+     Semantic aliases — reference these in components
+     --------------------------------------------------------------- */
+  --color-bg:            var(--bg-base);
+  --color-surface:       var(--surface-2);
+  --color-surface-alt:   var(--surface-1);
+  --color-primary:       var(--green-bright);
+  --color-play:          var(--green-core);
+  --color-text:          var(--text-white);
+  --color-text-2:        var(--text-sub);
+  --color-text-3:        var(--text-muted);
+  --color-on-primary:    var(--text-black);
+  --color-divider:       var(--hairline);
+}

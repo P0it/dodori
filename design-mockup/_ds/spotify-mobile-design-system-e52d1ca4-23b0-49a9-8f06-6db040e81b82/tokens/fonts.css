@@ -1,0 +1,8 @@
+/* ==========================================================================
+   Spotify Mobile Design System — fonts
+   The kit's own guidance is to use the platform default sans-serif, in this
+   order: platform default → Helvetica Neue → Helvetica → Arial. These are
+   system fonts, so NO webfont is loaded and there is NO licensing dependency.
+   The stack lives in tokens/typography.css (--font-sans). Nothing to import.
+   ========================================================================== */
+

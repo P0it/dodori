@@ -1,0 +1,32 @@
+/* ==========================================================================
+   Spotify Mobile — Spacing, radii, layout tokens
+   Radii transcribed from the kit: search field 6px, cards 4/5px,
+   cover art 7px, mini-player 3px, pills fully rounded.
+   ========================================================================== */
+:root {
+  /* Spacing scale (px) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;   /* default screen gutter */
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* Screen gutter used across mobile screens */
+  --gutter: 16px;
+
+  /* Corner radii (verbatim) */
+  --radius-mini: 3px;      /* now-playing bar */
+  --radius-card: 4px;      /* genre / search-link cards */
+  --radius-cover-sm: 5px;  /* small cover thumbnails */
+  --radius-cover: 7px;     /* mini-player cover art */
+  --radius-field: 6px;     /* search / find fields */
+  --radius-pill: 999px;    /* buttons, chips, follow */
+
+  /* Device */
+  --screen-w: 375px;       /* iPhone X logical width */
+  --statusbar-h: 44px;
+  --tabbar-h: 56px;
+  --nowplaying-h: 56px;
+}
