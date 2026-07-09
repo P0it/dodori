@@ -64,5 +64,14 @@
 
 ## 마일스톤 현황
 
-- [x] M0 스캐폴드 (본 커밋)
-- [ ] M1 인증·연결 / M2 캘린더 / M3 Track / M4 플레이리스트·Place / M5 푸시·베타 / M6 스토어
+- [x] M0 스캐폴드 / M1 인증·연결 / M2 캘린더 / M3 Track / M4 플레이리스트·Place
+- [x] M5 코드 (NextUp·Realtime·푸시 토큰·daily-release cron) — 베타 배포(EAS/TestFlight)는 남음
+- [ ] M6 스토어 준비
+
+## 배포 후 1회 수동 설정
+
+- **cron Vault 시크릿** (미설정 시 daily-release 푸시가 조용히 스킵됨) — SQL Editor에서:
+  `select vault.create_secret('<SERVICE_ROLE_KEY>', 'service_role_key');`
+  `select vault.create_secret('https://iyqttrufrjeytntinsrb.supabase.co', 'project_url');`
+- **네이버 검색 키** — `npx supabase secrets set NAVER_CLIENT_ID=... NAVER_CLIENT_SECRET=...`
+- **카카오 Android 키 해시** — 첫 빌드 후 debug keystore 해시를 카카오 콘솔 플랫폼 키에 등록
