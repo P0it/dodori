@@ -24,6 +24,15 @@
 - 시크릿은 Edge Function 뒤로 (네이버 API 키 등 클라이언트 노출 금지)
 - 목업 사진(`design-mockup/assets/`)은 참조 전용 — 앱 번들·시드에 사용 금지 (PRD §6.5)
 
+## 작업 방식 — Karpathy Guidelines
+
+코드 작성·수정·리팩토링 시 항상 적용 ([andrej-karpathy-skills](https://github.com/multica-ai/andrej-karpathy-skills), 스킬 `karpathy-guidelines` 원문):
+
+1. **Think Before Coding** — 가정을 명시하고, 해석이 여러 개면 제시하고 고른다. 불명확하면 멈추고 묻는다. 더 단순한 방법이 있으면 말한다
+2. **Simplicity First** — 요청을 푸는 최소 코드만. 단일 사용 코드에 추상화 금지, 요청 없는 설정성·불가능한 시나리오의 에러 처리 금지
+3. **Surgical Changes** — 요청과 무관한 코드·주석·포맷을 "개선"하지 않는다. 내 변경이 만든 고아(import 등)만 정리. 모든 변경 라인은 요청으로 추적 가능해야 함
+4. **Goal-Driven Execution** — 작업을 검증 가능한 목표로 변환("버그 수정" → "재현 테스트 작성 후 통과"). 다단계 작업은 단계별 verify를 붙인 계획을 먼저 제시
+
 ## 아키텍처 규칙 (SOLID·Clean Architecture 실용 적용)
 
 교과서식 4계층 대신 **의존성 방향**만 강제한다. 방향: `app/(라우트) → components/ → api/·lib/ → theme/·types/`

@@ -1,32 +1,21 @@
-import { useState } from 'react';
 import { Alert, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { color } from '@/theme/tokens';
 import { KakaoButton } from '@/components/KakaoButton';
 import { DuetMark } from '@/components/DuetMark';
+import { useSignInWithKakao } from '@/api/auth';
 
 export default function Login() {
   const router = useRouter();
-  const [busy, setBusy] = useState(false);
+  const signIn = useSignInWithKakao();
 
-  const onKakao = async () => {
-    if (busy) return;
-    setBusy(true);
-    try {
-      // 카카오 네이티브 SDK는 dev client 빌드에서만 동작 (Expo Go 불가)
-      const { login } = await import('@react-native-kakao/user');
-      const token = await login();
-      // TODO(M1): token.idToken을 Supabase Auth(signInWithIdToken)로 교환
-      console.log('kakao token', token.accessToken?.slice(0, 8));
-      router.replace('/(auth)/connect');
-    } catch (e) {
-      Alert.alert(
-        '카카오 로그인',
-        'dev client 빌드와 KAKAO_NATIVE_APP_KEY 설정이 필요해요.\n' + String(e),
-      );
-    } finally {
-      setBusy(false);
-    }
+  const onKakao = () => {
+    if (signIn.isPending) return;
+    signIn.mutate(undefined, {
+      onSuccess: () => router.replace('/'),
+      onError: (e) =>
+        Alert.alert('카카오 로그인 실패', e instanceof Error ? e.message : String(e)),
+    });
   };
 
   return (

@@ -26,5 +26,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     name: config.name ?? 'duet',
     slug: config.slug ?? 'duet',
     plugins: [...(config.plugins ?? []), ...kakaoPlugin] as ExpoConfig['plugins'],
+    extra: { ...config.extra, kakaoNativeAppKey: kakaoKey ?? null },
   };
 };
