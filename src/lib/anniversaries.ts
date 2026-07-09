@@ -49,6 +49,23 @@ export function buildAutoAnniversaries(
 }
 
 /**
+ * 특정 월에 표시할 발생일 — 캘린더 마커용.
+ * repeat_yearly면 그 해의 같은 월·일(2/29 보정), 아니면 원본 날짜가 그 월일 때만.
+ */
+export function occurrenceInMonth(
+  anchor: ISODate,
+  repeatYearly: boolean,
+  monthKey: string, // 'YYYY-MM'
+): ISODate | null {
+  const [ty, tm] = monthKey.split('-').map(Number);
+  const [, m, d] = anchor.split('-').map(Number);
+  if (!repeatYearly) return anchor.slice(0, 7) === monthKey ? anchor : null;
+  if (m !== tm) return null;
+  const td = Math.min(d, daysInMonth(ty, tm));
+  return `${ty}-${String(tm).padStart(2, '0')}-${String(td).padStart(2, '0')}`;
+}
+
+/**
  * repeat_yearly 기념일의 다음 발생일 (오늘 포함 이후 가장 가까운 발생).
  * 예: 생일 03-22, 오늘 07-08 → 내년 03-22
  */

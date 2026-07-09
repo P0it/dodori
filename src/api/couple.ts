@@ -47,6 +47,30 @@ export function useMyCouple() {
   });
 }
 
+export interface CoupleProfiles {
+  me: { id: string; nickname: string; birthday: string | null } | null;
+  partner: { id: string; nickname: string; birthday: string | null } | null;
+}
+
+/** 나·상대 프로필 (필터 칩 라벨, 역할 매핑용) */
+export function useCoupleProfiles() {
+  const couple = useMyCouple();
+  return useQuery({
+    enabled: !!couple.data,
+    queryKey: ['couple', 'profiles'],
+    queryFn: async (): Promise<CoupleProfiles> => {
+      const { data: userData } = await supabase.auth.getUser();
+      const uid = userData.user?.id;
+      const { data, error } = await supabase.from('profiles').select('id, nickname, birthday');
+      if (error) throw error;
+      return {
+        me: data.find((p) => p.id === uid) ?? null,
+        partner: data.find((p) => p.id !== uid) ?? null,
+      };
+    },
+  });
+}
+
 /** 초대 발급 — create_couple RPC (커플 생성 + 본인 등록 원자 처리) */
 export function useCreateInvite() {
   const qc = useQueryClient();

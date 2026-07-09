@@ -2,6 +2,7 @@ import {
   buildAutoAnniversaries,
   nextOccurrence,
   nthDayAnniversary,
+  occurrenceInMonth,
   yearlyAnniversary,
 } from '../anniversaries';
 
@@ -38,6 +39,21 @@ describe('buildAutoAnniversaries', () => {
     expect(list).toHaveLength(6);
     expect(list.filter((a) => a.repeatYearly)).toHaveLength(3);
     expect(list.find((a) => a.type === 'd200')?.date).toBe('2026-07-23');
+  });
+});
+
+describe('occurrenceInMonth (캘린더 마커)', () => {
+  it('1회성(d200)은 해당 월에만', () => {
+    expect(occurrenceInMonth('2026-07-23', false, '2026-07')).toBe('2026-07-23');
+    expect(occurrenceInMonth('2026-07-23', false, '2026-08')).toBeNull();
+    expect(occurrenceInMonth('2026-07-23', false, '2027-07')).toBeNull();
+  });
+  it('매년 반복(생일)은 표시 연도로 투영', () => {
+    expect(occurrenceInMonth('1998-09-08', true, '2026-09')).toBe('2026-09-08');
+    expect(occurrenceInMonth('1998-09-08', true, '2026-08')).toBeNull();
+  });
+  it('2/29 앵커는 평년 2/28로 보정', () => {
+    expect(occurrenceInMonth('2028-02-29', true, '2029-02')).toBe('2029-02-28');
   });
 });
 
