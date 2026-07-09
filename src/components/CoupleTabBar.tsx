@@ -1,7 +1,13 @@
+import { useMemo } from 'react';
 import { Pressable, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { color } from '@/theme/tokens';
+import { formatDday } from '@/lib/date';
+import { pickNextUp, nextUpProgress } from '@/lib/nextup';
+import { useAllTracks } from '@/api/tracks';
+import { useAnniversaries } from '@/api/anniversaries';
 import { CalGlyph, DiscGlyph, LibGlyph } from '@/components/glyphs';
 import { NextUp, type NextUpItem } from '@/components/NextUp';
 
@@ -23,8 +29,28 @@ type TabBarProps = {
  */
 export function CoupleTabBar({ state, navigation }: TabBarProps) {
   const insets = useSafeAreaInsets();
-  // M0: 자리 표시 데이터. M5에서 "다음 일정" 쿼리(§7.6)로 교체.
-  const nextUp: NextUpItem | null = null;
+  const router = useRouter();
+  const tracks = useAllTracks();
+  const annivs = useAnniversaries();
+
+  // "다음 일정" (§7.6) — upcoming track 최근접 1건 → 다음 기념일
+  const pick = useMemo(
+    () => pickNextUp(tracks.data ?? [], annivs.data ?? []),
+    [tracks.data, annivs.data],
+  );
+  const coverUrl =
+    pick?.kind === 'track'
+      ? (tracks.data?.find((t) => t.id === pick.id)?.coverThumbUrl ?? undefined)
+      : undefined;
+  const nextUp: NextUpItem | null = pick
+    ? {
+        kind: pick.kind,
+        title: pick.kind === 'track' ? pick.title : pick.label,
+        subtitle: `${pick.date.slice(5).replace('-', '.')} · ${formatDday(pick.date)}`,
+        coverUrl,
+        progress: nextUpProgress(pick.date),
+      }
+    : null;
 
   return (
     <LinearGradient
@@ -32,7 +58,16 @@ export function CoupleTabBar({ state, navigation }: TabBarProps) {
       locations={[0, 0.45]}
       style={{ paddingBottom: Math.max(insets.bottom, 12) }}
     >
-      {nextUp && <NextUp item={nextUp} />}
+      {nextUp && (
+        <NextUp
+          item={nextUp}
+          onPress={() =>
+            pick?.kind === 'track'
+              ? router.push(`/track/${pick.id}`)
+              : router.push('/(tabs)/playlist/queue')
+          }
+        />
+      )}
       <View
         style={{
           flexDirection: 'row',

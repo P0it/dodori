@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from './supabase';
 import { useMyCouple } from './couple';
@@ -93,23 +92,3 @@ export function useDeleteEvent() {
   });
 }
 
-/** Realtime: events 변경 시 캐시 무효화 (§7.5 — 상대 변경 즉시 반영) */
-export function useEventsRealtime() {
-  const qc = useQueryClient();
-  const couple = useMyCouple();
-  const coupleId = couple.data?.coupleId;
-  useEffect(() => {
-    if (!coupleId) return;
-    const channel = supabase
-      .channel(`events-${coupleId}`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'events', filter: `couple_id=eq.${coupleId}` },
-        () => qc.invalidateQueries({ queryKey: ['events'] }),
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [coupleId, qc]);
-}

@@ -11,6 +11,8 @@ import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
 import { color } from '@/theme/tokens';
 import { useAuthListener } from '@/api/auth';
+import { useCoupleRealtime } from '@/api/realtime';
+import { usePushRegistration } from '@/api/notifications';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -24,9 +26,11 @@ const queryClient = new QueryClient({
 
 const persister = createAsyncStoragePersister({ storage: AsyncStorage });
 
-/** QueryClientProvider 안쪽에서 auth 리스너 등록 */
+/** QueryClientProvider 안쪽에서 auth·Realtime·푸시 등록 (§7.5·§7.7) */
 function AuthBridge() {
   useAuthListener();
+  useCoupleRealtime();
+  usePushRegistration();
   return null;
 }
 

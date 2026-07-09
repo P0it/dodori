@@ -6,7 +6,7 @@ import { color, role } from '@/theme/tokens';
 import { monthCells, addMonths, monthLabel } from '@/lib/calendar';
 import { monthKey as toMonthKey, todayKST, isReleased, toKSTDate } from '@/lib/date';
 import { occurrenceInMonth } from '@/lib/anniversaries';
-import { useMonthEvents, useEventsRealtime, type VisibleEvent } from '@/api/events';
+import { useMonthEvents } from '@/api/events';
 import { useMonthTracks } from '@/api/tracks';
 import { useAnniversaries } from '@/api/anniversaries';
 import { useCoupleProfiles } from '@/api/couple';
@@ -31,8 +31,7 @@ export default function Calendar() {
   const events = useMonthEvents(month);
   const tracks = useMonthTracks(month);
   const annivs = useAnniversaries();
-  const profiles = useCoupleProfiles();
-  useEventsRealtime();
+  const profiles = useCoupleProfiles(); // Realtime은 루트 useCoupleRealtime이 담당 (§7.5)
 
   const cells = useMemo(() => monthCells(month), [month]);
 
