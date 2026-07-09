@@ -6,6 +6,7 @@ import { TopBar } from '@/components/TopBar';
 import { Meta } from '@/components/Meta';
 import { Eyebrow } from '@/components/Eyebrow';
 import { usePlaceSearch, useAddTrackPlace } from '@/api/places';
+import { useAddPlaylistPlace } from '@/api/playlists';
 
 /**
  * 장소 검색 — 단일 공용 (§7.4).
@@ -21,8 +22,15 @@ export default function PlaceSearch() {
   const [query, setQuery] = useState('');
   const search = usePlaceSearch(query);
   const addToTrack = useAddTrackPlace(trackId ?? '');
+  const addToPlaylist = useAddPlaylistPlace(playlistId ?? '');
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
   let order = Number(next ?? 0);
+
+  const add = (p: Parameters<typeof addToPlaylist.mutate>[0]) => {
+    const done = { onSuccess: () => setAddedIds((s) => new Set(s).add(p.naver_id)) };
+    if (trackId) addToTrack.mutate({ place: p, sortOrder: order++ }, done);
+    else if (playlistId) addToPlaylist.mutate(p, done);
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: color.bg }}>
@@ -71,13 +79,8 @@ export default function PlaceSearch() {
                     </Meta>
                   </View>
                   <Pressable
-                    disabled={added || !trackId}
-                    onPress={() =>
-                      addToTrack.mutate(
-                        { place: p, sortOrder: order++ },
-                        { onSuccess: () => setAddedIds((s) => new Set(s).add(p.naver_id)) },
-                      )
-                    }
+                    disabled={added || (!trackId && !playlistId)}
+                    onPress={() => add(p)}
                     style={{
                       width: 34,
                       height: 34,

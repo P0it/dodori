@@ -43,6 +43,48 @@ export function useMonthTracks(monthKey: string) {
   });
 }
 
+export interface TrackListItem extends MonthTrack {
+  photoCount: number;
+  noteCount: number;
+  placeCount: number;
+  liked: boolean;
+}
+
+/** 전체 트랙 (최신순) — 플레이리스트 루트·월별 그룹·Favorites 공용 */
+export function useAllTracks() {
+  const couple = useMyCouple();
+  return useQuery({
+    enabled: !!couple.data,
+    queryKey: ['tracks', 'all'],
+    queryFn: async (): Promise<TrackListItem[]> => {
+      const { data, error } = await supabase
+        .from('tracks')
+        .select(
+          `id, title, date, liked,
+           cover:photos!tracks_cover_photo_fk(storage_path),
+           photos!photos_track_id_fkey(id, storage_path),
+           notes(id), track_places(place_id)`,
+        )
+        .order('date', { ascending: false });
+      if (error) throw error;
+      return data.map((t) => {
+        const firstPhoto = t.photos?.[0]?.storage_path ?? null;
+        const coverPath = t.cover?.storage_path ?? firstPhoto;
+        return {
+          id: t.id,
+          title: t.title,
+          date: t.date,
+          liked: t.liked,
+          coverThumbUrl: coverPath ? thumbUrl(coverPath, 'grid') : null,
+          photoCount: t.photos?.length ?? 0,
+          noteCount: t.notes?.length ?? 0,
+          placeCount: t.track_places?.length ?? 0,
+        };
+      });
+    },
+  });
+}
+
 export interface TrackPhoto {
   id: string;
   storagePath: string;
