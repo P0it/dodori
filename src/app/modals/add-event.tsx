@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { color, role } from '@/theme/tokens';
+import { color, role, typeface } from '@/theme/tokens';
 import { isISODate, todayKST, toKSTDate } from '@/lib/date';
 import {
   useCreateEvent,
@@ -96,9 +96,9 @@ export default function AddEvent() {
         }}
       >
         <Pressable onPress={() => router.back()} hitSlop={8}>
-          <Text style={{ fontWeight: '600', fontSize: 15, color: color.sub }}>취소</Text>
+          <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 15, color: color.sub }}>취소</Text>
         </Pressable>
-        <Text style={{ fontWeight: '700', fontSize: 16, color: color.white }}>
+        <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 16, color: color.white }}>
           {editingId ? '일정 수정' : '내 일정'}
         </Text>
         <Pressable onPress={save} hitSlop={8} disabled={!valid || busy}>
@@ -107,7 +107,7 @@ export default function AddEvent() {
           ) : (
             <Text
               style={{
-                fontWeight: '700',
+                fontFamily: typeface, fontWeight: '700',
                 fontSize: 15,
                 color: valid ? role.me : color.muted,
               }}
@@ -121,7 +121,7 @@ export default function AddEvent() {
       <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 32 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 18 }}>
           <OwnerDot who="me" size={12} />
-          <Text style={{ fontWeight: '600', fontSize: 13, color: role.me }}>
+          <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 13, color: role.me }}>
             {profiles.data?.me?.nickname || '나'}의 일정
           </Text>
         </View>
@@ -136,7 +136,7 @@ export default function AddEvent() {
             paddingVertical: 12,
             borderBottomWidth: 1.5,
             borderBottomColor: color.surface3,
-            fontWeight: '800',
+            fontFamily: typeface, fontWeight: '800',
             fontSize: 28,
             letterSpacing: -0.5,
             color: color.white,
@@ -151,7 +151,7 @@ export default function AddEvent() {
             <FieldRow label="시간">
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <SmallInput value={startTime} onChange={setStartTime} placeholder="19:00" time />
-                <Text style={{ color: color.muted }}>–</Text>
+                <Text style={{ fontFamily: typeface, color: color.muted }}>–</Text>
                 <SmallInput value={endTime} onChange={setEndTime} placeholder="(선택)" time />
               </View>
             </FieldRow>
@@ -167,7 +167,7 @@ export default function AddEvent() {
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontWeight: '600', fontSize: 15, color: color.white }}>
+              <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 15, color: color.white }}>
                 제목 숨김
               </Text>
               <Meta style={{ marginTop: 5, fontSize: 12, lineHeight: 18 }}>
@@ -184,7 +184,7 @@ export default function AddEvent() {
 
         {editingId && (
           <Pressable onPress={del} style={{ marginTop: 24, alignItems: 'center' }}>
-            <Text style={{ fontWeight: '600', fontSize: 14, color: '#E8567A' }}>일정 삭제</Text>
+            <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 14, color: '#E8567A' }}>일정 삭제</Text>
           </Pressable>
         )}
       </ScrollView>
@@ -218,7 +218,7 @@ function FieldRow({ label, children }: { label: string; children: React.ReactNod
         backgroundColor: color.surface1,
       }}
     >
-      <Text style={{ flex: 1, fontWeight: '500', fontSize: 14, color: color.sub }}>{label}</Text>
+      <Text style={{ flex: 1, fontFamily: typeface, fontWeight: '500', fontSize: 14, color: color.sub }}>{label}</Text>
       {children}
     </View>
   );
@@ -261,7 +261,7 @@ function SmallInput({
       style={{
         width,
         textAlign: 'center',
-        fontWeight: '700',
+        fontFamily: typeface, fontWeight: '700',
         fontSize: 15,
         color: color.white,
         paddingVertical: 4,

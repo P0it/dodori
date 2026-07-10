@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { color } from '@/theme/tokens';
+import { color, typeface } from '@/theme/tokens';
 import { TopBar } from '@/components/TopBar';
 import { Eyebrow } from '@/components/Eyebrow';
 import { Meta } from '@/components/Meta';
@@ -48,7 +48,7 @@ export default function StartDate() {
     <View style={{ flex: 1, backgroundColor: color.bg }}>
       <TopBar title="함께한 시작" onBack={false} />
       <View style={{ paddingHorizontal: 24, paddingTop: 8 }}>
-        <Text style={{ fontWeight: '800', fontSize: 24, color: color.white, letterSpacing: -0.5 }}>
+        <Text style={{ fontFamily: typeface, fontWeight: '800', fontSize: 24, color: color.white, letterSpacing: -0.5 }}>
           두 사람의 정보를{'\n'}알려주세요
         </Text>
         <Meta style={{ marginTop: 8, marginBottom: 22, lineHeight: 20 }}>
@@ -79,7 +79,7 @@ export default function StartDate() {
               style={{ flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 12 }}
             >
               <StarGlyph size={15} />
-              <Text style={{ fontWeight: '700', fontSize: 13.5, color: color.white }}>
+              <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 13.5, color: color.white }}>
                 이런 싱글이 만들어져요
               </Text>
             </View>
@@ -89,7 +89,7 @@ export default function StartDate() {
                   key={c}
                   style={{
                     fontSize: 11.5,
-                    fontWeight: '600',
+                    fontFamily: typeface, fontWeight: '600',
                     color: color.anniv,
                     backgroundColor: 'rgba(232,184,75,0.12)',
                     borderRadius: 999,
@@ -106,7 +106,7 @@ export default function StartDate() {
         )}
 
         {error ? (
-          <Text style={{ color: '#E8567A', fontSize: 12.5, marginTop: 14, textAlign: 'center' }}>
+          <Text style={{ fontFamily: typeface, color: '#E8567A', fontSize: 12.5, marginTop: 14, textAlign: 'center' }}>
             {error}
           </Text>
         ) : null}
@@ -127,7 +127,7 @@ export default function StartDate() {
           {complete.isPending ? (
             <ActivityIndicator color={color.onPrimary} />
           ) : (
-            <Text style={{ fontWeight: '700', fontSize: 15, color: color.onPrimary }}>
+            <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 15, color: color.onPrimary }}>
               완료하고 시작하기
             </Text>
           )}
@@ -172,7 +172,7 @@ function DateField({
         borderColor: !valid ? '#E8567A' : complete ? color.me : color.surface3,
         color: color.white,
         fontSize: 17,
-        fontWeight: '700',
+        fontFamily: typeface, fontWeight: '700',
         letterSpacing: 1,
         textAlign: 'center',
       }}

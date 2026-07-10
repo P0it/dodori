@@ -1,5 +1,5 @@
 import { Text, type TextStyle, type StyleProp } from 'react-native';
-import { color } from '@/theme/tokens';
+import { color, typeface } from '@/theme/tokens';
 
 type Props = {
   children: React.ReactNode;
@@ -13,7 +13,7 @@ export function Eyebrow({ children, color: fg, style }: Props) {
     <Text
       style={[
         {
-          fontWeight: '700',
+          fontFamily: typeface, fontWeight: '700',
           fontSize: 11,
           letterSpacing: 1.5,
           textTransform: 'uppercase',

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { color, role } from '@/theme/tokens';
+import { color, role, typeface } from '@/theme/tokens';
 import { useCreatePlaylist } from '@/api/playlists';
 import { Meta } from '@/components/Meta';
 
@@ -33,14 +33,14 @@ export default function NewPlaylist() {
         }}
       >
         <Pressable onPress={() => router.back()} hitSlop={8}>
-          <Text style={{ fontWeight: '600', fontSize: 15, color: color.sub }}>취소</Text>
+          <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 15, color: color.sub }}>취소</Text>
         </Pressable>
-        <Text style={{ fontWeight: '700', fontSize: 16, color: color.white }}>새 플레이리스트</Text>
+        <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 16, color: color.white }}>새 플레이리스트</Text>
         <Pressable onPress={submit} hitSlop={8} disabled={!name.trim()}>
           {create.isPending ? (
             <ActivityIndicator size="small" color={role.me} />
           ) : (
-            <Text style={{ fontWeight: '700', fontSize: 15, color: name.trim() ? role.me : color.muted }}>
+            <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 15, color: name.trim() ? role.me : color.muted }}>
               만들기
             </Text>
           )}
@@ -57,7 +57,7 @@ export default function NewPlaylist() {
           onSubmitEditing={submit}
           style={{
             textAlign: 'center',
-            fontWeight: '800',
+            fontFamily: typeface, fontWeight: '800',
             fontSize: 26,
             letterSpacing: -0.4,
             color: color.white,
@@ -67,7 +67,7 @@ export default function NewPlaylist() {
           }}
         />
         <Meta style={{ fontSize: 11.5, lineHeight: 19, marginTop: 20, textAlign: 'center' }}>
-          테마 플레이리스트는 데이트가 아니라 <Text style={{ color: color.white }}>장소</Text>를 모아요.{'\n'}
+          테마 플레이리스트는 데이트가 아니라 <Text style={{ fontFamily: typeface, color: color.white }}>장소</Text>를 모아요.{'\n'}
           예: Cafe, 야경 좋은 곳, 다음에 갈 맛집
         </Meta>
         <Meta style={{ fontSize: 11.5, marginTop: 8, textAlign: 'center' }}>

@@ -1,5 +1,5 @@
 import { Text, View } from 'react-native';
-import { color } from '@/theme/tokens';
+import { color, typeface } from '@/theme/tokens';
 import { TopBar } from '@/components/TopBar';
 import { Meta } from '@/components/Meta';
 
@@ -11,7 +11,7 @@ export function PlaceholderScreen({ title, note, back = true }: Props) {
     <View style={{ flex: 1, backgroundColor: color.bg }}>
       <TopBar title={title} onBack={back} />
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-        <Text style={{ color: color.white, fontWeight: '700', fontSize: 18 }}>{title}</Text>
+        <Text style={{ color: color.white, fontFamily: typeface, fontWeight: '700', fontSize: 18 }}>{title}</Text>
         {note ? <Meta>{note}</Meta> : null}
       </View>
     </View>

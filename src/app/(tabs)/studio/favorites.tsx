@@ -1,7 +1,7 @@
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
-import { color, role } from '@/theme/tokens';
+import { color, role, typeface } from '@/theme/tokens';
 import { useAllTracks } from '@/api/tracks';
 import { TopBar } from '@/components/TopBar';
 import { Meta } from '@/components/Meta';
@@ -29,12 +29,12 @@ export default function Favorites() {
               )}
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontWeight: '600', fontSize: 15, color: color.white }}>{t.title}</Text>
+              <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 15, color: color.white }}>{t.title}</Text>
               <Meta style={{ marginTop: 2, fontSize: 12.5 }}>
                 {t.date.replaceAll('-', '.')} · 사진 {t.photoCount}
               </Meta>
             </View>
-            <Text style={{ color: role.me, fontSize: 16 }}>♥</Text>
+            <Text style={{ fontFamily: typeface, color: role.me, fontSize: 16 }}>♥</Text>
           </Pressable>
         ))}
         {list.length === 0 && (

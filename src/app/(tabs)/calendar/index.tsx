@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
-import { color, role } from '@/theme/tokens';
+import { color, role, typeface } from '@/theme/tokens';
 import { monthCells, addMonths, monthLabel } from '@/lib/calendar';
 import { monthKey as toMonthKey, todayKST, isReleased, toKSTDate } from '@/lib/date';
 import { occurrenceInMonth } from '@/lib/anniversaries';
@@ -91,11 +91,11 @@ export default function Calendar() {
           >
             <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8 }}>
               <Text
-                style={{ fontWeight: '800', fontSize: 26, letterSpacing: -0.5, color: color.white }}
+                style={{ fontFamily: typeface, fontWeight: '800', fontSize: 26, letterSpacing: -0.5, color: color.white }}
               >
                 {lbl.month}
               </Text>
-              <Text style={{ fontWeight: '500', fontSize: 15, color: color.sub }}>{lbl.year}</Text>
+              <Text style={{ fontFamily: typeface, fontWeight: '500', fontSize: 15, color: color.sub }}>{lbl.year}</Text>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
               <NavBtn dir="prev" onPress={() => setMonth((m) => addMonths(m, -1))} />
@@ -103,7 +103,7 @@ export default function Calendar() {
                 onPress={() => setMonth(toMonthKey(todayKST()))}
                 style={navBtnStyle({ wide: true })}
               >
-                <Text style={{ fontWeight: '700', fontSize: 12, color: color.white }}>오늘</Text>
+                <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 12, color: color.white }}>오늘</Text>
               </Pressable>
               <NavBtn dir="next" onPress={() => setMonth((m) => addMonths(m, 1))} />
             </View>
@@ -227,7 +227,7 @@ function Legend({ myName, partnerName }: { myName: string; partnerName: string }
       {items.map(([g, t], i) => (
         <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
           {g}
-          <Text style={{ fontSize: 11, color: color.sub }}>{t}</Text>
+          <Text style={{ fontFamily: typeface, fontSize: 11, color: color.sub }}>{t}</Text>
         </View>
       ))}
     </View>
@@ -239,7 +239,7 @@ function EmptyMonth() {
   const router = useRouter();
   return (
     <View style={{ alignItems: 'center', paddingHorizontal: 40, paddingTop: 24 }}>
-      <Text style={{ fontWeight: '700', fontSize: 16, color: color.white }}>
+      <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 16, color: color.white }}>
         이번 달은 아직 비어 있어요
       </Text>
       <Meta style={{ marginTop: 8, lineHeight: 20, textAlign: 'center' }}>
@@ -258,7 +258,7 @@ function EmptyMonth() {
           opacity: pressed ? 0.85 : 1,
         })}
       >
-        <Text style={{ fontWeight: '700', fontSize: 14, color: color.onPrimary }}>
+        <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 14, color: color.onPrimary }}>
           데이트 계획하기
         </Text>
       </Pressable>

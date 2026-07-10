@@ -1,7 +1,7 @@
 import { Pressable, Text, View } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
-import { color } from '@/theme/tokens';
+import { color, typeface } from '@/theme/tokens';
 import { DodoriMark } from '@/components/DodoriMark';
 import { Meta } from '@/components/Meta';
 
@@ -15,7 +15,7 @@ export default function Connect() {
       <View style={{ flex: 1, justifyContent: 'center' }}>
         <Text
           style={{
-            fontWeight: '800',
+            fontFamily: typeface, fontWeight: '800',
             fontSize: 27,
             letterSpacing: -0.5,
             color: color.white,
@@ -95,7 +95,7 @@ function ChoiceCard({
         </Svg>
       </View>
       <View style={{ flex: 1 }}>
-        <Text style={{ fontWeight: '700', fontSize: 16, color: color.white }}>{title}</Text>
+        <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 16, color: color.white }}>{title}</Text>
         <Meta style={{ marginTop: 3, fontSize: 12.5 }}>{sub}</Meta>
       </View>
     </Pressable>

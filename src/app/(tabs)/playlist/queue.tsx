@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
-import { color, role } from '@/theme/tokens';
+import { color, role, typeface } from '@/theme/tokens';
 import { formatDday, isReleased, todayKST } from '@/lib/date';
 import { useAllTracks } from '@/api/tracks';
 import { useAnniversaries } from '@/api/anniversaries';
@@ -41,7 +41,7 @@ export default function Queue() {
       <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
         <View style={{ paddingHorizontal: 20, paddingTop: 4 }}>
           <Eyebrow>다가오는 데이트 · 기념일</Eyebrow>
-          <Text style={{ fontWeight: '800', fontSize: 22, color: color.white, marginTop: 6 }}>
+          <Text style={{ fontFamily: typeface, fontWeight: '800', fontSize: 22, color: color.white, marginTop: 6 }}>
             Queue
           </Text>
         </View>
@@ -65,7 +65,7 @@ export default function Queue() {
                   )}
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontWeight: '600', fontSize: 15, color: color.white }}>{t.title}</Text>
+                  <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 15, color: color.white }}>{t.title}</Text>
                   <Meta style={{ marginTop: 2, fontSize: 12.5 }}>
                     {t.date.slice(5).replace('-', '.')}
                     {t.placeCount ? ` · 코스 ${t.placeCount}곳` : ''}
@@ -89,7 +89,7 @@ export default function Queue() {
                 small={/일$/.test(a.label) && /\d/.test(a.label) ? '일' : undefined}
               />
               <View style={{ flex: 1 }}>
-                <Text style={{ fontWeight: '600', fontSize: 15, color: color.white }}>{a.label}</Text>
+                <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 15, color: color.white }}>{a.label}</Text>
                 <Meta style={{ marginTop: 2, fontSize: 12.5 }}>
                   {a.nextDate.slice(5).replace('-', '.')} · 기념일
                 </Meta>

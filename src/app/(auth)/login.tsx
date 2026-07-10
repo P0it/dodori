@@ -1,6 +1,6 @@
 import { Alert, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { color } from '@/theme/tokens';
+import { color, typeface } from '@/theme/tokens';
 import { KakaoButton } from '@/components/KakaoButton';
 import { DodoriMark } from '@/components/DodoriMark';
 import { useSignInWithKakao } from '@/api/auth';
@@ -24,11 +24,11 @@ export default function Login() {
         <DodoriMark size={54} />
         <View style={{ alignItems: 'center' }}>
           <Text
-            style={{ fontWeight: '800', fontSize: 40, letterSpacing: -1.2, color: color.white }}
+            style={{ fontFamily: typeface, fontWeight: '800', fontSize: 40, letterSpacing: -0.5, color: color.white }}
           >
             도돌이
           </Text>
-          <Text style={{ fontWeight: '500', fontSize: 15, color: color.sub, marginTop: 8 }}>
+          <Text style={{ fontFamily: typeface, fontWeight: '500', fontSize: 15, color: color.sub, marginTop: 8 }}>
             둘이서 쓰는 캘린더, 둘만의 아카이브
           </Text>
         </View>

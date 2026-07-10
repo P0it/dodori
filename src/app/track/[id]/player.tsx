@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
-import { color } from '@/theme/tokens';
+import { color, typeface } from '@/theme/tokens';
 import { useTrack } from '@/api/tracks';
 import { originalUrl, thumbUrl } from '@/api/photos';
 import { Eyebrow } from '@/components/Eyebrow';
@@ -48,7 +48,7 @@ export default function Player() {
       <View style={{ flex: 1, backgroundColor: '#000', alignItems: 'center', justifyContent: 'center' }}>
         <Meta>사진이 없어요</Meta>
         <Pressable onPress={() => router.back()} style={{ marginTop: 16 }}>
-          <Text style={{ color: color.white }}>닫기</Text>
+          <Text style={{ fontFamily: typeface, color: color.white }}>닫기</Text>
         </Pressable>
       </View>
     );
@@ -68,11 +68,11 @@ export default function Player() {
         }}
       >
         <Pressable hitSlop={10} onPress={() => router.back()}>
-          <Text style={{ color: color.white, fontSize: 20 }}>▾</Text>
+          <Text style={{ fontFamily: typeface, color: color.white, fontSize: 20 }}>▾</Text>
         </Pressable>
         <View style={{ alignItems: 'center' }}>
           <Eyebrow style={{ fontSize: 9.5 }}>슬라이드쇼 재생 중</Eyebrow>
-          <Text style={{ fontWeight: '700', fontSize: 13, color: color.white, marginTop: 2 }}>
+          <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 13, color: color.white, marginTop: 2 }}>
             {track.data?.title}
           </Text>
         </View>
@@ -114,7 +114,7 @@ export default function Player() {
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <View>
-            <Text style={{ fontWeight: '700', fontSize: 16, color: color.white }}>
+            <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 16, color: color.white }}>
               {index + 1} / {photos.length}
             </Text>
             {current.takenAt && (
@@ -134,7 +134,7 @@ export default function Player() {
               justifyContent: 'center',
             }}
           >
-            <Text style={{ fontSize: 22, color: '#000' }}>{playing ? '❚❚' : '▶'}</Text>
+            <Text style={{ fontFamily: typeface, fontSize: 22, color: '#000' }}>{playing ? '❚❚' : '▶'}</Text>
           </Pressable>
           <View style={{ width: 60 }} />
         </View>

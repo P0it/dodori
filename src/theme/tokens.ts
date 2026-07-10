@@ -60,6 +60,9 @@ export const space = {
   8: 32,
 } as const;
 
+/** 앱 전역 서체 (expo-font 플러그인이 Android XML family·iOS 번들로 등록) — fontWeight와 조합해 사용 */
+export const typeface = 'Pretendard';
+
 export const font = {
   screenTitle: 34,
   h1: 28,

@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
-import { color, role } from '@/theme/tokens';
+import { color, role, typeface } from '@/theme/tokens';
 import { daysSince, formatDday, isReleased, monthKey, todayKST } from '@/lib/date';
 import { useAllTracks, type TrackListItem } from '@/api/tracks';
 import { useAnniversaries } from '@/api/anniversaries';
@@ -52,6 +52,9 @@ export default function PlaylistRoot() {
     .filter(Boolean)
     .join(' & ');
 
+  // 기록 0개 첫 실행 — 빈 섹션들 대신 히어로 하나로 (isSuccess 가드: 로딩 중 깜빡임 방지)
+  const noTracks = tracks.isSuccess && (tracks.data ?? []).length === 0;
+
   return (
     <ScrollView style={{ backgroundColor: color.bg }} contentContainerStyle={{ paddingBottom: 24 }}>
       {/* 헤더 */}
@@ -65,13 +68,13 @@ export default function PlaylistRoot() {
         }}
       >
         <View>
-          <Text style={{ fontWeight: '800', fontSize: 26, letterSpacing: -0.5, color: color.white }}>
+          <Text style={{ fontFamily: typeface, fontWeight: '800', fontSize: 26, letterSpacing: -0.5, color: color.white }}>
             플레이리스트
           </Text>
           <Meta style={{ marginTop: 2, fontSize: 12.5 }}>
             {names || '우리'} ·{' '}
             {couple.data?.startedAt ? (
-              <Text style={{ color: role.me, fontWeight: '700' }}>
+              <Text style={{ color: role.me, fontFamily: typeface, fontWeight: '700' }}>
                 {daysSince(couple.data.startedAt)}일째
               </Text>
             ) : null}
@@ -79,6 +82,10 @@ export default function PlaylistRoot() {
         </View>
       </View>
 
+      {noTracks ? (
+        <FirstTrackHero onPress={() => router.push('/modals/create-track')} />
+      ) : (
+      <>
       {/* 다가오는 카드 2장 */}
       <View style={{ flexDirection: 'row', gap: 12, paddingHorizontal: 16, paddingTop: 14 }}>
         <UpcomingCard
@@ -127,7 +134,7 @@ export default function PlaylistRoot() {
                   </View>
                 )}
               </View>
-              <Text numberOfLines={1} style={{ fontWeight: '600', fontSize: 13.5, color: color.white, marginTop: 8 }}>
+              <Text numberOfLines={1} style={{ fontFamily: typeface, fontWeight: '600', fontSize: 13.5, color: color.white, marginTop: 8 }}>
                 {t.title}
               </Text>
               <Meta style={{ marginTop: 2, fontSize: 12 }}>{t.date.slice(5).replace('-', '.')}</Meta>
@@ -155,18 +162,22 @@ export default function PlaylistRoot() {
               )}
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontWeight: '600', fontSize: 15, color: color.white }}>
+              <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 15, color: color.white }}>
                 {k.slice(0, 4)}년 {Number(k.slice(5))}월
               </Text>
               <Meta style={{ marginTop: 2, fontSize: 12.5 }}>{list.length} 데이트</Meta>
             </View>
-            <Text style={{ color: color.muted }}>›</Text>
+            <Text style={{ fontFamily: typeface, color: color.muted }}>›</Text>
           </Pressable>
         ))}
         {months.length === 0 && <Meta style={{ paddingVertical: 10 }}>기록이 쌓이면 달별로 모여요</Meta>}
       </View>
+      </>
+      )}
 
-      {/* 테마 플레이리스트 */}
+      {/* 테마 플레이리스트 — 첫 실행이고 만든 플리도 없으면 숨김 */}
+      {!(noTracks && (playlists.data ?? []).length === 0) && (
+      <>
       <SectionHeader title="테마 플레이리스트" />
       <View style={{ paddingHorizontal: 16, paddingTop: 10 }}>
         {(playlists.data ?? []).map((p) => (
@@ -185,13 +196,13 @@ export default function PlaylistRoot() {
                 justifyContent: 'center',
               }}
             >
-              <Text style={{ color: color.sub, fontWeight: '700' }}>{p.name.slice(0, 1)}</Text>
+              <Text style={{ color: color.sub, fontFamily: typeface, fontWeight: '700' }}>{p.name.slice(0, 1)}</Text>
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontWeight: '600', fontSize: 15, color: color.white }}>{p.name}</Text>
+              <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 15, color: color.white }}>{p.name}</Text>
               <Meta style={{ marginTop: 2, fontSize: 12.5 }}>장소 {p.placeCount}곳</Meta>
             </View>
-            <Text style={{ color: color.muted }}>›</Text>
+            <Text style={{ fontFamily: typeface, color: color.muted }}>›</Text>
           </Pressable>
         ))}
         <Pressable
@@ -208,11 +219,13 @@ export default function PlaylistRoot() {
               justifyContent: 'center',
             }}
           >
-            <Text style={{ color: color.white, fontSize: 20 }}>+</Text>
+            <Text style={{ fontFamily: typeface, color: color.white, fontSize: 20 }}>+</Text>
           </View>
-          <Text style={{ fontWeight: '600', fontSize: 15, color: color.sub }}>새 플레이리스트 만들기</Text>
+          <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 15, color: color.sub }}>새 플레이리스트 만들기</Text>
         </Pressable>
       </View>
+      </>
+      )}
 
       {/* Singles 배너 */}
       <View style={{ paddingHorizontal: 16, paddingTop: 18 }}>
@@ -231,7 +244,7 @@ export default function PlaylistRoot() {
         >
           <AnnivCover size={52} disc />
           <View style={{ flex: 1 }}>
-            <Text style={{ fontWeight: '700', fontSize: 15, color: color.white }}>Singles</Text>
+            <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 15, color: color.white }}>Singles</Text>
             <Meta style={{ marginTop: 2, fontSize: 12.5 }}>기념일 모음 · {annivs.data?.length ?? 0}</Meta>
           </View>
           <StarGlyph size={14} />
@@ -252,7 +265,7 @@ function SectionHeader({ title, onMore }: { title: string; onMore?: () => void }
         paddingTop: 20,
       }}
     >
-      <Text style={{ fontWeight: '700', fontSize: 19, letterSpacing: -0.3, color: color.white }}>
+      <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 19, letterSpacing: -0.3, color: color.white }}>
         {title}
       </Text>
       {onMore && (
@@ -311,7 +324,7 @@ function UpcomingCard({
         )}
       </View>
       <View style={{ paddingHorizontal: 12, paddingVertical: 11 }}>
-        <Text numberOfLines={1} style={{ fontWeight: '700', fontSize: 15, color: color.white }}>
+        <Text numberOfLines={1} style={{ fontFamily: typeface, fontWeight: '700', fontSize: 15, color: color.white }}>
           {title}
         </Text>
         <Meta style={{ marginTop: 3, fontSize: 12 }}>{meta}</Meta>
@@ -320,12 +333,54 @@ function UpcomingCard({
   );
 }
 
+/** 기록 0개 첫 실행 히어로 — 빈 섹션 나열 대신 첫 트랙 만들기 하나에 집중 */
+function FirstTrackHero({ onPress }: { onPress: () => void }) {
+  return (
+    <View style={{ paddingHorizontal: 16, paddingTop: 14 }}>
+      <Pressable
+        onPress={onPress}
+        style={{
+          borderRadius: 14,
+          backgroundColor: color.surface1,
+          borderWidth: 1,
+          borderColor: 'rgba(30,215,96,0.18)',
+          paddingVertical: 28,
+          paddingHorizontal: 20,
+          alignItems: 'center',
+          gap: 8,
+        }}
+      >
+        <Eyebrow color={role.me}>Track 01</Eyebrow>
+        <Text style={{ fontFamily: typeface, fontWeight: '800', fontSize: 21, color: color.white }}>
+          첫 데이트를 기록해보세요
+        </Text>
+        <Meta style={{ textAlign: 'center' }}>데이트 하나가 트랙 하나로 쌓여요</Meta>
+        <View
+          style={{
+            marginTop: 12,
+            paddingHorizontal: 22,
+            height: 40,
+            borderRadius: 999,
+            backgroundColor: color.greenCore,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 14, color: color.onPrimary }}>
+            데이트 만들기
+          </Text>
+        </View>
+      </Pressable>
+    </View>
+  );
+}
+
 function EmptyRow({ text, cta, onPress }: { text: string; cta: string; onPress: () => void }) {
   return (
     <View style={{ paddingHorizontal: 16, paddingTop: 12 }}>
       <Meta>{text}</Meta>
       <Pressable onPress={onPress} style={{ marginTop: 10 }}>
-        <Text style={{ color: role.me, fontWeight: '600', fontSize: 13.5 }}>{cta}</Text>
+        <Text style={{ color: role.me, fontFamily: typeface, fontWeight: '600', fontSize: 13.5 }}>{cta}</Text>
       </Pressable>
     </View>
   );

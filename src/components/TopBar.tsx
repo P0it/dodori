@@ -1,7 +1,7 @@
 import { Pressable, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
-import { color } from '@/theme/tokens';
+import { color, typeface } from '@/theme/tokens';
 
 type Props = {
   title?: string;
@@ -43,7 +43,7 @@ export function TopBar({ title, onBack = true, right, tint = color.white }: Prop
         style={{
           flex: 1,
           textAlign: 'center',
-          fontWeight: '700',
+          fontFamily: typeface, fontWeight: '700',
           fontSize: 15,
           letterSpacing: -0.15,
           color: tint,

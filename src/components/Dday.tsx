@@ -1,5 +1,5 @@
 import { Text, View, type ViewStyle, type StyleProp } from 'react-native';
-import { role, roleBg } from '@/theme/tokens';
+import { role, roleBg, typeface } from '@/theme/tokens';
 
 type Props = {
   children: React.ReactNode;
@@ -24,7 +24,7 @@ export function Dday({ children, tone = 'me', style }: Props) {
         style,
       ]}
     >
-      <Text style={{ color: role[tone], fontWeight: '700', fontSize: 11.5, letterSpacing: 0.2 }}>
+      <Text style={{ color: role[tone], fontFamily: typeface, fontWeight: '700', fontSize: 11.5, letterSpacing: 0.2 }}>
         {children}
       </Text>
     </View>

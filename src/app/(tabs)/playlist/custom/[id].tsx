@@ -1,7 +1,7 @@
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
-import { color, role } from '@/theme/tokens';
+import { color, role, typeface } from '@/theme/tokens';
 import {
   usePlaylistDetail,
   useDeletePlaylist,
@@ -38,7 +38,7 @@ export default function CustomPlaylist() {
         title={p?.name ?? ''}
         right={
           <Pressable hitSlop={8} onPress={onDelete}>
-            <Text style={{ color: color.sub, fontSize: 18 }}>⋯</Text>
+            <Text style={{ fontFamily: typeface, color: color.sub, fontSize: 18 }}>⋯</Text>
           </Pressable>
         }
       />
@@ -63,7 +63,7 @@ export default function CustomPlaylist() {
               ),
             )}
           </View>
-          <Text style={{ fontWeight: '800', fontSize: 24, color: color.white, marginTop: 16 }}>
+          <Text style={{ fontFamily: typeface, fontWeight: '800', fontSize: 24, color: color.white, marginTop: 16 }}>
             {p?.name}
           </Text>
           <Meta style={{ marginTop: 6 }}>
@@ -107,19 +107,19 @@ export default function CustomPlaylist() {
                     justifyContent: 'center',
                   }}
                 >
-                  <Text style={{ color: color.sub, fontSize: 11 }}>가고픈</Text>
+                  <Text style={{ fontFamily: typeface, color: color.sub, fontSize: 11 }}>가고픈</Text>
                 </View>
               )}
               <View style={{ flex: 1, minWidth: 0 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
-                  <Text style={{ fontWeight: '600', fontSize: 15.5, color: color.white }}>
+                  <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 15.5, color: color.white }}>
                     {pl.name}
                   </Text>
                   {pl.visitCount === 0 && (
                     <Text
                       style={{
                         fontSize: 9.5,
-                        fontWeight: '700',
+                        fontFamily: typeface, fontWeight: '700',
                         color: role.anniv,
                         borderWidth: 1,
                         borderColor: role.anniv,
@@ -136,7 +136,7 @@ export default function CustomPlaylist() {
                   {pl.category ?? '장소'} · 방문 {pl.visitCount}회
                 </Meta>
               </View>
-              <Text style={{ color: color.muted }}>›</Text>
+              <Text style={{ fontFamily: typeface, color: color.muted }}>›</Text>
             </Pressable>
           ))}
           <Pressable
@@ -155,7 +155,7 @@ export default function CustomPlaylist() {
               opacity: pressed ? 0.7 : 1,
             })}
           >
-            <Text style={{ color: role.me, fontWeight: '600', fontSize: 13.5 }}>+ 장소 담기</Text>
+            <Text style={{ color: role.me, fontFamily: typeface, fontWeight: '600', fontSize: 13.5 }}>+ 장소 담기</Text>
           </Pressable>
         </View>
       </ScrollView>

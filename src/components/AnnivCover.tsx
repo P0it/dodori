@@ -1,6 +1,6 @@
 import { Text, View, type ViewStyle, type StyleProp } from 'react-native';
 import { Image } from 'expo-image';
-import { color } from '@/theme/tokens';
+import { color, typeface } from '@/theme/tokens';
 
 type Props = {
   size?: number;
@@ -42,7 +42,7 @@ export function AnnivCover({ size = 56, big, small, photo, disc, style }: Props)
     >
       <Text
         style={{
-          fontWeight: '700',
+          fontFamily: typeface, fontWeight: '700',
           fontSize: size * (disc ? 0.24 : 0.36),
           color: color.anniv,
           letterSpacing: -0.3,
@@ -54,7 +54,7 @@ export function AnnivCover({ size = 56, big, small, photo, disc, style }: Props)
       {!disc && small ? (
         <Text
           style={{
-            fontWeight: '600',
+            fontFamily: typeface, fontWeight: '600',
             fontSize: size * 0.15,
             color: 'rgba(232,184,75,0.7)',
             letterSpacing: 1,

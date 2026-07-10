@@ -1,7 +1,7 @@
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { color, role } from '@/theme/tokens';
+import { color, role, typeface } from '@/theme/tokens';
 import { daysSince } from '@/lib/date';
 import { useMyCouple, useCoupleProfiles } from '@/api/couple';
 import { useAllTracks } from '@/api/tracks';
@@ -72,17 +72,17 @@ export default function Studio() {
         ) : (
           <DodoriMark size={54} />
         )}
-        <Text style={{ fontWeight: '800', fontSize: 22, color: color.white, marginTop: 14, letterSpacing: -0.3 }}>
+        <Text style={{ fontFamily: typeface, fontWeight: '800', fontSize: 22, color: color.white, marginTop: 14, letterSpacing: -0.3 }}>
           {names || '도돌이'}
         </Text>
         {couple.data?.startedAt && (
           <>
             <Meta style={{ marginTop: 5 }}>since {couple.data.startedAt.replaceAll('-', '.')}</Meta>
             <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6, marginTop: 14 }}>
-              <Text style={{ fontWeight: '800', fontSize: 34, color: role.me, letterSpacing: -0.7 }}>
+              <Text style={{ fontFamily: typeface, fontWeight: '800', fontSize: 34, color: role.me, letterSpacing: -0.5 }}>
                 {daysSince(couple.data.startedAt)}
               </Text>
-              <Text style={{ fontWeight: '600', fontSize: 16, color: color.sub }}>일째</Text>
+              <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 16, color: color.sub }}>일째</Text>
             </View>
           </>
         )}
@@ -116,7 +116,7 @@ export default function Studio() {
         />
         <Divider />
         <LinkRow
-          icon={<Text style={{ color: role.me, fontSize: 16 }}>♥</Text>}
+          icon={<Text style={{ fontFamily: typeface, color: role.me, fontSize: 16 }}>♥</Text>}
           label="Favorites"
           sub={`아껴둔 데이트 ${favorites.length}`}
           onPress={() => router.push('/studio/favorites')}
@@ -133,7 +133,7 @@ export default function Studio() {
         />
         <Divider />
         <LinkRow
-          icon={<Text style={{ color: '#E8567A', fontSize: 15 }}>↩</Text>}
+          icon={<Text style={{ fontFamily: typeface, color: '#E8567A', fontSize: 15 }}>↩</Text>}
           label="로그아웃"
           danger
           onPress={onSignOut}
@@ -146,7 +146,7 @@ export default function Studio() {
 function Stat({ n, label }: { n: number; label: string }) {
   return (
     <View style={{ flex: 1, alignItems: 'center' }}>
-      <Text style={{ fontWeight: '800', fontSize: 22, color: color.white }}>{n}</Text>
+      <Text style={{ fontFamily: typeface, fontWeight: '800', fontSize: 22, color: color.white }}>{n}</Text>
       <Meta style={{ marginTop: 2, fontSize: 11.5 }}>{label}</Meta>
     </View>
   );
@@ -183,12 +183,12 @@ function LinkRow({
         {icon}
       </View>
       <View style={{ flex: 1 }}>
-        <Text style={{ fontWeight: '600', fontSize: 15, color: danger ? '#E8567A' : color.white }}>
+        <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 15, color: danger ? '#E8567A' : color.white }}>
           {label}
         </Text>
         {sub && <Meta style={{ marginTop: 2, fontSize: 12 }}>{sub}</Meta>}
       </View>
-      {onPress && <Text style={{ color: color.muted }}>›</Text>}
+      {onPress && <Text style={{ fontFamily: typeface, color: color.muted }}>›</Text>}
     </Pressable>
   );
 }

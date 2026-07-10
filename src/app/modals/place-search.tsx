@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { color, role } from '@/theme/tokens';
+import { color, role, typeface } from '@/theme/tokens';
 import { TopBar } from '@/components/TopBar';
 import { Meta } from '@/components/Meta';
 import { Eyebrow } from '@/components/Eyebrow';
@@ -71,7 +71,7 @@ export default function PlaceSearch() {
                   style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 11 }}
                 >
                   <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text style={{ fontWeight: '600', fontSize: 15, color: color.white }}>
+                    <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 15, color: color.white }}>
                       {p.name}
                     </Text>
                     <Meta style={{ marginTop: 2, fontSize: 12 }}>
@@ -92,7 +92,7 @@ export default function PlaceSearch() {
                       justifyContent: 'center',
                     }}
                   >
-                    <Text style={{ color: added ? color.bg : color.white, fontWeight: '700' }}>
+                    <Text style={{ color: added ? color.bg : color.white, fontFamily: typeface, fontWeight: '700' }}>
                       {added ? '✓' : '+'}
                     </Text>
                   </Pressable>
@@ -114,7 +114,7 @@ export default function PlaceSearch() {
             opacity: pressed ? 0.85 : 1,
           })}
         >
-          <Text style={{ fontWeight: '700', fontSize: 14.5, color: color.onPrimary }}>완료</Text>
+          <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 14.5, color: color.onPrimary }}>완료</Text>
         </Pressable>
       </View>
     </View>

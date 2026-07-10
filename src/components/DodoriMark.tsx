@@ -1,5 +1,5 @@
 import { Text, View } from 'react-native';
-import { color } from '@/theme/tokens';
+import { color, typeface } from '@/theme/tokens';
 
 type Props = { size?: number; showWord?: boolean };
 
@@ -55,9 +55,9 @@ export function DodoriMark({ size = 40, showWord = false }: Props) {
       {showWord && (
         <Text
           style={{
-            fontWeight: '800',
+            fontFamily: typeface, fontWeight: '800',
             fontSize: size * 0.8,
-            letterSpacing: -1,
+            letterSpacing: -0.5,
             color: color.white,
           }}
         >

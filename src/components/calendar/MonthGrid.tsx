@@ -1,6 +1,6 @@
 import { Pressable, Text, View } from 'react-native';
 import { Image } from 'expo-image';
-import { color, role } from '@/theme/tokens';
+import { color, role, typeface } from '@/theme/tokens';
 import type { DayCell } from '@/lib/calendar';
 import { OwnerDot } from '@/components/OwnerDot';
 import { StarGlyph } from '@/components/glyphs';
@@ -41,7 +41,7 @@ export function MonthGrid({ cells, marks, onSelectDay, dim }: Props) {
               textAlign: 'center',
               paddingVertical: 7,
               fontSize: 11,
-              fontWeight: '600',
+              fontFamily: typeface, fontWeight: '600',
               color: i === 0 ? role.partner : i === 6 ? '#8fb4ff' : color.muted,
             }}
           >
@@ -141,14 +141,14 @@ function DayCellView({ cell, m, onPress }: { cell: DayCell; m: DayMarks; onPress
         {m.annivLabel && (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
             <StarGlyph size={9} />
-            <Text style={{ fontSize: 8.5, fontWeight: '700', color: role.anniv }}>싱글</Text>
+            <Text style={{ fontSize: 8.5, fontFamily: typeface, fontWeight: '700', color: role.anniv }}>싱글</Text>
           </View>
         )}
         {m.upcoming && (
-          <Text style={{ fontSize: 8.5, fontWeight: '700', color: role.me }}>예정</Text>
+          <Text style={{ fontSize: 8.5, fontFamily: typeface, fontWeight: '700', color: role.me }}>예정</Text>
         )}
         {released && (
-          <Text style={{ fontSize: 8.5, fontWeight: '700', color: color.white }}>데이트</Text>
+          <Text style={{ fontSize: 8.5, fontFamily: typeface, fontWeight: '700', color: color.white }}>데이트</Text>
         )}
         {m.busy && (
           <View

@@ -1,5 +1,5 @@
 import { Pressable, Text, type ViewStyle, type StyleProp } from 'react-native';
-import { color } from '@/theme/tokens';
+import { color, typeface } from '@/theme/tokens';
 import { KakaoGlyph } from '@/components/glyphs';
 
 type Props = {
@@ -29,7 +29,7 @@ export function KakaoButton({ children = '카카오로 시작하기', onPress, s
       ]}
     >
       <KakaoGlyph size={20} />
-      <Text style={{ color: color.kakaoText, fontWeight: '700', fontSize: 15 }}>{children}</Text>
+      <Text style={{ color: color.kakaoText, fontFamily: typeface, fontWeight: '700', fontSize: 15 }}>{children}</Text>
     </Pressable>
   );
 }

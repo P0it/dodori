@@ -1,7 +1,7 @@
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
-import { color, role } from '@/theme/tokens';
+import { color, role, typeface } from '@/theme/tokens';
 import { isReleased, monthKey } from '@/lib/date';
 import { useAllTracks } from '@/api/tracks';
 import { TopBar } from '@/components/TopBar';
@@ -49,7 +49,7 @@ export default function MonthDetail() {
               ),
             )}
           </View>
-          <Text style={{ fontWeight: '800', fontSize: 24, color: color.white, marginTop: 16, letterSpacing: -0.4 }}>
+          <Text style={{ fontFamily: typeface, fontWeight: '800', fontSize: 24, color: color.white, marginTop: 16, letterSpacing: -0.4 }}>
             {title}
           </Text>
           <Meta style={{ marginTop: 6 }}>
@@ -84,14 +84,14 @@ export default function MonthDetail() {
                 </View>
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
-                    <Text numberOfLines={1} style={{ fontWeight: '600', fontSize: 15.5, color: color.white }}>
+                    <Text numberOfLines={1} style={{ fontFamily: typeface, fontWeight: '600', fontSize: 15.5, color: color.white }}>
                       {t.title}
                     </Text>
                     {upcoming && (
                       <Text
                         style={{
                           fontSize: 10,
-                          fontWeight: '700',
+                          fontFamily: typeface, fontWeight: '700',
                           color: role.me,
                           borderWidth: 1,
                           borderColor: role.me,
@@ -110,7 +110,7 @@ export default function MonthDetail() {
                     {upcoming && t.placeCount ? ` · 코스 ${t.placeCount}곳` : ''}
                   </Meta>
                 </View>
-                <Text style={{ color: color.muted }}>›</Text>
+                <Text style={{ fontFamily: typeface, color: color.muted }}>›</Text>
               </Pressable>
             );
           })}

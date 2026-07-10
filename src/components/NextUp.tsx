@@ -1,6 +1,6 @@
 import { Pressable, Text, View } from 'react-native';
 import { Image } from 'expo-image';
-import { color, role } from '@/theme/tokens';
+import { color, role, typeface } from '@/theme/tokens';
 import { Eyebrow } from '@/components/Eyebrow';
 import { AnnivCover } from '@/components/AnnivCover';
 
@@ -69,11 +69,11 @@ export function NextUp({ item, onPress }: Props) {
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text
               numberOfLines={1}
-              style={{ color: color.white, fontWeight: '600', fontSize: 13.5 }}
+              style={{ color: color.white, fontFamily: typeface, fontWeight: '600', fontSize: 13.5 }}
             >
               {item.title}
             </Text>
-            <Text style={{ color: color.sub, fontSize: 12, marginTop: 2 }}>{item.subtitle}</Text>
+            <Text style={{ fontFamily: typeface, color: color.sub, fontSize: 12, marginTop: 2 }}>{item.subtitle}</Text>
           </View>
         </View>
         <View style={{ height: 2, backgroundColor: 'rgba(255,255,255,0.15)' }}>

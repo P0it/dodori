@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { color, role } from '@/theme/tokens';
+import { color, role, typeface } from '@/theme/tokens';
 import { TopBar } from '@/components/TopBar';
 import { Meta } from '@/components/Meta';
 import { Eyebrow } from '@/components/Eyebrow';
@@ -62,7 +62,7 @@ export default function CreateTrack() {
     <View style={{ flex: 1, backgroundColor: color.bg }}>
       <TopBar
         title="데이트 만들기"
-        right={<Text style={{ fontSize: 12.5, color: color.sub }}>{step}/2</Text>}
+        right={<Text style={{ fontFamily: typeface, fontSize: 12.5, color: color.sub }}>{step}/2</Text>}
       />
       {step === 1 ? (
         <PickDate
@@ -110,7 +110,7 @@ function PickDate({
   return (
     <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
       <View style={{ paddingHorizontal: 24, paddingTop: 8 }}>
-        <Text style={{ fontWeight: '800', fontSize: 23, color: color.white, letterSpacing: -0.4 }}>
+        <Text style={{ fontFamily: typeface, fontWeight: '800', fontSize: 23, color: color.white, letterSpacing: -0.4 }}>
           언제 만날까요?
         </Text>
         <Meta style={{ marginTop: 8 }}>둘 다 비어 있는 날을 골라보세요.</Meta>
@@ -126,15 +126,15 @@ function PickDate({
           paddingBottom: 6,
         }}
       >
-        <Text style={{ fontWeight: '700', fontSize: 17, color: color.white }}>
+        <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 17, color: color.white }}>
           {lbl.year}년 {lbl.month}
         </Text>
         <View style={{ flexDirection: 'row', gap: 20 }}>
           <Pressable hitSlop={8} onPress={() => setMonth((m) => addMonths(m, -1))}>
-            <Text style={{ color: color.sub, fontSize: 17 }}>‹</Text>
+            <Text style={{ fontFamily: typeface, color: color.sub, fontSize: 17 }}>‹</Text>
           </Pressable>
           <Pressable hitSlop={8} onPress={() => setMonth((m) => addMonths(m, 1))}>
-            <Text style={{ color: color.sub, fontSize: 17 }}>›</Text>
+            <Text style={{ fontFamily: typeface, color: color.sub, fontSize: 17 }}>›</Text>
           </Pressable>
         </View>
       </View>
@@ -150,7 +150,7 @@ function PickDate({
                 textAlign: 'center',
                 paddingVertical: 6,
                 fontSize: 11,
-                fontWeight: '600',
+                fontFamily: typeface, fontWeight: '600',
                 color: i === 0 ? role.partner : color.muted,
               }}
             >
@@ -235,12 +235,12 @@ function PickDate({
                 justifyContent: 'center',
               }}
             >
-              <Text style={{ fontWeight: '800', fontSize: 16, color: color.bg }}>
+              <Text style={{ fontFamily: typeface, fontWeight: '800', fontSize: 16, color: color.bg }}>
                 {Number(date.slice(8, 10))}
               </Text>
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontWeight: '700', fontSize: 15, color: color.white }}>
+              <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 15, color: color.white }}>
                 {Number(date.slice(5, 7))}월 {Number(date.slice(8, 10))}일
               </Text>
               <Meta style={{ marginTop: 2, fontSize: 12 }}>
@@ -264,7 +264,7 @@ function PickDate({
             opacity: !date ? 0.4 : pressed ? 0.85 : 1,
           })}
         >
-          <Text style={{ fontWeight: '700', fontSize: 15, color: color.onPrimary }}>
+          <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 15, color: color.onPrimary }}>
             다음 · 장소 담기
           </Text>
         </Pressable>
@@ -332,7 +332,7 @@ function PickPlaces({
                   }}
                 >
                   <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text style={{ fontWeight: '600', fontSize: 15, color: color.white }}>
+                    <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 15, color: color.white }}>
                       {p.name}
                     </Text>
                     <Meta style={{ marginTop: 2, fontSize: 12 }}>
@@ -356,7 +356,7 @@ function PickPlaces({
                       justifyContent: 'center',
                     }}
                   >
-                    <Text style={{ color: added ? color.bg : color.white, fontWeight: '700' }}>
+                    <Text style={{ color: added ? color.bg : color.white, fontFamily: typeface, fontWeight: '700' }}>
                       {added ? '✓' : '+'}
                     </Text>
                   </Pressable>
@@ -388,7 +388,7 @@ function PickPlaces({
               marginBottom: 8,
             }}
           >
-            <Text style={{ fontWeight: '700', fontSize: 13.5, color: color.white }}>
+            <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 13.5, color: color.white }}>
               담은 코스 · {course.length}
             </Text>
             {course.length > 0 && (
@@ -413,7 +413,7 @@ function PickPlaces({
                     backgroundColor: color.surface1,
                   }}
                 >
-                  <Text style={{ fontWeight: '700', fontSize: 11, color: role.me }}>{i + 1}</Text>
+                  <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 11, color: role.me }}>{i + 1}</Text>
                   <Text
                     numberOfLines={1}
                     style={{ fontSize: 11, color: color.white, marginTop: 3 }}
@@ -441,7 +441,7 @@ function PickPlaces({
           {saving ? (
             <ActivityIndicator color={color.onPrimary} />
           ) : (
-            <Text style={{ fontWeight: '700', fontSize: 15, color: color.onPrimary }}>
+            <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 15, color: color.onPrimary }}>
               완료 · 데이트 만들기
             </Text>
           )}

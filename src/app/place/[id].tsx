@@ -1,7 +1,7 @@
 import { Linking, Pressable, ScrollView, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
-import { color, role } from '@/theme/tokens';
+import { color, role, typeface } from '@/theme/tokens';
 import { formatDday, isReleased } from '@/lib/date';
 import { usePlaceDetail } from '@/api/playlists';
 import { TopBar } from '@/components/TopBar';
@@ -35,7 +35,7 @@ export default function PlaceDetail() {
         <TopBar title="" />
         <View style={{ position: 'absolute', left: 20, right: 20, bottom: 12 }}>
           <Eyebrow style={{ color: 'rgba(255,255,255,0.85)' }}>{p?.category ?? '장소'}</Eyebrow>
-          <Text style={{ fontWeight: '800', fontSize: 26, color: color.white, marginTop: 4, letterSpacing: -0.4 }}>
+          <Text style={{ fontFamily: typeface, fontWeight: '800', fontSize: 26, color: color.white, marginTop: 4, letterSpacing: -0.4 }}>
             {p?.name}
           </Text>
         </View>
@@ -54,7 +54,7 @@ export default function PlaceDetail() {
               backgroundColor: 'rgba(30,215,96,0.12)',
             }}
           >
-            <Text style={{ fontWeight: '700', fontSize: 12.5, color: role.me }}>
+            <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 12.5, color: role.me }}>
               방문 {p?.visitCount ?? 0}회
             </Text>
           </View>
@@ -70,7 +70,7 @@ export default function PlaceDetail() {
                 backgroundColor: color.surface2,
               }}
             >
-              <Text style={{ fontWeight: '600', fontSize: 12.5, color: color.sub }}>
+              <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 12.5, color: color.sub }}>
                 네이버에서 보기
               </Text>
             </Pressable>
@@ -83,8 +83,8 @@ export default function PlaceDetail() {
         {/* 우리 사진 */}
         <View style={{ paddingHorizontal: 20, paddingTop: 16 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-            <Text style={{ fontWeight: '700', fontSize: 17, color: color.white }}>
-              우리 사진 <Text style={{ color: color.sub, fontWeight: '500' }}>{p?.photoThumbs.length ?? 0}</Text>
+            <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 17, color: color.white }}>
+              우리 사진 <Text style={{ color: color.sub, fontFamily: typeface, fontWeight: '500' }}>{p?.photoThumbs.length ?? 0}</Text>
             </Text>
             <Meta style={{ fontSize: 12 }}>이 장소의 데이트에서 자동 연결</Meta>
           </View>
@@ -98,9 +98,9 @@ export default function PlaceDetail() {
 
         {/* 여기서 만든 데이트 */}
         <View style={{ paddingHorizontal: 20, paddingTop: 18 }}>
-          <Text style={{ fontWeight: '700', fontSize: 17, color: color.white }}>
+          <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 17, color: color.white }}>
             여기서 만든 데이트{' '}
-            <Text style={{ color: color.sub, fontWeight: '500' }}>{p?.tracks.length ?? 0}</Text>
+            <Text style={{ color: color.sub, fontFamily: typeface, fontWeight: '500' }}>{p?.tracks.length ?? 0}</Text>
           </Text>
           {(p?.tracks ?? []).map((t) => {
             const upcoming = !isReleased(t.date);
@@ -112,12 +112,12 @@ export default function PlaceDetail() {
               >
                 <View style={{ flex: 1 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Text style={{ fontWeight: '600', fontSize: 15, color: color.white }}>{t.title}</Text>
+                    <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 15, color: color.white }}>{t.title}</Text>
                     {upcoming && (
                       <Text
                         style={{
                           fontSize: 10,
-                          fontWeight: '700',
+                          fontFamily: typeface, fontWeight: '700',
                           color: role.me,
                           borderWidth: 1,
                           borderColor: role.me,
@@ -135,7 +135,7 @@ export default function PlaceDetail() {
                     {upcoming ? ` · ${formatDday(t.date)}` : ''}
                   </Meta>
                 </View>
-                <Text style={{ color: color.muted }}>›</Text>
+                <Text style={{ fontFamily: typeface, color: color.muted }}>›</Text>
               </Pressable>
             );
           })}

@@ -1,6 +1,6 @@
 import { Text, View, type ViewStyle, type StyleProp } from 'react-native';
 import { Image } from 'expo-image';
-import { color } from '@/theme/tokens';
+import { color, typeface } from '@/theme/tokens';
 import { resolveCover } from '@/lib/cover';
 import { thumbUrl } from '@/api/photos';
 
@@ -73,8 +73,8 @@ export function TrackCover({ coverPhotoPath, photoPaths, size = 168, style }: Pr
         style,
       ]}
     >
-      <Text style={{ fontSize: size * 0.16, color: color.muted }}>♪</Text>
-      <Text style={{ fontSize: 12, color: color.muted }}>커버 없음</Text>
+      <Text style={{ fontFamily: typeface, fontSize: size * 0.16, color: color.muted }}>♪</Text>
+      <Text style={{ fontFamily: typeface, fontSize: 12, color: color.muted }}>커버 없음</Text>
     </View>
   );
 }

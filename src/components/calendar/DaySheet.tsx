@@ -1,6 +1,6 @@
 import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { color, role } from '@/theme/tokens';
+import { color, role, typeface } from '@/theme/tokens';
 import { formatDday } from '@/lib/date';
 import type { VisibleEvent } from '@/api/events';
 import type { MonthTrack } from '@/api/tracks';
@@ -57,10 +57,10 @@ export function DaySheet({ date, onClose, events, tracks, annivs, uid }: Props) 
         />
         <ScrollView contentContainerStyle={{ paddingHorizontal: 20 }}>
           <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8, marginBottom: 8 }}>
-            <Text style={{ fontWeight: '800', fontSize: 22, color: color.white }}>
+            <Text style={{ fontFamily: typeface, fontWeight: '800', fontSize: 22, color: color.white }}>
               {m}월 {d}일
             </Text>
-            <Text style={{ fontWeight: '500', fontSize: 13, color: color.sub }}>{weekday}</Text>
+            <Text style={{ fontFamily: typeface, fontWeight: '500', fontSize: 13, color: color.sub }}>{weekday}</Text>
           </View>
 
           {/* 기념일 (목업 19) */}
@@ -73,7 +73,7 @@ export function DaySheet({ date, onClose, events, tracks, annivs, uid }: Props) 
                 <View style={{ flex: 1 }}>
                   <Eyebrow color={role.anniv}>Single · 기념일</Eyebrow>
                   <Text
-                    style={{ fontWeight: '800', fontSize: 22, color: color.white, marginTop: 2 }}
+                    style={{ fontFamily: typeface, fontWeight: '800', fontSize: 22, color: color.white, marginTop: 2 }}
                   >
                     {anniv.label}
                   </Text>
@@ -92,7 +92,7 @@ export function DaySheet({ date, onClose, events, tracks, annivs, uid }: Props) 
                     padding: 14,
                   }}
                 >
-                  <Text style={{ fontWeight: '700', fontSize: 14, color: color.white }}>
+                  <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 14, color: color.white }}>
                     아직 계획이 없어요
                   </Text>
                   <Meta style={{ marginTop: 4, lineHeight: 19 }}>
@@ -131,7 +131,7 @@ export function DaySheet({ date, onClose, events, tracks, annivs, uid }: Props) 
                     }}
                   />
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontWeight: '600', fontSize: 15, color: color.white }}>
+                    <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 15, color: color.white }}>
                       {t.title}
                     </Text>
                     <Meta style={{ marginTop: 2 }}>{t.date.replaceAll('-', '.')}</Meta>
@@ -178,10 +178,10 @@ export function DaySheet({ date, onClose, events, tracks, annivs, uid }: Props) 
                 >
                   <View style={{ width: 44, alignItems: 'center', gap: 6 }}>
                     <OwnerDot who={mine ? 'me' : 'partner'} size={9} />
-                    <Text style={{ fontSize: 11, color: color.sub }}>{time}</Text>
+                    <Text style={{ fontFamily: typeface, fontSize: 11, color: color.sub }}>{time}</Text>
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontWeight: '600', fontSize: 15, color: color.white }}>
+                    <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 15, color: color.white }}>
                       {e.title}
                     </Text>
                     {mine && e.title_hidden ? (
@@ -189,7 +189,7 @@ export function DaySheet({ date, onClose, events, tracks, annivs, uid }: Props) 
                     ) : null}
                   </View>
                   {mine && (
-                    <Text style={{ fontSize: 12, color: color.muted }}>수정</Text>
+                    <Text style={{ fontFamily: typeface, fontSize: 12, color: color.muted }}>수정</Text>
                   )}
                 </Pressable>
               );
@@ -213,7 +213,7 @@ export function DaySheet({ date, onClose, events, tracks, annivs, uid }: Props) 
                 opacity: pressed ? 0.85 : 1,
               })}
             >
-              <Text style={{ fontWeight: '700', fontSize: 14, color: color.onPrimary }}>
+              <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 14, color: color.onPrimary }}>
                 {anniv ? `${anniv.label} 데이트 계획하기` : '이 날 데이트 만들기'}
               </Text>
             </Pressable>
@@ -233,7 +233,7 @@ export function DaySheet({ date, onClose, events, tracks, annivs, uid }: Props) 
                 opacity: pressed ? 0.7 : 1,
               })}
             >
-              <Text style={{ fontWeight: '600', fontSize: 14, color: color.white }}>일정 추가</Text>
+              <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 14, color: color.white }}>일정 추가</Text>
             </Pressable>
           </View>
         </ScrollView>

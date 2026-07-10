@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
-import { color, role } from '@/theme/tokens';
+import { color, role, typeface } from '@/theme/tokens';
 import { isReleased, formatDday } from '@/lib/date';
 import { useTrack, useUpdateTrack, useDeleteTrack, useAddNote, type TrackDetail } from '@/api/tracks';
 import { pickPhotos, thumbUrl, useUploadPhotos } from '@/api/photos';
@@ -104,7 +104,7 @@ function TrackBody({ t }: { t: TrackDetail }) {
         title={released ? t.title : '계획 중인 데이트'}
         right={
           <Pressable hitSlop={8} onPress={onDelete}>
-            <Text style={{ color: color.sub, fontSize: 18 }}>⋯</Text>
+            <Text style={{ fontFamily: typeface, color: color.sub, fontSize: 18 }}>⋯</Text>
           </Pressable>
         }
       />
@@ -143,7 +143,7 @@ function TrackBody({ t }: { t: TrackDetail }) {
               autoFocus
               style={{
                 marginTop: 16,
-                fontWeight: '800',
+                fontFamily: typeface, fontWeight: '800',
                 fontSize: 25,
                 color: color.white,
                 textAlign: 'center',
@@ -155,8 +155,8 @@ function TrackBody({ t }: { t: TrackDetail }) {
             />
           ) : (
             <Pressable onPress={() => setEditingTitle(true)} style={{ marginTop: 16 }}>
-              <Text style={{ fontWeight: '800', fontSize: 25, letterSpacing: -0.5, color: color.white }}>
-                {t.title} <Text style={{ fontSize: 14, color: color.muted }}>✎</Text>
+              <Text style={{ fontFamily: typeface, fontWeight: '800', fontSize: 25, letterSpacing: -0.5, color: color.white }}>
+                {t.title} <Text style={{ fontFamily: typeface, fontSize: 14, color: color.muted }}>✎</Text>
               </Text>
             </Pressable>
           )}
@@ -169,7 +169,7 @@ function TrackBody({ t }: { t: TrackDetail }) {
             onPress={() => update.mutate({ liked: !t.liked })}
             style={{ marginTop: 12, flexDirection: 'row', alignItems: 'center', gap: 6 }}
           >
-            <Text style={{ fontSize: 18, color: t.liked ? role.me : color.muted }}>
+            <Text style={{ fontFamily: typeface, fontSize: 18, color: t.liked ? role.me : color.muted }}>
               {t.liked ? '♥' : '♡'}
             </Text>
             <Meta style={{ fontSize: 12 }}>{t.liked ? 'Favorites에 있음' : 'Favorites에 추가'}</Meta>
@@ -182,12 +182,12 @@ function TrackBody({ t }: { t: TrackDetail }) {
             <View
               style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}
             >
-              <Text style={{ fontWeight: '700', fontSize: 17, color: color.white }}>
-                사진 <Text style={{ color: color.sub, fontWeight: '500' }}>{t.photos.length}</Text>
+              <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 17, color: color.white }}>
+                사진 <Text style={{ color: color.sub, fontFamily: typeface, fontWeight: '500' }}>{t.photos.length}</Text>
               </Text>
               {t.photos.length > 0 && (
                 <Pressable onPress={() => router.push(`/track/${t.id}/gallery`)}>
-                  <Text style={{ fontSize: 12.5, color: role.me, fontWeight: '600' }}>
+                  <Text style={{ fontSize: 12.5, color: role.me, fontFamily: typeface, fontWeight: '600' }}>
                     전체 보기
                   </Text>
                 </Pressable>
@@ -195,7 +195,7 @@ function TrackBody({ t }: { t: TrackDetail }) {
             </View>
             {t.photos.length === 0 ? (
               <View style={{ alignItems: 'center', paddingVertical: 20, gap: 12 }}>
-                <Text style={{ fontWeight: '700', fontSize: 16, color: color.white }}>
+                <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 16, color: color.white }}>
                   오늘의 데이트가 발매됐어요
                 </Text>
                 <Meta style={{ textAlign: 'center', lineHeight: 20 }}>
@@ -223,7 +223,7 @@ function TrackBody({ t }: { t: TrackDetail }) {
               {upload.isPending ? (
                 <ActivityIndicator color={role.me} />
               ) : (
-                <Text style={{ color: role.me, fontWeight: '600', fontSize: 13.5 }}>+ 사진 올리기</Text>
+                <Text style={{ color: role.me, fontFamily: typeface, fontWeight: '600', fontSize: 13.5 }}>+ 사진 올리기</Text>
               )}
             </Pressable>
           </View>
@@ -232,7 +232,7 @@ function TrackBody({ t }: { t: TrackDetail }) {
         {/* 코스 */}
         <View style={{ paddingHorizontal: 20, paddingTop: 22 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Text style={{ fontWeight: '700', fontSize: 17, color: color.white }}>코스</Text>
+            <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 17, color: color.white }}>코스</Text>
             <Meta style={{ fontSize: 12.5 }}>{t.places.length}곳</Meta>
           </View>
           {t.places.map((p) => (
@@ -241,13 +241,13 @@ function TrackBody({ t }: { t: TrackDetail }) {
               style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10 }}
             >
               <View style={{ width: 42, alignItems: 'center' }}>
-                <Text style={{ fontWeight: '700', fontSize: 13, color: released ? role.me : color.white }}>
+                <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 13, color: released ? role.me : color.white }}>
                   {p.visitTime ? p.visitTime.slice(0, 5) : `${p.sortOrder + 1}`}
                 </Text>
               </View>
               <View style={{ width: 1, alignSelf: 'stretch', backgroundColor: 'rgba(255,255,255,0.1)' }} />
               <View style={{ flex: 1, minWidth: 0 }}>
-                <Text style={{ fontWeight: '600', fontSize: 15, color: color.white }}>{p.name}</Text>
+                <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 15, color: color.white }}>{p.name}</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 3 }}>
                   <Meta style={{ fontSize: 12 }}>{p.category ?? '장소'}</Meta>
                   <OwnerDot who={p.addedBy === uid ? 'me' : 'partner'} size={6} />
@@ -256,7 +256,7 @@ function TrackBody({ t }: { t: TrackDetail }) {
               </View>
               {!released && (
                 <Pressable hitSlop={8} onPress={() => removePlace.mutate(p.placeId)}>
-                  <Text style={{ color: color.muted, fontSize: 16 }}>×</Text>
+                  <Text style={{ fontFamily: typeface, color: color.muted, fontSize: 16 }}>×</Text>
                 </Pressable>
               )}
             </View>
@@ -281,14 +281,14 @@ function TrackBody({ t }: { t: TrackDetail }) {
                 opacity: pressed ? 0.7 : 1,
               })}
             >
-              <Text style={{ color: role.me, fontWeight: '600', fontSize: 13.5 }}>+ 장소 담기</Text>
+              <Text style={{ color: role.me, fontFamily: typeface, fontWeight: '600', fontSize: 13.5 }}>+ 장소 담기</Text>
             </Pressable>
           )}
         </View>
 
         {/* 노트 (사전 메모 / 라이너 노트) */}
         <View style={{ paddingHorizontal: 20, paddingTop: 22 }}>
-          <Text style={{ fontWeight: '700', fontSize: 17, color: color.white }}>
+          <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 17, color: color.white }}>
             {released ? '라이너 노트' : '사전 메모'}
           </Text>
           {t.notes.map((n) => (
@@ -298,13 +298,13 @@ function TrackBody({ t }: { t: TrackDetail }) {
                 <Text
                   style={{
                     fontSize: 12.5,
-                    fontWeight: '700',
+                    fontFamily: typeface, fontWeight: '700',
                     color: n.authorId === uid ? role.me : role.partner,
                   }}
                 >
                   {nameOf(n.authorId)}
                 </Text>
-                <Text style={{ fontSize: 14, color: '#e5e5e5', lineHeight: 21, marginTop: 3 }}>
+                <Text style={{ fontFamily: typeface, fontSize: 14, color: '#e5e5e5', lineHeight: 21, marginTop: 3 }}>
                   {n.body}
                 </Text>
               </View>
@@ -346,7 +346,7 @@ function TrackBody({ t }: { t: TrackDetail }) {
             >
               <Text
                 style={{
-                  fontWeight: '700',
+                  fontFamily: typeface, fontWeight: '700',
                   fontSize: 13,
                   color: noteDraft.trim() ? color.onPrimary : color.muted,
                 }}
@@ -409,7 +409,7 @@ function PhotoStrip({
                 justifyContent: 'center',
               }}
             >
-              <Text style={{ fontWeight: '700', fontSize: 15, color: color.white }}>
+              <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 15, color: color.white }}>
                 +{total - photos.length}
               </Text>
             </View>

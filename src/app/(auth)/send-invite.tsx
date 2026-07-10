@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { Alert, Pressable, Share, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
-import { color } from '@/theme/tokens';
+import { color, typeface } from '@/theme/tokens';
 import { TopBar } from '@/components/TopBar';
 import { Eyebrow } from '@/components/Eyebrow';
 import { Meta } from '@/components/Meta';
@@ -67,7 +67,7 @@ export default function SendInvite() {
         >
           <Text
             style={{
-              fontWeight: '800',
+              fontFamily: typeface, fontWeight: '800',
               fontSize: 30,
               letterSpacing: 6,
               color: code ? color.me : color.muted,
@@ -118,7 +118,7 @@ function PrimaryBtn({
         opacity: disabled ? 0.4 : pressed ? 0.85 : 1,
       })}
     >
-      <Text style={{ fontWeight: '700', fontSize: 15, color: color.onPrimary }}>{label}</Text>
+      <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 15, color: color.onPrimary }}>{label}</Text>
     </Pressable>
   );
 }
@@ -146,7 +146,7 @@ function SecondaryBtn({
         opacity: disabled ? 0.4 : pressed ? 0.7 : 1,
       })}
     >
-      <Text style={{ fontWeight: '600', fontSize: 14.5, color: color.white }}>{label}</Text>
+      <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 14.5, color: color.white }}>{label}</Text>
     </Pressable>
   );
 }

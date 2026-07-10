@@ -1,5 +1,5 @@
 import { Pressable, Text, View } from 'react-native';
-import { color } from '@/theme/tokens';
+import { color, typeface } from '@/theme/tokens';
 
 type Props = {
   selected?: boolean;
@@ -28,7 +28,7 @@ export function FilterChip({ selected, onPress, children, leading }: Props) {
       {leading}
       <Text
         style={{
-          fontWeight: '600',
+          fontFamily: typeface, fontWeight: '600',
           fontSize: 12.5,
           color: selected ? color.bg : color.sub,
         }}
