@@ -7,13 +7,16 @@ const {
   Icon, PillButton, CoverArt, C, PHOTO, SANS,
 } = window;
 
-/* Legacy mark — two overlapping couple circles + wordmark (앱은 도돌이표 마크로 교체됨) */
-function BrandMark({ size = 40, showWord = true }) {
+/* 도돌이 마크 — 여는 도돌이표 𝄆 (막대 2 + 점 2, 브랜드 그린 단색). 앱 아이콘과 동일 지오메트리 */
+function DodoriMark({ size = 40, showWord = true }) {
+  const g = C.me;
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-      <div style={{ position: 'relative', width: size * 1.5, height: size }}>
-        <div style={{ position: 'absolute', left: 0, top: 0, width: size, height: size, borderRadius: '50%', background: C.me }} />
-        <div style={{ position: 'absolute', left: size * 0.5, top: 0, width: size, height: size, borderRadius: '50%', background: C.partner, mixBlendMode: 'screen' }} />
+      <div style={{ position: 'relative', width: size * 0.8, height: size }}>
+        <div style={{ position: 'absolute', left: 0, top: 0, width: size * 0.22, height: size, borderRadius: size * 0.03, background: g }} />
+        <div style={{ position: 'absolute', left: size * 0.33, top: 0, width: size * 0.085, height: size, borderRadius: size * 0.03, background: g }} />
+        <div style={{ position: 'absolute', left: size * 0.54, top: size * 0.17, width: size * 0.26, height: size * 0.26, borderRadius: '50%', background: g }} />
+        <div style={{ position: 'absolute', left: size * 0.54, top: size * 0.57, width: size * 0.26, height: size * 0.26, borderRadius: '50%', background: g }} />
       </div>
       {showWord && <span style={{ fontFamily: SANS, fontWeight: 800, fontSize: size * 0.8, letterSpacing: '-0.03em', color: '#fff' }}>dodori</span>}
     </div>
@@ -30,7 +33,7 @@ function Login() {
     <Screen noHome={false}>
       <Center>
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 20 }}>
-          <BrandMark size={54} showWord={false} />
+          <DodoriMark size={54} showWord={false} />
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontFamily: SANS, fontWeight: 800, fontSize: 40, letterSpacing: '-0.03em', color: '#fff' }}>dodori</div>
             <div style={{ fontFamily: SANS, fontWeight: 500, fontSize: 15, color: C.sub, marginTop: 8 }}>둘이서 쓰는 캘린더, 둘만의 아카이브</div>
@@ -58,7 +61,7 @@ function ConnectChoice() {
     <Screen>
       <Center>
         <div style={{ paddingTop: 40 }}>
-          <BrandMark size={30} />
+          <DodoriMark size={30} />
         </div>
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
           <div style={{ fontFamily: SANS, fontWeight: 800, fontSize: 27, letterSpacing: '-0.02em', color: '#fff', lineHeight: 1.3 }}>둘이 연결되어야<br />시작할 수 있어요</div>
@@ -99,7 +102,7 @@ function InviteCard() {
       <div style={{ position: 'relative', height: 150, background: `linear-gradient(135deg, ${C.me}, ${C.partner})` }}>
         <img src={PHOTO.sunset} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.55, mixBlendMode: 'overlay' }} />
         <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <BrandMark size={30} showWord={false} />
+          <DodoriMark size={30} showWord={false} />
         </div>
         <div style={{ position: 'absolute', left: 16, bottom: 12 }}>
           <Eyebrow style={{ color: 'rgba(255,255,255,0.9)' }}>dodori 초대장</Eyebrow>
@@ -155,7 +158,7 @@ function Waiting() {
           <div style={{ position: 'relative', width: 96, height: 96, marginBottom: 24 }}>
             <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: `3px solid ${C.s2}`, borderTopColor: C.me, animation: 'spin 1.4s linear infinite' }} />
             <div style={{ position: 'absolute', inset: 20, borderRadius: '50%', background: `linear-gradient(135deg,${C.me},${C.partner})`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <BrandMark size={22} showWord={false} />
+              <DodoriMark size={22} showWord={false} />
             </div>
           </div>
           <div style={{ fontFamily: SANS, fontWeight: 800, fontSize: 21, color: '#fff', letterSpacing: '-0.01em' }}>수락을 기다리는 중…</div>
