@@ -1,7 +1,7 @@
 /**
- * Duet 디자인 토큰 — 원본: design-mockup/_ds/.../tokens/*.css + app/shared.jsx `C` 팔레트.
- * 컴포넌트에서 hex 하드코딩 금지 — 반드시 이 토큰 또는 tailwind 클래스를 참조한다. (PRD §6.2)
- * M6 브랜드 리스킨은 이 파일(+tailwind.config.js) 값 교체로 끝나야 한다.
+ * 도돌이 디자인 토큰 — 원본: design-mockup/_ds/.../tokens/*.css + app/shared.jsx `C` 팔레트.
+ * 컴포넌트에서 hex 하드코딩 금지 — 반드시 이 토큰을 참조한다. (PRD §6.2)
+ * M6 브랜드 리스킨은 이 파일 값 교체로 끝나야 한다.
  */
 
 /** 데이터 인코딩 3역할 규약 (PRD §6.2) — 값은 바뀌어도 역할 구분은 유지 */

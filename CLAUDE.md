@@ -1,12 +1,13 @@
-# Duet — 커플 캘린더·아카이브
+# 도돌이(Dodori) — 커플 캘린더·아카이브
 
 "데이트 = 트랙, 한 달 = 플레이리스트, 기념일 = 싱글" 컨셉의 커플 앱.
+구 서비스명 Duet에서 리브랜딩(2026-07). 로고·인앱 마크는 여는 도돌이표 𝄆 — #121212 배경 + 브랜드 그린 단색.
 기능·데이터·서버 사양은 기술 PRD(대화로 전달됨), UI는 `design-mockup/`(Claude Design 목업)이 원본.
 
 ## 스택 (M0에서 확정)
 
 - Expo SDK 57 + React Native 0.86 + TypeScript strict + expo-router (src/app 파일 라우팅)
-- NativeWind v4 (토큰은 `tailwind.config.js` + `src/theme/tokens.ts`)
+- 스타일은 RN `style` + 토큰(`src/theme/tokens.ts`) — NativeWind 미사용
 - Supabase: Auth·Postgres·Storage·Realtime·Edge Functions (별도 백엔드 없음)
 - TanStack Query(+AsyncStorage persist) / Zustand(최소) / FlashList / expo-image
 - Sentry(@sentry/react-native), 카카오: `@react-native-kakao/{core,user}`
@@ -15,6 +16,9 @@
 
 - 카카오 SDK: PRD 후보 확인 결과 `@react-native-seoul/kakao-login`(2025-10 마지막 업데이트) 대신
   **`@react-native-kakao/*`** 선택 — 더 활발한 유지보수(2026-03), Expo config plugin 공식 지원.
+- NativeWind v4: **제거**. `className` 사용처가 0인데 `jsxImportSource: 'nativewind'`가 모든 JSX를
+  css-interop으로 감싸면서 `Pressable`의 함수형 `style`(`({pressed}) => …`)을 조용히 버렸다
+  (카카오 버튼이 배경 없이 렌더링). RN 0.86 Metro 패치 우회(`forceWriteFileSystem`)도 함께 불필요해짐.
 
 ## 불변 규칙
 

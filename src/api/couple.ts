@@ -48,8 +48,13 @@ export function useMyCouple() {
 }
 
 export interface CoupleProfiles {
-  me: { id: string; nickname: string; birthday: string | null } | null;
-  partner: { id: string; nickname: string; birthday: string | null } | null;
+  me: { id: string; nickname: string; birthday: string | null; avatar_url: string | null } | null;
+  partner: {
+    id: string;
+    nickname: string;
+    birthday: string | null;
+    avatar_url: string | null;
+  } | null;
 }
 
 /** 나·상대 프로필 (필터 칩 라벨, 역할 매핑용) */
@@ -61,7 +66,9 @@ export function useCoupleProfiles() {
     queryFn: async (): Promise<CoupleProfiles> => {
       const { data: userData } = await supabase.auth.getUser();
       const uid = userData.user?.id;
-      const { data, error } = await supabase.from('profiles').select('id, nickname, birthday');
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, nickname, birthday, avatar_url');
       if (error) throw error;
       return {
         me: data.find((p) => p.id === uid) ?? null,

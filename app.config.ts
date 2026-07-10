@@ -23,8 +23,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     : (console.warn('[app.config] KAKAO_NATIVE_APP_KEY 미설정 — 카카오 플러그인 제외'), []);
   return {
     ...config,
-    name: config.name ?? 'duet',
-    slug: config.slug ?? 'duet',
+    name: config.name ?? '도돌이',
+    slug: config.slug ?? 'dodori',
     plugins: [...(config.plugins ?? []), ...kakaoPlugin] as ExpoConfig['plugins'],
     extra: { ...config.extra, kakaoNativeAppKey: kakaoKey ?? null },
   };

@@ -2,7 +2,7 @@ import { Pressable, Text, View } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
 import { color } from '@/theme/tokens';
-import { DuetMark } from '@/components/DuetMark';
+import { DodoriMark } from '@/components/DodoriMark';
 import { Meta } from '@/components/Meta';
 
 /** 커플 연결 선택 (목업 02 ConnectChoice + §6.1 코드 입력 분기) */
@@ -10,7 +10,7 @@ export default function Connect() {
   return (
     <View style={{ flex: 1, backgroundColor: color.bg, paddingHorizontal: 28 }}>
       <View style={{ paddingTop: 40 }}>
-        <DuetMark size={30} showWord />
+        <DodoriMark size={30} showWord />
       </View>
       <View style={{ flex: 1, justifyContent: 'center' }}>
         <Text

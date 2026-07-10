@@ -1,25 +1,25 @@
 {
   "expo": {
-    "name": "duet",
-    "slug": "duet",
+    "name": "도돌이",
+    "slug": "dodori",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "duet",
+    "scheme": "dodori",
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/expo.icon",
-      "bundleIdentifier": "com.hyunwoo.duet"
+      "bundleIdentifier": "com.hyunwoo.dodori"
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#121212",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.hyunwoo.duet"
+      "package": "com.hyunwoo.dodori"
     },
     "web": {
       "output": "single",
@@ -28,9 +28,15 @@
     "plugins": [
       "expo-router",
       [
+        "expo-image-picker",
+        {
+          "photosPermission": "데이트 트랙에 담을 사진을 선택하기 위해 사진 보관함 접근이 필요합니다."
+        }
+      ],
+      [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
+          "backgroundColor": "#121212",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }

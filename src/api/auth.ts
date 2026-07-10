@@ -20,15 +20,22 @@ export async function signInWithKakao() {
   });
   if (error) throw error;
 
-  // 첫 로그인 시 프로필 행 보장 (닉네임은 카카오 프로필에서)
+  // 첫 로그인 시 프로필 행 보장 (닉네임·프로필 사진은 카카오 프로필에서)
   const user = data.user;
   const nickname =
     (user.user_metadata?.name as string | undefined) ??
     (user.user_metadata?.nickname as string | undefined) ??
     '';
+  const avatarUrl =
+    (user.user_metadata?.avatar_url as string | undefined) ??
+    (user.user_metadata?.picture as string | undefined) ??
+    null;
   const { error: profileError } = await supabase
     .from('profiles')
-    .upsert({ id: user.id, nickname }, { onConflict: 'id', ignoreDuplicates: false });
+    .upsert(
+      { id: user.id, nickname, avatar_url: avatarUrl },
+      { onConflict: 'id', ignoreDuplicates: false },
+    );
   if (profileError) throw profileError;
 
   return data.session;

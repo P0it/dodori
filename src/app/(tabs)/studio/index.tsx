@@ -1,4 +1,5 @@
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { color, role } from '@/theme/tokens';
 import { daysSince } from '@/lib/date';
@@ -10,7 +11,7 @@ import { Meta } from '@/components/Meta';
 import { Divider } from '@/components/Divider';
 import { StarGlyph } from '@/components/glyphs';
 import { OwnerDot } from '@/components/OwnerDot';
-import { DuetMark } from '@/components/DuetMark';
+import { DodoriMark } from '@/components/DodoriMark';
 
 /** 스튜디오 탭 루트 (목업 25) — 커플 프로필·통계·관리 진입 */
 export default function Studio() {
@@ -42,11 +43,37 @@ export default function Studio() {
 
   return (
     <ScrollView style={{ backgroundColor: color.bg }} contentContainerStyle={{ paddingBottom: 24 }}>
-      {/* 프로필 헤더 */}
+      {/* 프로필 헤더 — 카카오 프로필 사진이 있으면 커플 아바타, 없으면 도돌이 마크 */}
       <View style={{ alignItems: 'center', paddingTop: 34 }}>
-        <DuetMark size={54} />
+        {profiles.data?.me?.avatar_url || profiles.data?.partner?.avatar_url ? (
+          <View style={{ flexDirection: 'row' }}>
+            {([
+              [profiles.data?.me, role.me],
+              [profiles.data?.partner, role.partner],
+            ] as const).map(
+              ([p, ring], i) =>
+                p?.avatar_url && (
+                  <Image
+                    key={p.id}
+                    source={{ uri: p.avatar_url }}
+                    style={{
+                      width: 56,
+                      height: 56,
+                      borderRadius: 28,
+                      borderWidth: 2,
+                      borderColor: ring,
+                      marginLeft: i === 1 ? -10 : 0,
+                      backgroundColor: color.surface2,
+                    }}
+                  />
+                ),
+            )}
+          </View>
+        ) : (
+          <DodoriMark size={54} />
+        )}
         <Text style={{ fontWeight: '800', fontSize: 22, color: color.white, marginTop: 14, letterSpacing: -0.3 }}>
-          {names || 'Duet'}
+          {names || '도돌이'}
         </Text>
         {couple.data?.startedAt && (
           <>
