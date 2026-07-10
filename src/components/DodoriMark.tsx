@@ -61,7 +61,7 @@ export function DodoriMark({ size = 40, showWord = false }: Props) {
             color: color.white,
           }}
         >
-          도돌이
+          dodori
         </Text>
       )}
     </View>

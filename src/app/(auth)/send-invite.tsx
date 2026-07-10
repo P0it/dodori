@@ -45,7 +45,7 @@ export default function SendInvite() {
   const share = () => {
     if (!code) return;
     Share.share({
-      message: `도돌이에서 함께 기록해요! 앱에서 이 초대 코드를 입력해줘: ${code}`,
+      message: `dodori에서 함께 기록해요! 앱에서 이 초대 코드를 입력해줘: ${code}`,
     });
   };
 

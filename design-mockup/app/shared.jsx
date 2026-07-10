@@ -1,5 +1,5 @@
 /* ============================================================
-   Duet — shared foundations (phone frame, chrome, helpers)
+   dodori — shared foundations (phone frame, chrome, helpers)
    Built on the Spotify Mobile Design System.
    ============================================================ */
 const DS = window.SpotifyMobileDesignSystem_e52d1c;

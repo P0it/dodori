@@ -1,4 +1,4 @@
-# design-mockup — Duet UI 목업 (참조 전용)
+# design-mockup — dodori UI 목업 (참조 전용)
 
 Claude Design 프로젝트 `bd527553-671a-4c91-8640-e790c75f0ed9` ("Design decisions summary")에서 동기화한 목업입니다.
 **앱 구현의 시각적 원본(source of truth)** 이며, 앱 번들에는 포함되지 않습니다.

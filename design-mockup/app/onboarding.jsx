@@ -7,15 +7,15 @@ const {
   Icon, PillButton, CoverArt, C, PHOTO, SANS,
 } = window;
 
-/* Duet mark — two overlapping couple circles + wordmark */
-function DuetMark({ size = 40, showWord = true }) {
+/* Legacy mark — two overlapping couple circles + wordmark (앱은 도돌이표 마크로 교체됨) */
+function BrandMark({ size = 40, showWord = true }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
       <div style={{ position: 'relative', width: size * 1.5, height: size }}>
         <div style={{ position: 'absolute', left: 0, top: 0, width: size, height: size, borderRadius: '50%', background: C.me }} />
         <div style={{ position: 'absolute', left: size * 0.5, top: 0, width: size, height: size, borderRadius: '50%', background: C.partner, mixBlendMode: 'screen' }} />
       </div>
-      {showWord && <span style={{ fontFamily: SANS, fontWeight: 800, fontSize: size * 0.8, letterSpacing: '-0.03em', color: '#fff' }}>Duet</span>}
+      {showWord && <span style={{ fontFamily: SANS, fontWeight: 800, fontSize: size * 0.8, letterSpacing: '-0.03em', color: '#fff' }}>dodori</span>}
     </div>
   );
 }
@@ -30,9 +30,9 @@ function Login() {
     <Screen noHome={false}>
       <Center>
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 20 }}>
-          <DuetMark size={54} showWord={false} />
+          <BrandMark size={54} showWord={false} />
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontFamily: SANS, fontWeight: 800, fontSize: 40, letterSpacing: '-0.03em', color: '#fff' }}>Duet</div>
+            <div style={{ fontFamily: SANS, fontWeight: 800, fontSize: 40, letterSpacing: '-0.03em', color: '#fff' }}>dodori</div>
             <div style={{ fontFamily: SANS, fontWeight: 500, fontSize: 15, color: C.sub, marginTop: 8 }}>둘이서 쓰는 캘린더, 둘만의 아카이브</div>
           </div>
         </div>
@@ -58,7 +58,7 @@ function ConnectChoice() {
     <Screen>
       <Center>
         <div style={{ paddingTop: 40 }}>
-          <DuetMark size={30} />
+          <BrandMark size={30} />
         </div>
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
           <div style={{ fontFamily: SANS, fontWeight: 800, fontSize: 27, letterSpacing: '-0.02em', color: '#fff', lineHeight: 1.3 }}>둘이 연결되어야<br />시작할 수 있어요</div>
@@ -99,10 +99,10 @@ function InviteCard() {
       <div style={{ position: 'relative', height: 150, background: `linear-gradient(135deg, ${C.me}, ${C.partner})` }}>
         <img src={PHOTO.sunset} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.55, mixBlendMode: 'overlay' }} />
         <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <DuetMark size={30} showWord={false} />
+          <BrandMark size={30} showWord={false} />
         </div>
         <div style={{ position: 'absolute', left: 16, bottom: 12 }}>
-          <Eyebrow style={{ color: 'rgba(255,255,255,0.9)' }}>Duet 초대장</Eyebrow>
+          <Eyebrow style={{ color: 'rgba(255,255,255,0.9)' }}>dodori 초대장</Eyebrow>
         </div>
       </div>
       <div style={{ padding: '16px 16px 18px' }}>
@@ -155,7 +155,7 @@ function Waiting() {
           <div style={{ position: 'relative', width: 96, height: 96, marginBottom: 24 }}>
             <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: `3px solid ${C.s2}`, borderTopColor: C.me, animation: 'spin 1.4s linear infinite' }} />
             <div style={{ position: 'absolute', inset: 20, borderRadius: '50%', background: `linear-gradient(135deg,${C.me},${C.partner})`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <DuetMark size={22} showWord={false} />
+              <BrandMark size={22} showWord={false} />
             </div>
           </div>
           <div style={{ fontFamily: SANS, fontWeight: 800, fontSize: 21, color: '#fff', letterSpacing: '-0.01em' }}>수락을 기다리는 중…</div>
@@ -164,7 +164,7 @@ function Waiting() {
         <div style={{ marginTop: 28, padding: '14px 16px', borderRadius: 12, background: C.s1, display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <Eyebrow style={{ fontSize: 9.5, marginBottom: 4 }}>초대 링크</Eyebrow>
-            <div style={{ fontFamily: SANS, fontSize: 13, color: C.sub, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>duet.app/i/8fK2-hyunwoo</div>
+            <div style={{ fontFamily: SANS, fontSize: 13, color: C.sub, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>dodori.app/i/8fK2-hyunwoo</div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: C.anniv }}>
             <Icon name="IconsControlCenterOrientationLock" size={13} style={{ color: C.anniv }} />
@@ -188,7 +188,7 @@ function Accept() {
       <TopBar title="초대 수락" />
       <Center style={{ height: 'auto' }}>
         <div style={{ paddingTop: 24, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-          <Eyebrow color={C.me}>Duet 초대</Eyebrow>
+          <Eyebrow color={C.me}>dodori 초대</Eyebrow>
           <div style={{ position: 'relative', margin: '22px 0 18px' }}>
             <CoverArt src={PHOTO.portrait} size={104} shape="circle" style={{ border: `3px solid ${C.me}` }} />
           </div>
@@ -220,7 +220,7 @@ function AlreadyConnected() {
         <div style={{ fontFamily: SANS, fontWeight: 800, fontSize: 21, color: '#fff' }}>이미 연결된 계정이에요</div>
         <Meta style={{ marginTop: 12, lineHeight: 1.6, maxWidth: 280 }}>이 계정은 이미 다른 상대와 연결되어 있어요. 새로 연결하려면 먼저 기존 연결을 해제해야 해요.</Meta>
         <div style={{ marginTop: 26, width: '100%', display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <PillButton variant="primary" style={{ width: '100%' }}>내 Duet으로 돌아가기</PillButton>
+          <PillButton variant="primary" style={{ width: '100%' }}>dodori로 돌아가기</PillButton>
           <PillButton variant="outline" style={{ width: '100%' }}>연결 관리 열기</PillButton>
         </div>
       </Center>

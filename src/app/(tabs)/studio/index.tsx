@@ -73,7 +73,7 @@ export default function Studio() {
           <DodoriMark size={54} />
         )}
         <Text style={{ fontFamily: typeface, fontWeight: '800', fontSize: 22, color: color.white, marginTop: 14, letterSpacing: -0.3 }}>
-          {names || '도돌이'}
+          {names || 'dodori'}
         </Text>
         {couple.data?.startedAt && (
           <>

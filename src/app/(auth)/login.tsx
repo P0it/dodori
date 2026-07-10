@@ -26,7 +26,7 @@ export default function Login() {
           <Text
             style={{ fontFamily: typeface, fontWeight: '800', fontSize: 40, letterSpacing: -0.5, color: color.white }}
           >
-            도돌이
+            dodori
           </Text>
           <Text style={{ fontFamily: typeface, fontWeight: '500', fontSize: 15, color: color.sub, marginTop: 8 }}>
             둘이서 쓰는 캘린더, 둘만의 아카이브
