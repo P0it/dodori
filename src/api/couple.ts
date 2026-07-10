@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Crypto from 'expo-crypto';
 import { supabase } from './supabase';
+import { useSession } from './auth';
 
 /** 초대 코드 생성 — nanoid(10) 동급, 혼동 문자(0/O, 1/l/I) 제외 알파벳 */
 const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
@@ -18,11 +19,13 @@ export interface MyCouple {
 
 /** 내 커플 상태 — 없으면 null (연결 플로우 분기 기준) */
 export function useMyCouple() {
+  // uid를 키에 포함: 로그아웃 중 캐시된 null이 재로그인 후 분기에 쓰이는 것을 방지
+  const session = useSession();
+  const uid = session.data?.user.id;
   return useQuery({
-    queryKey: ['couple', 'mine'],
+    queryKey: ['couple', 'mine', uid],
+    enabled: !!uid,
     queryFn: async (): Promise<MyCouple | null> => {
-      const { data: userData } = await supabase.auth.getUser();
-      const uid = userData.user?.id;
       if (!uid) return null;
       // 연결 후엔 멤버 행이 2개 보이므로 반드시 본인 행으로 한정
       const { data: membership, error } = await supabase
