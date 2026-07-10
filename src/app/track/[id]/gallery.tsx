@@ -56,7 +56,10 @@ export default function Gallery() {
         renderItem={({ item: p, index }) => (
           <Pressable
             onPress={() =>
-              router.push({ pathname: `/track/${id}/player`, params: { start: String(index) } })
+              router.push({
+                pathname: '/track/[id]/player',
+                params: { id: String(id), start: String(index) },
+              })
             }
             onLongPress={() => onLongPress(p)}
             style={{ flex: 1, aspectRatio: 1, margin: 2, borderRadius: 3, overflow: 'hidden' }}
