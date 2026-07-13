@@ -21,6 +21,18 @@ export function thumbUrl(storagePath: string, kind: keyof typeof THUMB): string 
   return data.publicUrl;
 }
 
+/** 썸네일 서명 URL — photos 버킷이 비공개라 public URL은 렌더되지 않는다 */
+export async function signedThumbUrl(
+  storagePath: string,
+  kind: keyof typeof THUMB,
+): Promise<string> {
+  const { data, error } = await supabase.storage
+    .from('photos')
+    .createSignedUrl(storagePath, 60 * 60, { transform: { ...THUMB[kind], resize: 'cover' } });
+  if (error) throw error;
+  return data.signedUrl;
+}
+
 /** 뷰어용 원본 — 비공개 버킷이므로 서명 URL */
 export async function originalUrl(storagePath: string): Promise<string> {
   const { data, error } = await supabase.storage
@@ -81,43 +93,65 @@ async function resizeForUpload(photo: PickedPhoto) {
   return result; // { uri, width, height }
 }
 
-/** 트랙에 사진 업로드 — 경로 {couple_id}/{track_id}/{uuid}.jpg (§7.3) */
-export function useUploadPhotos(trackId: string) {
+/** 사진의 부모 — 트랙(데이트) 또는 post(게시물). photos 테이블은 둘 중 하나만 가진다 */
+export type PhotoParent = { trackId: string; postId?: never } | { postId: string; trackId?: never };
+
+/**
+ * 부모(트랙 또는 게시물)에 사진 업로드 — 경로 {couple_id}/{parent_id}/{uuid}.jpg (§7.3).
+ * 부모를 방금 만든 직후에도 쓸 수 있도록 훅이 아닌 함수 (게시물 작성 플로우).
+ */
+export async function uploadPhotos(
+  parent: PhotoParent,
+  coupleId: string,
+  photos: PickedPhoto[],
+): Promise<number> {
+  const { data: userData } = await supabase.auth.getUser();
+  const uid = userData.user?.id;
+  if (!uid) throw new Error('로그인이 필요해요');
+  const parentId = parent.trackId ?? parent.postId!;
+
+  let uploaded = 0;
+  for (const photo of photos) {
+    const resized = await resizeForUpload(photo);
+    const path = `${coupleId}/${parentId}/${Crypto.randomUUID()}.jpg`;
+    const file = await fetch(resized.uri);
+    const body = await file.arrayBuffer();
+    const { error: upError } = await supabase.storage
+      .from('photos')
+      .upload(path, body, { contentType: 'image/jpeg' });
+    if (upError) throw upError;
+    const { error: rowError } = await supabase.from('photos').insert({
+      track_id: parent.trackId ?? null,
+      post_id: parent.postId ?? null,
+      uploader_id: uid,
+      storage_path: path,
+      width: resized.width,
+      height: resized.height,
+      taken_at: photo.takenAt,
+    });
+    if (rowError) throw rowError;
+    uploaded++;
+  }
+  return uploaded;
+}
+
+/** 트랙 사진 추가 (트랙 상세) */
+export function useUploadPhotos(parent: PhotoParent) {
   const qc = useQueryClient();
   const couple = useMyCouple();
   return useMutation({
     mutationFn: async (photos: PickedPhoto[]) => {
       const coupleId = couple.data?.coupleId;
-      const { data: userData } = await supabase.auth.getUser();
-      const uid = userData.user?.id;
-      if (!coupleId || !uid) throw new Error('로그인·연결이 필요해요');
-
-      let uploaded = 0;
-      for (const photo of photos) {
-        const resized = await resizeForUpload(photo);
-        const path = `${coupleId}/${trackId}/${Crypto.randomUUID()}.jpg`;
-        const file = await fetch(resized.uri);
-        const body = await file.arrayBuffer();
-        const { error: upError } = await supabase.storage
-          .from('photos')
-          .upload(path, body, { contentType: 'image/jpeg' });
-        if (upError) throw upError;
-        const { error: rowError } = await supabase.from('photos').insert({
-          track_id: trackId,
-          uploader_id: uid,
-          storage_path: path,
-          width: resized.width,
-          height: resized.height,
-          taken_at: photo.takenAt,
-        });
-        if (rowError) throw rowError;
-        uploaded++;
-      }
-      return uploaded;
+      if (!coupleId) throw new Error('연결이 필요해요');
+      return uploadPhotos(parent, coupleId, photos);
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['track', trackId] });
-      qc.invalidateQueries({ queryKey: ['tracks'] });
+      if (parent.trackId) {
+        qc.invalidateQueries({ queryKey: ['track', parent.trackId] });
+        qc.invalidateQueries({ queryKey: ['tracks'] });
+      } else {
+        qc.invalidateQueries({ queryKey: ['posts'] });
+      }
     },
   });
 }

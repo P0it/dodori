@@ -57,7 +57,7 @@ function TrackBody({ t }: { t: TrackDetail }) {
   const update = useUpdateTrack(t.id);
   const del = useDeleteTrack(t.id);
   const addNote = useAddNote(t.id);
-  const upload = useUploadPhotos(t.id);
+  const upload = useUploadPhotos({ trackId: t.id });
   const removePlace = useRemoveTrackPlace(t.id);
 
   const [noteDraft, setNoteDraft] = useState('');

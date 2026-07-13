@@ -35,6 +35,16 @@ export function useCoupleRealtime() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'anniversaries', filter }, () =>
         qc.invalidateQueries({ queryKey: ['anniversaries'] }),
       )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'posts', filter }, () =>
+        qc.invalidateQueries({ queryKey: ['posts'] }),
+      )
+      // post_reactions·post_comments는 couple_id 컬럼이 없어 필터 없이 구독 (photos·notes와 동일)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'post_reactions' }, () =>
+        qc.invalidateQueries({ queryKey: ['posts'] }),
+      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'post_comments' }, () =>
+        qc.invalidateQueries({ queryKey: ['posts'] }),
+      )
       .subscribe();
     return () => {
       supabase.removeChannel(channel);

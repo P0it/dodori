@@ -89,6 +89,25 @@ export function daysSince(startedAt: ISODate, now: Date = new Date()): number {
   return diffDays(startedAt, todayKST(now)) + 1;
 }
 
+/**
+ * 게시물 타임스탬프 표기 (KST). 1분 미만 '방금', 당일 'n분/n시간 전',
+ * 어제 '어제', 그 이전은 날짜('7.4' / 해가 다르면 '2025.12.31').
+ */
+export function formatRelative(at: string, now: Date = new Date()): string {
+  const then = new Date(at);
+  const mins = Math.floor((now.getTime() - then.getTime()) / 60_000);
+  if (mins < 1) return '방금';
+  if (mins < 60) return `${mins}분 전`;
+
+  const days = diffDays(toKSTDate(then), todayKST(now));
+  if (days === 0) return `${Math.floor(mins / 60)}시간 전`;
+  if (days === 1) return '어제';
+
+  const [y, m, d] = toKSTDate(then).split('-').map(Number);
+  const thisYear = Number(todayKST(now).slice(0, 4));
+  return y === thisYear ? `${m}.${d}` : `${y}.${m}.${d}`;
+}
+
 /** 'YYYY-MM' (월 플레이리스트 키) */
 export function monthKey(date: ISODate): string {
   return date.slice(0, 7);

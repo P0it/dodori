@@ -4,6 +4,7 @@ import {
   daysSince,
   diffDays,
   formatDday,
+  formatRelative,
   isISODate,
   isReleased,
   monthKey,
@@ -66,6 +67,26 @@ describe('daysSince (시작일 = 1일째)', () => {
   it('시작 당일은 1일째', () => {
     const now = new Date('2026-01-05T03:00:00Z');
     expect(daysSince('2026-01-05', now)).toBe(1);
+  });
+});
+
+describe('formatRelative (게시물 타임스탬프, KST)', () => {
+  const now = new Date('2026-07-08T03:00:00Z'); // KST 07-08 12:00
+
+  it('1분 미만은 방금', () => {
+    expect(formatRelative('2026-07-08T02:59:30Z', now)).toBe('방금');
+  });
+  it('당일 분/시간', () => {
+    expect(formatRelative('2026-07-08T02:30:00Z', now)).toBe('30분 전');
+    expect(formatRelative('2026-07-08T00:00:00Z', now)).toBe('3시간 전');
+  });
+  it('KST 자정을 넘겼으면 시간이 아니라 어제', () => {
+    // UTC 07-07 14:30 = KST 07-07 23:30 → 12시간 30분 전이지만 KST로는 전날
+    expect(formatRelative('2026-07-07T14:30:00Z', now)).toBe('어제');
+  });
+  it('그 이전은 날짜, 해가 다르면 연도까지', () => {
+    expect(formatRelative('2026-07-04T03:00:00Z', now)).toBe('7.4');
+    expect(formatRelative('2025-12-31T03:00:00Z', now)).toBe('2025.12.31');
   });
 });
 
