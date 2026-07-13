@@ -3,7 +3,7 @@ import { color, typeface } from '@/theme/tokens';
 
 type Props = { size?: number; showWord?: boolean };
 
-/** 도돌이 마크 — 여는 도돌이표 𝄆 (막대 2 + 점 2, 브랜드 그린 단색). 앱 아이콘과 동일 지오메트리 */
+/** 도도리 마크 — 여는 도돌이표 𝄆 (막대 2 + 점 2, 브랜드 그린 단색). 앱 아이콘과 동일 지오메트리 */
 export function DodoriMark({ size = 40, showWord = false }: Props) {
   const g = color.greenBright;
   return (
