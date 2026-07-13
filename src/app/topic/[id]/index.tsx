@@ -1,0 +1,289 @@
+import { useState } from 'react';
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
+import { useLocalSearchParams } from 'expo-router';
+import { color, role, typeface } from '@/theme/tokens';
+import { useSession } from '@/api/auth';
+import { useCoupleProfiles } from '@/api/couple';
+import {
+  useTopic,
+  useTopicVotes,
+  useVote,
+  useTopicComments,
+  useAddComment,
+  type Choice,
+  type TopicComment,
+} from '@/api/topics';
+import { TopBar } from '@/components/TopBar';
+import { Meta } from '@/components/Meta';
+import { ChoiceRow } from '@/components/topic/ChoiceRow';
+import { CommentList } from '@/components/topic/CommentList';
+
+/** 주제 상세 — 투표하고, 상대 답을 확인하고, 토론한다 */
+export default function TopicDetail() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const session = useSession();
+  const uid = session.data?.user.id;
+  const profiles = useCoupleProfiles();
+
+  const topic = useTopic(id);
+  const votes = useTopicVotes(id);
+  const comments = useTopicComments(id);
+  const vote = useVote(id);
+  const addComment = useAddComment(id);
+
+  const [draft, setDraft] = useState('');
+  const [replyTo, setReplyTo] = useState<TopicComment | null>(null);
+
+  const myName = profiles.data?.me?.nickname || '나';
+  const partnerName = profiles.data?.partner?.nickname || '상대';
+
+  const mine = votes.data?.mine ?? null;
+  const partner = votes.data?.partner ?? null;
+  const locked = mine === null;
+
+  const pickedBy = (c: Choice): ('me' | 'partner')[] => {
+    const who: ('me' | 'partner')[] = [];
+    if (mine === c) who.push('me');
+    if (partner === c) who.push('partner');
+    return who;
+  };
+
+  const onSend = () => {
+    const body = draft.trim();
+    if (!body) return;
+    addComment.mutate(
+      { body, parentId: replyTo?.id ?? null },
+      {
+        onSuccess: () => {
+          setDraft('');
+          setReplyTo(null);
+        },
+      },
+    );
+  };
+
+  if (!topic.data) {
+    return (
+      <View style={{ flex: 1, backgroundColor: color.bg }}>
+        <TopBar title="오늘의 주제" />
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          {topic.isError ? <Meta>주제를 불러오지 못했어요</Meta> : <ActivityIndicator color={color.sub} />}
+        </View>
+      </View>
+    );
+  }
+
+  const list = comments.data ?? [];
+  const rootCount = list.filter((c) => c.parentId === null).length;
+
+  return (
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: color.bg }}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <TopBar title="오늘의 주제" />
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 32 }}>
+        <Text
+          style={{
+            fontFamily: typeface,
+            fontWeight: '800',
+            fontSize: 24,
+            lineHeight: 34,
+            letterSpacing: -0.4,
+            color: color.white,
+          }}
+        >
+          {topic.data.question}
+        </Text>
+
+        <View style={{ gap: 10, marginTop: 18 }}>
+          <ChoiceRow
+            label={topic.data.optionA}
+            pickedBy={pickedBy('a')}
+            selected={mine === 'a'}
+            disabled={!locked || vote.isPending}
+            onPress={() => vote.mutate('a')}
+          />
+          <ChoiceRow
+            label={topic.data.optionB}
+            pickedBy={pickedBy('b')}
+            selected={mine === 'b'}
+            disabled={!locked || vote.isPending}
+            onPress={() => vote.mutate('b')}
+          />
+        </View>
+
+        {locked ? (
+          <View
+            style={{
+              marginTop: 20,
+              paddingVertical: 22,
+              paddingHorizontal: 20,
+              borderRadius: 14,
+              backgroundColor: color.surface1,
+              borderWidth: 1,
+              borderColor: color.surface2,
+              alignItems: 'center',
+            }}
+          >
+            <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 15, color: color.white }}>
+              하나 고르면 열려요
+            </Text>
+            <Meta style={{ marginTop: 6, textAlign: 'center', lineHeight: 20 }}>
+              {partnerName}님의 답과 대화는 내가 고른 뒤에 볼 수 있어요.
+            </Meta>
+          </View>
+        ) : (
+          <>
+            <Verdict mine={mine} partner={partner} partnerName={partnerName} />
+
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 26, marginBottom: 6 }}>
+              <Text
+                style={{
+                  fontFamily: typeface,
+                  fontWeight: '700',
+                  fontSize: 18,
+                  letterSpacing: -0.3,
+                  color: color.white,
+                }}
+              >
+                대화
+              </Text>
+              {rootCount > 0 && (
+                <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 14, color: color.muted }}>
+                  {rootCount}
+                </Text>
+              )}
+            </View>
+
+            <CommentList
+              comments={list}
+              uid={uid}
+              myName={myName}
+              partnerName={partnerName}
+              onReply={setReplyTo}
+            />
+
+            <View style={{ marginTop: 16 }}>
+              {replyTo && (
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 8,
+                    paddingHorizontal: 12,
+                    paddingVertical: 8,
+                    borderTopLeftRadius: 12,
+                    borderTopRightRadius: 12,
+                    backgroundColor: color.surface2,
+                  }}
+                >
+                  <Text
+                    numberOfLines={1}
+                    style={{ flex: 1, fontFamily: typeface, fontSize: 12.5, color: color.sub }}
+                  >
+                    {replyTo.authorId === uid ? myName : partnerName}님에게 답글 · {replyTo.body}
+                  </Text>
+                  <Pressable onPress={() => setReplyTo(null)} hitSlop={8}>
+                    <Text style={{ fontFamily: typeface, fontSize: 15, color: color.sub }}>×</Text>
+                  </Pressable>
+                </View>
+              )}
+              <TextInput
+                value={draft}
+                onChangeText={setDraft}
+                placeholder="왜 그렇게 생각하는지 적어보세요"
+                placeholderTextColor={color.muted}
+                style={{
+                  minHeight: 88,
+                  maxHeight: 200,
+                  borderRadius: 14,
+                  borderTopLeftRadius: replyTo ? 0 : 14,
+                  borderTopRightRadius: replyTo ? 0 : 14,
+                  paddingHorizontal: 14,
+                  paddingVertical: 12,
+                  backgroundColor: color.surface1,
+                  borderWidth: 1,
+                  borderColor: color.surface2,
+                  color: color.white,
+                  fontFamily: typeface,
+                  fontSize: 15,
+                  lineHeight: 22,
+                  textAlignVertical: 'top',
+                }}
+                multiline
+              />
+              <Pressable
+                onPress={onSend}
+                disabled={!draft.trim() || addComment.isPending}
+                style={({ pressed }) => ({
+                  alignSelf: 'flex-end',
+                  marginTop: 10,
+                  paddingHorizontal: 22,
+                  height: 42,
+                  borderRadius: 999,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: draft.trim() ? role.me : color.surface2,
+                  opacity: pressed ? 0.85 : 1,
+                })}
+              >
+                <Text
+                  style={{
+                    fontFamily: typeface,
+                    fontWeight: '700',
+                    fontSize: 14,
+                    color: draft.trim() ? color.onPrimary : color.muted,
+                  }}
+                >
+                  남기기
+                </Text>
+              </Pressable>
+            </View>
+          </>
+        )}
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+}
+
+function Verdict({
+  mine,
+  partner,
+  partnerName,
+}: {
+  mine: Choice | null;
+  partner: Choice | null;
+  partnerName: string;
+}) {
+  const waiting = partner === null;
+  const same = partner === mine;
+  const text = waiting
+    ? `${partnerName}님을 기다리는 중`
+    : same
+      ? '취향 일치. 오늘은 싸울 일 없겠네요'
+      : '갈렸어요. 할 말 있으면 아래에';
+  return (
+    <Text
+      style={{
+        fontFamily: typeface,
+        fontWeight: '700',
+        fontSize: 14,
+        color: waiting ? color.sub : same ? role.me : role.anniv,
+        marginTop: 16,
+        textAlign: 'center',
+      }}
+    >
+      {text}
+    </Text>
+  );
+}
