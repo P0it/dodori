@@ -2,6 +2,7 @@ import { Pressable, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { color, role, typeface } from '@/theme/tokens';
 import type { DayCell } from '@/lib/calendar';
+import { shortHolidayName } from '@/lib/holidays';
 import { OwnerDot } from '@/components/OwnerDot';
 import { StarGlyph } from '@/components/glyphs';
 
@@ -13,6 +14,8 @@ export interface DayMarks {
   releasedNoPhoto?: boolean;
   upcoming?: boolean;
   annivLabel?: string;
+  /** 공휴일 이름 ('설날', '대체공휴일(광복절)' 등) */
+  holidayLabel?: string;
   owners?: ('me' | 'partner')[];
   /** 상대의 제목 숨김 일정 (빗금 바) */
   busy?: boolean;
@@ -23,15 +26,19 @@ const WEEK = ['일', '월', '화', '수', '목', '금', '토'];
 type Props = {
   cells: DayCell[];
   marks: Record<string, DayMarks>;
+  selected: string;
   onSelectDay: (date: string) => void;
   /** 빈 달 데모용 흐림 처리 */
   dim?: boolean;
 };
 
-/** 월간 그리드 (목업 17 — 7열, 셀 높이 62, 라이브러리 없이 자체 구현 §3) */
-export function MonthGrid({ cells, marks, onSelectDay, dim }: Props) {
+/** 월간 그리드 (목업 17 — 7열, 라이브러리 없이 자체 구현 §3). 부모가 준 높이를 주 단위 행이 균등하게 나눠 갖는다 */
+export function MonthGrid({ cells, marks, selected, onSelectDay, dim }: Props) {
+  const weeks: DayCell[][] = [];
+  for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7));
+
   return (
-    <View style={{ paddingHorizontal: 12, opacity: dim ? 0.35 : 1 }}>
+    <View style={{ flex: 1, paddingHorizontal: 12, opacity: dim ? 0.35 : 1 }}>
       <View style={{ flexDirection: 'row' }}>
         {WEEK.map((w, i) => (
           <Text
@@ -49,26 +56,45 @@ export function MonthGrid({ cells, marks, onSelectDay, dim }: Props) {
           </Text>
         ))}
       </View>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-        {cells.map((cell) => (
-          <DayCellView
-            key={cell.date}
-            cell={cell}
-            m={cell.inMonth ? (marks[cell.date] ?? {}) : {}}
-            onPress={() => cell.inMonth && onSelectDay(cell.date)}
-          />
-        ))}
-      </View>
+      {weeks.map((week) => (
+        <View key={week[0].date} style={{ flexDirection: 'row', flex: 1 }}>
+          {week.map((cell) => (
+            <DayCellView
+              key={cell.date}
+              cell={cell}
+              m={cell.inMonth ? (marks[cell.date] ?? {}) : {}}
+              selected={cell.inMonth && cell.date === selected}
+              onPress={() => cell.inMonth && onSelectDay(cell.date)}
+            />
+          ))}
+        </View>
+      ))}
     </View>
   );
 }
 
-function DayCellView({ cell, m, onPress }: { cell: DayCell; m: DayMarks; onPress: () => void }) {
+function DayCellView({
+  cell,
+  m,
+  selected,
+  onPress,
+}: {
+  cell: DayCell;
+  m: DayMarks;
+  selected: boolean;
+  onPress: () => void;
+}) {
   const released = !!m.releasedThumb || m.releasedNoPhoto;
   return (
     <Pressable
       onPress={onPress}
-      style={{ width: `${100 / 7}%`, height: 62, borderRadius: 7, overflow: 'hidden', padding: 5 }}
+      style={{
+        flex: 1,
+        borderRadius: 7,
+        overflow: 'hidden',
+        padding: 5,
+        backgroundColor: selected ? 'rgba(255,255,255,0.10)' : 'transparent',
+      }}
     >
       {m.releasedThumb && (
         <>
@@ -122,27 +148,37 @@ function DayCellView({ cell, m, onPress }: { cell: DayCell; m: DayMarks; onPress
         <Text
           style={{
             fontSize: 12.5,
-            fontWeight: cell.isToday || m.annivLabel ? '700' : '500',
+            fontWeight: cell.isToday || m.annivLabel || m.holidayLabel ? '700' : '500',
             color: !cell.inMonth
               ? '#4a4a4a'
               : cell.isToday
                 ? color.bg
                 : m.annivLabel
                   ? role.anniv
-                  : color.white,
+                  : m.holidayLabel
+                    ? color.holiday
+                    : color.white,
           }}
         >
           {cell.day}
         </Text>
       </View>
 
-      {/* 하단 마커 */}
-      <View style={{ marginTop: 'auto', gap: 3 }}>
+      {/* 마커 — 날짜 숫자 바로 아래 (셀이 커져도 숫자에 붙어 있게) */}
+      <View style={{ marginTop: 3, gap: 3 }}>
         {m.annivLabel && (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
             <StarGlyph size={9} />
             <Text style={{ fontSize: 8.5, fontFamily: typeface, fontWeight: '700', color: role.anniv }}>싱글</Text>
           </View>
+        )}
+        {m.holidayLabel && (
+          <Text
+            numberOfLines={1}
+            style={{ fontSize: 8.5, fontFamily: typeface, fontWeight: '700', color: color.holiday }}
+          >
+            {shortHolidayName(m.holidayLabel)}
+          </Text>
         )}
         {m.upcoming && (
           <Text style={{ fontSize: 8.5, fontFamily: typeface, fontWeight: '700', color: role.me }}>예정</Text>

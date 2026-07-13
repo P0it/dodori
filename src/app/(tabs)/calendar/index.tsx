@@ -1,22 +1,21 @@
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { Pressable, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import { color, role, typeface } from '@/theme/tokens';
+import { color, typeface } from '@/theme/tokens';
 import { monthCells, addMonths, monthLabel } from '@/lib/calendar';
 import { monthKey as toMonthKey, todayKST, isReleased, toKSTDate } from '@/lib/date';
 import { occurrenceInMonth } from '@/lib/anniversaries';
+import { holidayMapForMonth } from '@/lib/holidays';
 import { useMonthEvents } from '@/api/events';
-import { useMonthTracks } from '@/api/tracks';
+import { useMonthTracks, useAllTracks } from '@/api/tracks';
 import { useAnniversaries } from '@/api/anniversaries';
 import { useCoupleProfiles } from '@/api/couple';
+import { useHolidayExtras } from '@/api/holidays';
 import { useSession } from '@/api/auth';
 import { FilterChip } from '@/components/FilterChip';
 import { OwnerDot } from '@/components/OwnerDot';
-import { StarGlyph } from '@/components/glyphs';
-import { Meta } from '@/components/Meta';
 import { MonthGrid, type DayMarks } from '@/components/calendar/MonthGrid';
-import { DaySheet } from '@/components/calendar/DaySheet';
+import { DayAgenda } from '@/components/calendar/DayAgenda';
 
 type Filter = 'us' | 'me' | 'partner';
 
@@ -24,20 +23,29 @@ type Filter = 'us' | 'me' | 'partner';
 export default function Calendar() {
   const [month, setMonth] = useState(() => toMonthKey(todayKST()));
   const [filter, setFilter] = useState<Filter>('us');
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selected, setSelected] = useState(() => todayKST());
 
   const session = useSession();
   const uid = session.data?.user.id;
   const events = useMonthEvents(month);
   const tracks = useMonthTracks(month);
+  const allTracks = useAllTracks(); // 어젠다의 "다음 일정" 한 줄 — 달을 넘어간 트랙도 봐야 한다
   const annivs = useAnniversaries();
   const profiles = useCoupleProfiles(); // Realtime은 루트 useCoupleRealtime이 담당 (§7.5)
 
   const cells = useMemo(() => monthCells(month), [month]);
 
+  const holidayExtras = useHolidayExtras(); // 임시공휴일·선거일 (없으면 계산값만으로 동작)
+  const holidays = useMemo(
+    () => holidayMapForMonth(month, holidayExtras.data ?? {}),
+    [month, holidayExtras.data],
+  );
+
   const marks = useMemo(() => {
     const map: Record<string, DayMarks> = {};
     const at = (d: string) => (map[d] ??= {});
+
+    for (const [date, name] of Object.entries(holidays)) at(date).holidayLabel = name;
 
     for (const t of tracks.data ?? []) {
       const m = at(t.date);
@@ -65,12 +73,7 @@ export default function Calendar() {
       }
     }
     return map;
-  }, [tracks.data, annivs.data, events.data, month, filter, uid]);
-
-  const isEmpty =
-    !tracks.data?.length &&
-    !events.data?.length &&
-    !(annivs.data ?? []).some((a) => occurrenceInMonth(a.date, a.repeatYearly, month));
+  }, [holidays, tracks.data, annivs.data, events.data, month, filter, uid]);
 
   const lbl = monthLabel(month);
   const partnerName = profiles.data?.partner?.nickname || '상대';
@@ -78,7 +81,6 @@ export default function Calendar() {
 
   return (
     <View style={{ flex: 1, backgroundColor: color.bg }}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
         {/* 헤더 */}
         <View style={{ paddingHorizontal: 16, paddingTop: 8 }}>
           <View
@@ -129,25 +131,25 @@ export default function Calendar() {
           </View>
         </View>
 
-        <View style={{ marginTop: 8 }}>
-          <MonthGrid cells={cells} marks={marks} onSelectDay={setSelected} />
-        </View>
+      <View style={{ flex: 1, marginTop: 8 }}>
+        <MonthGrid cells={cells} marks={marks} selected={selected} onSelectDay={setSelected} />
+      </View>
 
-        {isEmpty ? <EmptyMonth /> : <Legend partnerName={partnerName} myName={myName} />}
-      </ScrollView>
-
-      <DaySheet
-        date={selected}
-        onClose={() => setSelected(null)}
-        events={(events.data ?? []).filter(
-          (e) => e.starts_at && toKSTDate(new Date(e.starts_at)) === selected,
-        )}
-        tracks={(tracks.data ?? []).filter((t) => t.date === selected)}
-        annivs={(annivs.data ?? []).filter(
-          (a) => occurrenceInMonth(a.date, a.repeatYearly, month) === selected,
-        )}
-        uid={uid}
-      />
+      <View style={{ height: '34%', borderTopWidth: 1, borderTopColor: color.surface2 }}>
+        <DayAgenda
+          date={selected}
+          events={(events.data ?? []).filter(
+            (e) => e.starts_at && toKSTDate(new Date(e.starts_at)) === selected,
+          )}
+          tracks={(tracks.data ?? []).filter((t) => t.date === selected)}
+          annivs={(annivs.data ?? []).filter(
+            (a) => occurrenceInMonth(a.date, a.repeatYearly, month) === selected,
+          )}
+          uid={uid}
+          allTracks={allTracks.data ?? []}
+          allAnnivs={annivs.data ?? []}
+        />
+      </View>
     </View>
   );
 }
@@ -185,83 +187,3 @@ const navBtnStyle =
     justifyContent: 'center' as const,
     opacity: pressed ? 0.7 : 1,
   });
-
-function Legend({ myName, partnerName }: { myName: string; partnerName: string }) {
-  const items: [React.ReactNode, string][] = [
-    [<OwnerDot key="a" who="me" size={8} />, myName],
-    [<OwnerDot key="b" who="partner" size={8} />, partnerName],
-    [
-      <View
-        key="c"
-        style={{
-          width: 10,
-          height: 10,
-          borderRadius: 3,
-          borderWidth: 1.5,
-          borderStyle: 'dashed',
-          borderColor: role.me,
-        }}
-      />,
-      '예정 데이트',
-    ],
-    [<StarGlyph key="d" size={10} />, '기념일'],
-    [
-      <View
-        key="e"
-        style={{ width: 12, height: 5, borderRadius: 2, backgroundColor: 'rgba(232,104,143,0.5)' }}
-      />,
-      '바쁨(숨김)',
-    ],
-  ];
-  return (
-    <View
-      style={{
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        columnGap: 16,
-        rowGap: 8,
-        paddingHorizontal: 20,
-        paddingTop: 14,
-      }}
-    >
-      {items.map(([g, t], i) => (
-        <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          {g}
-          <Text style={{ fontFamily: typeface, fontSize: 11, color: color.sub }}>{t}</Text>
-        </View>
-      ))}
-    </View>
-  );
-}
-
-/** 빈 달 상태 (목업 20) */
-function EmptyMonth() {
-  const router = useRouter();
-  return (
-    <View style={{ alignItems: 'center', paddingHorizontal: 40, paddingTop: 24 }}>
-      <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 16, color: color.white }}>
-        이번 달은 아직 비어 있어요
-      </Text>
-      <Meta style={{ marginTop: 8, lineHeight: 20, textAlign: 'center' }}>
-        다가오는 날 중 하루를 골라 데이트를 계획해 보세요. 계획한 트랙은 여기에 나타나요.
-      </Meta>
-      <Pressable
-        onPress={() => router.push('/modals/create-track')}
-        style={({ pressed }) => ({
-          marginTop: 18,
-          height: 44,
-          paddingHorizontal: 22,
-          borderRadius: 999,
-          backgroundColor: role.me,
-          alignItems: 'center',
-          justifyContent: 'center',
-          opacity: pressed ? 0.85 : 1,
-        })}
-      >
-        <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 14, color: color.onPrimary }}>
-          데이트 계획하기
-        </Text>
-      </Pressable>
-    </View>
-  );
-}
