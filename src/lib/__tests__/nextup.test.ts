@@ -1,4 +1,4 @@
-import { pickNextUp, nextUpProgress } from '../nextup';
+import { pickNextUp } from '../nextup';
 
 const NOW = new Date('2026-07-08T03:00:00Z'); // KST 2026-07-08
 
@@ -24,17 +24,5 @@ describe('pickNextUp (§7.6)', () => {
   });
   it('둘 다 없으면 null (절대 빈 값 UI 없음 전제는 화면에서 처리)', () => {
     expect(pickNextUp([], [], NOW)).toBeNull();
-  });
-});
-
-describe('nextUpProgress', () => {
-  it('D-3 → 0.9', () => {
-    expect(nextUpProgress('2026-07-11', NOW)).toBeCloseTo(0.9);
-  });
-  it('당일 → 1', () => {
-    expect(nextUpProgress('2026-07-08', NOW)).toBe(1);
-  });
-  it('D-30 이상 → 0', () => {
-    expect(nextUpProgress('2026-09-01', NOW)).toBe(0);
   });
 });

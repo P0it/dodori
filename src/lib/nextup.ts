@@ -2,7 +2,7 @@
  * "다음 일정" 선정 (PRD §7.6): upcoming track 최근접 1건 → 없으면 다음 기념일 → 없으면 null.
  * 앱 어디서든 이 규칙 하나만 쓴다 (NextUp 바 · 플리 루트 카드 공용).
  */
-import { todayKST, diffDays, type ISODate } from './date';
+import { todayKST, type ISODate } from './date';
 
 export interface NextUpTrack {
   kind: 'track';
@@ -35,8 +35,3 @@ export function pickNextUp(
   return null;
 }
 
-/** 미니플레이어 진행률: 30일 전부터 당일까지 차오름 (목업 프로그레스 바 대응) */
-export function nextUpProgress(target: ISODate, now: Date = new Date()): number {
-  const d = diffDays(todayKST(now), target);
-  return Math.min(1, Math.max(0, (30 - d) / 30));
-}

@@ -32,6 +32,28 @@ export function CalGlyph({ size = 24, filled, color: fg = color.white }: GlyphPr
   );
 }
 
+/** 오늘 탭 글리프 — 서로 주고받는 말풍선 두 개 */
+export function TalkGlyph({ size = 24, filled, color: fg = color.white }: GlyphProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M3 6.5A2.5 2.5 0 015.5 4h8A2.5 2.5 0 0116 6.5v4A2.5 2.5 0 0113.5 13H8l-5 3.5v-10z"
+        stroke={fg}
+        strokeWidth={1.7}
+        strokeLinejoin="round"
+        fill={filled ? fg : 'none'}
+      />
+      <Path
+        d="M18.5 9H19a2 2 0 012 2v4.5a2 2 0 01-2 2h-.5L15 20v-3"
+        stroke={fg}
+        strokeWidth={1.7}
+        strokeLinejoin="round"
+        fill={filled ? fg : 'none'}
+      />
+    </Svg>
+  );
+}
+
 /** 스튜디오 탭 글리프 (목업 DiscGlyph) */
 export function DiscGlyph({ size = 24, filled, color: fg = color.white }: GlyphProps) {
   return (
@@ -71,6 +93,55 @@ export function StarGlyph({ size = 12, color: fg = color.anniv }: { size?: numbe
   return (
     <Svg width={size} height={size} viewBox="0 0 12 12" fill={fg}>
       <Path d="M6 0l1.6 3.7 4 .35-3 2.65.9 3.9L6 8.5 2.5 10.6l.9-3.9-3-2.65 4-.35z" />
+    </Svg>
+  );
+}
+
+/** 새 게시물 (+) */
+export function PlusGlyph({ size = 24, color: fg = color.white }: GlyphProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d="M12 5v14M5 12h14" stroke={fg} strokeWidth={1.7} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+/** 관리 메뉴 (≡) */
+export function MenuGlyph({ size = 22, color: fg = color.white }: GlyphProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M4 7h16M4 12h16M4 17h16"
+        stroke={fg}
+        strokeWidth={1.7}
+        strokeLinecap="round"
+      />
+    </Svg>
+  );
+}
+
+/** 더보기 (⋯) */
+export function MoreGlyph({ size = 20, color: fg = color.sub }: GlyphProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill={fg}>
+      <Circle cx={5} cy={12} r={1.6} />
+      <Circle cx={12} cy={12} r={1.6} />
+      <Circle cx={19} cy={12} r={1.6} />
+    </Svg>
+  );
+}
+
+/** 사진 여러 장 (겹친 사각형) */
+export function StackGlyph({ size = 15, color: fg = color.white }: GlyphProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Rect x={8} y={3} width={13} height={13} rx={2.5} stroke={fg} strokeWidth={1.9} />
+      <Path
+        d="M16 20.5H5.5A2.5 2.5 0 013 18V7.5"
+        stroke={fg}
+        strokeWidth={1.9}
+        strokeLinecap="round"
+      />
     </Svg>
   );
 }
