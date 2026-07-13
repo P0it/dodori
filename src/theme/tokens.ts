@@ -1,5 +1,5 @@
 /**
- * 도돌이 디자인 토큰 — 원본: design-mockup/_ds/.../tokens/*.css + app/shared.jsx `C` 팔레트.
+ * 도도리 디자인 토큰 — 원본: design-mockup/_ds/.../tokens/*.css + app/shared.jsx `C` 팔레트.
  * 컴포넌트에서 hex 하드코딩 금지 — 반드시 이 토큰을 참조한다. (PRD §6.2)
  * M6 브랜드 리스킨은 이 파일 값 교체로 끝나야 한다.
  */
@@ -31,6 +31,8 @@ export const color = {
   kakao: '#FEE500',
   kakaoText: '#191600',
   danger: '#E8567A',
+  /** 공휴일 — role.partner(핑크)와 혼동되지 않도록 채도 높은 적색으로 분리 */
+  holiday: '#FF5C5C',
 } as const;
 
 /** 역할별 반투명 배경 (D-day pill 등) */
