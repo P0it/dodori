@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Crypto from 'expo-crypto';
 import { supabase } from './supabase';
 import { useSession } from './auth';
+import { givenName } from '@/lib/name';
 
 /** 초대 코드 생성 — nanoid(10) 동급, 혼동 문자(0/O, 1/l/I) 제외 알파벳 */
 const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
@@ -13,6 +14,8 @@ export function generateInviteCode(length = 10): string {
 export interface MyCouple {
   coupleId: string;
   startedAt: string | null;
+  /** 커플 생성 시각 — 오늘의 주제 번호 기준일 (lib/topics) */
+  createdAt: string;
   inviteCode: string | null;
   memberCount: number;
 }
@@ -30,7 +33,7 @@ export function useMyCouple() {
       // 연결 후엔 멤버 행이 2개 보이므로 반드시 본인 행으로 한정
       const { data: membership, error } = await supabase
         .from('couple_members')
-        .select('couple_id, couples(started_at, invite_code)')
+        .select('couple_id, couples(started_at, invite_code, created_at)')
         .eq('user_id', uid)
         .maybeSingle();
       if (error) throw error;
@@ -43,6 +46,7 @@ export function useMyCouple() {
       return {
         coupleId: membership.couple_id,
         startedAt: membership.couples?.started_at ?? null,
+        createdAt: membership.couples!.created_at,
         inviteCode: membership.couples?.invite_code ?? null,
         memberCount: count ?? 1,
       };
@@ -60,7 +64,10 @@ export interface CoupleProfiles {
   } | null;
 }
 
-/** 나·상대 프로필 (필터 칩 라벨, 역할 매핑용) */
+/**
+ * 나·상대 프로필 (필터 칩 라벨, 역할 매핑용)
+ * nickname은 표시용으로 성을 뗀 이름 — UI 카피는 전부 이름만 쓴다 (givenName)
+ */
 export function useCoupleProfiles() {
   const couple = useMyCouple();
   return useQuery({
@@ -73,9 +80,10 @@ export function useCoupleProfiles() {
         .from('profiles')
         .select('id, nickname, birthday, avatar_url');
       if (error) throw error;
+      const display = data.map((p) => ({ ...p, nickname: givenName(p.nickname) }));
       return {
-        me: data.find((p) => p.id === uid) ?? null,
-        partner: data.find((p) => p.id !== uid) ?? null,
+        me: display.find((p) => p.id === uid) ?? null,
+        partner: display.find((p) => p.id !== uid) ?? null,
       };
     },
   });
