@@ -1,8 +1,9 @@
-# 도돌이(Dodori) — 커플 캘린더·아카이브
+# 도도리(dodori) — 커플 캘린더·아카이브
 
 "데이트 = 트랙, 한 달 = 플레이리스트, 기념일 = 싱글" 컨셉의 커플 앱.
 구 서비스명 Duet에서 리브랜딩(2026-07). 로고·인앱 마크는 여는 도돌이표 𝄆 — #121212 배경 + 브랜드 그린 단색.
-표기 규칙: 앱 이름(런처·app.json `name`)만 "도돌이", 인앱 워드마크·서비스명 표기는 소문자 **dodori**.
+표기 규칙: 앱 이름(런처·app.json `name`)만 "도도리", 인앱 워드마크·서비스명 표기는 소문자 **dodori**.
+"도돌이"는 옛 한글 표기 — 마크의 유래인 음악 기호 "도돌이표"를 가리킬 때만 쓰고, 브랜드명으로는 쓰지 않는다.
 기능·데이터·서버 사양은 기술 PRD(대화로 전달됨), UI는 `design-mockup/`(Claude Design 목업)이 원본.
 
 ## 스택 (M0에서 확정)
@@ -65,6 +66,8 @@
 - 탭바는 커스텀 (`CoupleTabBar` = NextUp 미니플레이어 + 3탭, 목업 AppChrome 대응)
 - 캘린더 월간 그리드는 라이브러리 없이 자체 구현 예정 (PRD §3, §6.3 성능 요구)
 - Edge Functions: `claim-invite`(M1), `search-places`(M3) — 골격만 존재
+- 공휴일: `lib/holidays.ts`가 규칙으로 계산(양력 고정 + KASI 음양력 변환 + 대체공휴일, ~2050).
+  계산 불가능한 임시공휴일·선거일만 `holidays_extra` 테이블 + `sync-holidays` cron이 채운다
 - `couple_members.user_id`는 unique(유저당 커플 1개), RLS 공통 술어는 `public.my_couple_id()`
 
 ## 마일스톤 현황
@@ -75,8 +78,13 @@
 
 ## 배포 후 1회 수동 설정
 
-- **cron Vault 시크릿** (미설정 시 daily-release 푸시가 조용히 스킵됨) — SQL Editor에서:
-  `select vault.create_secret('<SERVICE_ROLE_KEY>', 'service_role_key');`
+- **cron Vault 시크릿** (미설정 시 daily-release·sync-holidays가 조용히 스킵됨) — SQL Editor에서.
+  ⚠️ `<SERVICE_ROLE_KEY>`를 **반드시 실제 키로 치환**할 것 — 예전에 이 자리 문자열이 그대로 저장돼
+  cron이 401로 몇 달간 실패했다. 값은 Settings → API Keys의 `service_role` JWT(`eyJ`로 시작).
+  `select vault.create_secret('eyJ...실제키...', 'service_role_key');`
   `select vault.create_secret('https://iyqttrufrjeytntinsrb.supabase.co', 'project_url');`
+  이미 있으면 `create_secret`은 duplicate 에러 → `vault.update_secret((select id from vault.secrets where name='service_role_key'), 'eyJ...')`
 - **네이버 검색 키** — `npx supabase secrets set NAVER_CLIENT_ID=... NAVER_CLIENT_SECRET=...`
+- **공공데이터포털 키** (미설정 시 임시공휴일·선거일만 캘린더에 안 뜸 — 일반 공휴일은 계산되므로 정상) —
+  한국천문연구원 특일정보 API 활용신청 후 `npx supabase secrets set DATA_GO_KR_KEY=...`
 - **카카오 Android 키 해시** — 첫 빌드 후 debug keystore 해시를 카카오 콘솔 플랫폼 키에 등록

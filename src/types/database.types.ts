@@ -7,6 +7,11 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.5"
+  }
   graphql_public: {
     Tables: {
       [_ in never]: never
@@ -173,6 +178,24 @@ export type Database = {
           },
         ]
       }
+      holidays_extra: {
+        Row: {
+          date: string
+          name: string
+          synced_at: string
+        }
+        Insert: {
+          date: string
+          name: string
+          synced_at?: string
+        }
+        Update: {
+          date?: string
+          name?: string
+          synced_at?: string
+        }
+        Relationships: []
+      }
       notes: {
         Row: {
           author_id: string
@@ -210,9 +233,10 @@ export type Database = {
           created_at: string
           height: number | null
           id: string
+          post_id: string | null
           storage_path: string
           taken_at: string | null
-          track_id: string
+          track_id: string | null
           uploader_id: string
           width: number | null
         }
@@ -220,9 +244,10 @@ export type Database = {
           created_at?: string
           height?: number | null
           id?: string
+          post_id?: string | null
           storage_path: string
           taken_at?: string | null
-          track_id: string
+          track_id?: string | null
           uploader_id: string
           width?: number | null
         }
@@ -230,13 +255,21 @@ export type Database = {
           created_at?: string
           height?: number | null
           id?: string
+          post_id?: string | null
           storage_path?: string
           taken_at?: string | null
-          track_id?: string
+          track_id?: string | null
           uploader_id?: string
           width?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "photos_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "photos_track_id_fkey"
             columns: ["track_id"]
@@ -363,6 +396,99 @@ export type Database = {
           },
         ]
       }
+      post_comments: {
+        Row: {
+          author_id: string
+          body: string
+          created_at: string
+          id: string
+          post_id: string
+        }
+        Insert: {
+          author_id: string
+          body: string
+          created_at?: string
+          id?: string
+          post_id: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          created_at?: string
+          id?: string
+          post_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_reactions: {
+        Row: {
+          created_at: string
+          emoji: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          emoji: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_reactions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      posts: {
+        Row: {
+          author_id: string
+          caption: string
+          couple_id: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          author_id: string
+          caption?: string
+          couple_id: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          author_id?: string
+          caption?: string
+          couple_id?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "posts_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -387,6 +513,124 @@ export type Database = {
           id?: string
           nickname?: string
           push_token?: string | null
+        }
+        Relationships: []
+      }
+      topic_comments: {
+        Row: {
+          author_id: string
+          body: string
+          couple_id: string
+          created_at: string
+          id: string
+          parent_id: string | null
+          topic_id: string
+        }
+        Insert: {
+          author_id: string
+          body: string
+          couple_id: string
+          created_at?: string
+          id?: string
+          parent_id?: string | null
+          topic_id: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          couple_id?: string
+          created_at?: string
+          id?: string
+          parent_id?: string | null
+          topic_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "topic_comments_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "topic_comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "topic_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "topic_comments_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      topic_votes: {
+        Row: {
+          choice: string
+          couple_id: string
+          created_at: string
+          topic_id: string
+          user_id: string
+        }
+        Insert: {
+          choice: string
+          couple_id: string
+          created_at?: string
+          topic_id: string
+          user_id: string
+        }
+        Update: {
+          choice?: string
+          couple_id?: string
+          created_at?: string
+          topic_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "topic_votes_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "topic_votes_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      topics: {
+        Row: {
+          created_at: string
+          id: string
+          option_a: string
+          option_b: string
+          question: string
+          seq: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          option_a: string
+          option_b: string
+          question: string
+          seq: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          option_a?: string
+          option_b?: string
+          question?: string
+          seq?: number
         }
         Relationships: []
       }
@@ -532,6 +776,9 @@ export type Database = {
     }
     Functions: {
       create_couple: { Args: { p_invite_code: string }; Returns: string }
+      has_voted: { Args: { p_topic_id: string }; Returns: boolean }
+      invoke_daily_release: { Args: never; Returns: undefined }
+      invoke_sync_holidays: { Args: never; Returns: undefined }
       my_couple_id: { Args: never; Returns: string }
     }
     Enums: {
@@ -668,4 +915,3 @@ export const Constants = {
     Enums: {},
   },
 } as const
-

@@ -1,7 +1,7 @@
 // daily-release — 매일 00:05 KST cron (§7.2·§7.7)
 // (a) 어제 날짜 트랙 "발매" 푸시 (둘 다)  (b) 기념일 D-7/D-1 리마인드 (둘 다)
 // 호출: pg_cron → net.http_post (Authorization: service role). 수동 테스트도 동일.
-import { adminClient, json } from '../_shared/client.ts';
+import { adminClient, isServiceRole, json } from '../_shared/client.ts';
 
 const DAY_MS = 86_400_000;
 
@@ -31,10 +31,7 @@ async function sendPushes(messages: PushMsg[]) {
 
 Deno.serve(async (req) => {
   // service role 호출만 허용 (cron 전용)
-  const auth = req.headers.get('Authorization') ?? '';
-  if (!auth.includes(Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '§')) {
-    return json({ error: 'forbidden' }, 403);
-  }
+  if (!isServiceRole(req)) return json({ error: 'forbidden' }, 403);
 
   const admin = adminClient();
   const today = kstDate();
