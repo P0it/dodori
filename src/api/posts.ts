@@ -6,7 +6,7 @@ import { signedThumbUrl, uploadPhotos, type PickedPhoto } from './photos';
 export interface PostPhoto {
   id: string;
   storagePath: string;
-  /** 서명된 썸네일 URL (비공개 버킷) */
+  /** 서명된 썸네일 URL (비공개 버킷) — 피드 캐러셀용 비율 보존 변형 */
   thumbUrl: string;
   width: number | null;
   height: number | null;
@@ -23,6 +23,8 @@ export interface Post {
   caption: string;
   createdAt: string;
   photos: PostPhoto[];
+  /** 계정 그리드용 첫 사진 360 정사각 썸네일 */
+  gridThumbUrl: string | null;
   /** 이모지별로 누른 사람들 */
   reactions: { emoji: string; userIds: string[] }[];
   comments: PostComment[];
@@ -48,22 +50,22 @@ async function toPost(row: PostRow): Promise<Post> {
   for (const r of row.post_reactions ?? []) {
     byEmoji.set(r.emoji, [...(byEmoji.get(r.emoji) ?? []), r.user_id]);
   }
+  const sortedPhotos = (row.photos ?? []).sort((a, b) => a.created_at.localeCompare(b.created_at));
   return {
     id: row.id,
     authorId: row.author_id,
     caption: row.caption,
     createdAt: row.created_at,
     photos: await Promise.all(
-      (row.photos ?? [])
-        .sort((a, b) => a.created_at.localeCompare(b.created_at))
-        .map(async (p) => ({
-          id: p.id,
-          storagePath: p.storage_path,
-          thumbUrl: await signedThumbUrl(p.storage_path, 'feed'),
-          width: p.width,
-          height: p.height,
-        })),
+      sortedPhotos.map(async (p) => ({
+        id: p.id,
+        storagePath: p.storage_path,
+        thumbUrl: await signedThumbUrl(p.storage_path, 'feed'),
+        width: p.width,
+        height: p.height,
+      })),
     ),
+    gridThumbUrl: sortedPhotos[0] ? await signedThumbUrl(sortedPhotos[0].storage_path, 'grid') : null,
     reactions: [...byEmoji.entries()].map(([emoji, userIds]) => ({ emoji, userIds })),
     comments: (row.post_comments ?? [])
       .map((c) => ({ id: c.id, authorId: c.author_id, body: c.body, createdAt: c.created_at }))

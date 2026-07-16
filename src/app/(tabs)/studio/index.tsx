@@ -36,7 +36,7 @@ export default function Studio() {
       ListEmptyComponent={<EmptyPosts onPress={() => router.push('/modals/create-post')} />}
       renderItem={({ item: p }) => (
         <PostGridCell
-          thumbUrl={p.photos[0]?.thumbUrl ?? null}
+          thumbUrl={p.gridThumbUrl}
           caption={p.caption}
           multiple={p.photos.length > 1}
           onPress={() => router.push(`/studio/post/${p.id}`)}
