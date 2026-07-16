@@ -10,7 +10,7 @@ import {
 import { Image } from 'expo-image';
 import { color, radius, role, space, typeface, type OwnerRole } from '@/theme/tokens';
 import { formatRelative } from '@/lib/date';
-import { OwnerDot } from '@/components/OwnerDot';
+import { Avatar } from '@/components/Avatar';
 import { Meta } from '@/components/Meta';
 import { MoreGlyph } from '@/components/glyphs';
 import { ReactionBar } from './ReactionBar';
@@ -51,6 +51,10 @@ export function PostCard({
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) =>
     setPage(Math.round(e.nativeEvent.contentOffset.x / width));
 
+  const first = post.photos[0];
+  const ratio = first?.width && first?.height ? first.height / first.width : 1;
+  const carouselH = Math.round(width * Math.min(1.25, Math.max(0.5625, ratio)));
+
   return (
     <View style={{ paddingBottom: space[5] }}>
       {/* 작성자 */}
@@ -63,32 +67,7 @@ export function PostCard({
           paddingVertical: 11,
         }}
       >
-        {avatar ? (
-          <Image
-            source={{ uri: avatar }}
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: 16,
-              borderWidth: 1.5,
-              borderColor: role[authorRole],
-              backgroundColor: color.surface2,
-            }}
-          />
-        ) : (
-          <View
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: 16,
-              backgroundColor: color.surface2,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <OwnerDot who={authorRole} size={10} />
-          </View>
-        )}
+        <Avatar url={avatar} role={authorRole} name={name(post.authorId)} size={32} />
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text
             style={{ fontFamily: typeface, fontWeight: '700', fontSize: 14.5, color: color.white }}
@@ -104,7 +83,7 @@ export function PostCard({
         )}
       </View>
 
-      {/* 사진 캐러셀 — 정사각, 페이징 */}
+      {/* 사진 캐러셀 — 원본 비율(레터박스), 페이징 */}
       {post.photos.length > 0 && (
         <View>
           <ScrollView
@@ -113,14 +92,14 @@ export function PostCard({
             showsHorizontalScrollIndicator={false}
             onScroll={onScroll}
             scrollEventThrottle={16}
-            style={{ width, height: width }}
+            style={{ width, height: carouselH }}
           >
             {post.photos.map((p) => (
               <Image
                 key={p.id}
                 source={{ uri: p.thumbUrl }}
-                style={{ width, height: width }}
-                contentFit="cover"
+                style={{ width, height: carouselH, backgroundColor: color.bg }}
+                contentFit="contain"
                 transition={160}
               />
             ))}
@@ -182,12 +161,12 @@ export function PostCard({
 
         {!!post.caption && (
           <Text style={{ fontFamily: typeface, fontSize: 14.5, color: color.white, lineHeight: 21 }}>
-            <Text style={{ fontWeight: '700', color: role[authorRole] }}>
-              {name(post.authorId)}
-            </Text>
-            {'  '}
             {post.caption}
           </Text>
+        )}
+
+        {!!post.caption && (
+          <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.06)' }} />
         )}
 
         <CommentList
