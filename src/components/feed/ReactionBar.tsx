@@ -9,7 +9,7 @@ type Props = {
   onToggle: (emoji: string, on: boolean) => void;
 };
 
-/** 고정 이모지 리액션 — 내가 누른 건 green 링, 상대만 누른 건 pink 링 */
+/** 좋아요(하트) — 내가 누른 건 green 링, 상대만 누른 건 pink 링 */
 export function ReactionBar({ reactions, myUid, onToggle }: Props) {
   return (
     <View style={{ flexDirection: 'row', gap: 6 }}>

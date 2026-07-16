@@ -16,7 +16,10 @@ export const THUMB = {
   feed: { width: 1080, quality: 72 },
 } as const;
 
-/** height가 있는 변형만 cover로 자른다. feed는 width만 지정해 비율 보존 */
+/**
+ * 비율 보존의 열쇠는 height를 안 주는 것 — width만 제약하면 세로가 안 잘린다.
+ * (resize는 storage-js 기본값이 이미 'cover'라 명시는 height 있는 변형의 의도 표기용)
+ */
 function transformFor(kind: keyof typeof THUMB) {
   const t = THUMB[kind];
   return 'height' in t ? { ...t, resize: 'cover' as const } : { ...t };
