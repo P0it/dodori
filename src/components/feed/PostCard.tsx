@@ -174,6 +174,7 @@ export function PostCard({
           myUid={myUid}
           who={who}
           name={name}
+          avatarUrl={avatarUrl}
           onAdd={onAddComment}
           onDelete={onDeleteComment}
         />

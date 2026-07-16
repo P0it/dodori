@@ -3,6 +3,7 @@ import { Pressable, Text, TextInput, View } from 'react-native';
 import { color, radius, role, typeface, type OwnerRole } from '@/theme/tokens';
 import { formatRelative } from '@/lib/date';
 import { Meta } from '@/components/Meta';
+import { Avatar } from '@/components/Avatar';
 import type { PostComment } from '@/api/posts';
 
 type Props = {
@@ -10,6 +11,7 @@ type Props = {
   myUid: string;
   who: (uid: string) => OwnerRole;
   name: (uid: string) => string;
+  avatarUrl: (uid: string) => string | null;
   onAdd: (body: string) => void;
   onDelete: (commentId: string) => void;
 };
@@ -17,7 +19,7 @@ type Props = {
 const PREVIEW = 2;
 
 /** 게시물 댓글 — 기본 2개 미리보기 + 입력 */
-export function CommentList({ comments, myUid, who, name, onAdd, onDelete }: Props) {
+export function CommentList({ comments, myUid, who, name, avatarUrl, onAdd, onDelete }: Props) {
   const [draft, setDraft] = useState('');
   const [expanded, setExpanded] = useState(false);
 
@@ -41,18 +43,11 @@ export function CommentList({ comments, myUid, who, name, onAdd, onDelete }: Pro
 
       {shown.map((c) => (
         <View key={c.id} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
+          <Avatar url={avatarUrl(c.authorId)} role={who(c.authorId)} name={name(c.authorId)} size={24} />
           <Text
-            style={{
-              fontFamily: typeface,
-              fontSize: 14,
-              lineHeight: 20,
-              color: color.white,
-              flex: 1,
-            }}
+            style={{ fontFamily: typeface, fontSize: 14, lineHeight: 20, color: color.white, flex: 1 }}
           >
-            <Text style={{ fontWeight: '700', color: role[who(c.authorId)] }}>
-              {name(c.authorId)}
-            </Text>
+            <Text style={{ fontWeight: '700', color: color.white }}>{name(c.authorId)}</Text>
             {'  '}
             {c.body}
           </Text>
@@ -70,6 +65,7 @@ export function CommentList({ comments, myUid, who, name, onAdd, onDelete }: Pro
       ))}
 
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2 }}>
+        <Avatar url={avatarUrl(myUid)} role={who(myUid)} name={name(myUid)} size={24} />
         <TextInput
           value={draft}
           onChangeText={setDraft}
