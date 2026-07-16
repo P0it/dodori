@@ -59,7 +59,7 @@ async function toPost(row: PostRow): Promise<Post> {
         .map(async (p) => ({
           id: p.id,
           storagePath: p.storage_path,
-          thumbUrl: await signedThumbUrl(p.storage_path, 'grid'),
+          thumbUrl: await signedThumbUrl(p.storage_path, 'feed'),
           width: p.width,
           height: p.height,
         })),

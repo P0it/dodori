@@ -7,16 +7,24 @@ import { useMyCouple } from './couple';
 
 /**
  * 썸네일 3단계 (§6.3): 캘린더 124@2x / 그리드·스트립 360 / 뷰어 원본.
+ * 피드(feed)는 원본 비율 보존 — 높이 미지정으로 가로세로가 안 잘린다.
  * 원본은 뷰어 전용 — 목록 화면에서 원본 URL 사용 금지 (§9)
  */
 export const THUMB = {
   calendar: { width: 124, height: 124, quality: 60 },
   grid: { width: 360, height: 360, quality: 70 },
+  feed: { width: 1080, quality: 72 },
 } as const;
+
+/** height가 있는 변형만 cover로 자른다. feed는 width만 지정해 비율 보존 */
+function transformFor(kind: keyof typeof THUMB) {
+  const t = THUMB[kind];
+  return 'height' in t ? { ...t, resize: 'cover' as const } : { ...t };
+}
 
 export function thumbUrl(storagePath: string, kind: keyof typeof THUMB): string {
   const { data } = supabase.storage.from('photos').getPublicUrl(storagePath, {
-    transform: { ...THUMB[kind], resize: 'cover' },
+    transform: transformFor(kind),
   });
   return data.publicUrl;
 }
@@ -28,7 +36,7 @@ export async function signedThumbUrl(
 ): Promise<string> {
   const { data, error } = await supabase.storage
     .from('photos')
-    .createSignedUrl(storagePath, 60 * 60, { transform: { ...THUMB[kind], resize: 'cover' } });
+    .createSignedUrl(storagePath, 60 * 60, { transform: transformFor(kind) });
   if (error) throw error;
   return data.signedUrl;
 }
