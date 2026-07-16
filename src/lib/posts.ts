@@ -1,4 +1,4 @@
-/** 게시물에 달 수 있는 리액션 (고정 세트) */
-export const REACTIONS = ['♥', '😆', '😮', '🥺', '🔥'] as const;
+/** 게시물 리액션 — 좋아요(하트) 하나 (커플 앱: 팔레트 불필요) */
+export const REACTIONS = ['♥'] as const;
 
 export type Reaction = (typeof REACTIONS)[number];
