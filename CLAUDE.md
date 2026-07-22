@@ -1,10 +1,19 @@
-# 도도리(dodori) — 커플 캘린더·아카이브
+# 도도리(dodori) — 커플 공용 공간
 
-"데이트 = 트랙, 한 달 = 플레이리스트, 기념일 = 싱글" 컨셉의 커플 앱.
+둘이 매일 여는 하나의 앱. **홈**의 주제로 말을 섞고, **캘린더**에서 일정을 함께 잡고,
+**플레이리스트**에 가고 싶은 곳을 쟁여두고, **피드**에서 남긴 것을 돌아본다 (= 4탭).
+음악 메타포: 장소 = 트랙, 하루(데이트) = 앨범, 플레이리스트 = 직접 만드는 컬렉션.
+**"싱글(기념일)" 개념은 폐기** — 기념일은 캘린더의 일이다.
+
 구 서비스명 Duet에서 리브랜딩(2026-07). 로고·인앱 마크는 여는 도돌이표 𝄆 — #121212 배경 + 브랜드 그린 단색.
 표기 규칙: 앱 이름(런처·app.json `name`)만 "도도리", 인앱 워드마크·서비스명 표기는 소문자 **dodori**.
 "도돌이"는 옛 한글 표기 — 마크의 유래인 음악 기호 "도돌이표"를 가리킬 때만 쓰고, 브랜드명으로는 쓰지 않는다.
-기능·데이터·서버 사양은 기술 PRD(대화로 전달됨), UI는 `design-mockup/`(Claude Design 목업)이 원본.
+
+## 사양의 출처 (순서대로)
+
+1. `docs/superpowers/specs/` — **최신 결정이 여기 있다.** 방향 전환(오늘의 주제, 커플 피드, 플레이리스트 재정의)은 전부 PRD 이후에 나왔다
+2. 기술 PRD(대화로 전달됨) — M0~M5 기반 사양. 위 스펙과 충돌하면 **PRD가 낡은 것**이다
+3. `design-mockup/`(Claude Design 목업) — UI 원본. 단, 4탭 전환 이후 화면은 목업에 없다
 
 ## 스택 (M0에서 확정)
 
@@ -47,7 +56,7 @@
 - **Supabase 접근은 api/ 로만** — 화면·컴포넌트에서 `supabase` 직접 import 금지. 쿼리는 api/에 훅(TanStack Query)으로 캡슐화 (DIP: 화면은 "데이터 훅"에만 의존)
 - **components/ 는 props-only** — 전역 상태·네트워크 접근 금지, 표현만 (SRP). 도메인 분기가 필요하면 lib/ 함수를 받아쓰기
 - **화면(app/)은 조합만** — 훅 호출 + 컴포넌트 배치. 비즈니스 로직이 화면에 생기면 lib/ 또는 api/로 내린다
-- **확장은 variant/prop으로** (OCP) — 예: NextUp의 track/anniv variant처럼. 역할 분기는 `OwnerRole` 타입으로 닫는다
+- **확장은 prop으로** (OCP) — 새 케이스가 생기면 컴포넌트 안에 if를 늘리지 말고 prop으로 받는다. 역할 분기는 `OwnerRole` 타입으로 닫는다 (나=green / 상대=pink)
 - 서버 규칙(초대 수락 트랜잭션, 기념일 생성)은 Edge Function이 단일 진실 — 클라이언트 lib/와 규칙이 겹치면 테스트로 동치 검증
 
 과잉 금지: repository 인터페이스·DI 컨테이너·usecase 클래스 도입하지 않는다. 계층이 아니라 방향이 규칙이다.
@@ -62,19 +71,22 @@
 
 ## 구조 메모
 
-- `src/app/` 라우트: (auth) / (tabs)/{playlist,calendar,studio} / track/[id] / place/[id] / modals
-- 탭바는 커스텀 (`CoupleTabBar` = NextUp 미니플레이어 + 3탭, 목업 AppChrome 대응)
-- 캘린더 월간 그리드는 라이브러리 없이 자체 구현 예정 (PRD §3, §6.3 성능 요구)
-- Edge Functions: `claim-invite`(M1), `search-places`(M3) — 골격만 존재
+- `src/app/` 라우트: (auth) / (tabs)/{home,calendar,playlist,feed} / topic/[id] / track/[id] / place/[id] / modals
+  - `feed` = "피드" 탭. 게시물 피드·기념일·좋아요·설정
+- 탭바는 커스텀 4탭 (`CoupleTabBar`) — NextUp 미니플레이어는 제거됨. 진입 첫 화면은 `home`
+- **홈**: 하루 한 개의 대화주제. 내가 투표해야 상대 답이 열린다 (`lib/topics.ts`, 주제는 커플별 `seq` 순차 배정)
+- 캘린더 월간 그리드는 라이브러리 없이 자체 구현 (`components/calendar/MonthGrid.tsx`) + 그 아래 인라인 아젠다
 - 공휴일: `lib/holidays.ts`가 규칙으로 계산(양력 고정 + KASI 음양력 변환 + 대체공휴일, ~2050).
   계산 불가능한 임시공휴일·선거일만 `holidays_extra` 테이블 + `sync-holidays` cron이 채운다
+- Edge Functions: `claim-invite` / `search-places` / `daily-release` / `generate-anniversaries` / `sync-holidays`
 - `couple_members.user_id`는 unique(유저당 커플 1개), RLS 공통 술어는 `public.my_couple_id()`
 
 ## 마일스톤 현황
 
-- [x] M0 스캐폴드 / M1 인증·연결 / M2 캘린더 / M3 Track / M4 플레이리스트·Place
-- [x] M5 코드 (NextUp·Realtime·푸시 토큰·daily-release cron) — 베타 배포(EAS/TestFlight)는 남음
-- [ ] M6 스토어 준비
+- [x] M0 스캐폴드 / M1 인증·연결 / M2 캘린더 / M3 Track / M4 플레이리스트·Place / M5 Realtime·푸시·cron
+- [x] 방향 전환(2026-07): 오늘의 주제 + 커플 피드 + 4탭
+- [ ] 플레이리스트 재정의 이행 — 장소=트랙 / 하루=앨범, 싱글 제거 (스펙 확정, 코드 미반영)
+- [ ] 베타 배포(EAS/TestFlight) → M6 스토어 준비
 
 ## 배포 후 1회 수동 설정
 

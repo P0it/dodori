@@ -36,7 +36,7 @@ function Login() {
           <DodoriMark size={54} showWord={false} />
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontFamily: SANS, fontWeight: 800, fontSize: 40, letterSpacing: '-0.03em', color: '#fff' }}>dodori</div>
-            <div style={{ fontFamily: SANS, fontWeight: 500, fontSize: 15, color: C.sub, marginTop: 8 }}>둘이서 쓰는 캘린더, 둘만의 아카이브</div>
+            <div style={{ fontFamily: SANS, fontWeight: 500, fontSize: 15, color: C.sub, marginTop: 8 }}>하루마다 쌓아가는 우리의 마디</div>
           </div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, paddingBottom: 40 }}>
