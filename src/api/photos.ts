@@ -115,13 +115,13 @@ export async function uploadPhotos(
   parent: PhotoParent,
   coupleId: string,
   photos: PickedPhoto[],
-): Promise<number> {
+): Promise<string[]> {
   const { data: userData } = await supabase.auth.getUser();
   const uid = userData.user?.id;
   if (!uid) throw new Error('로그인이 필요해요');
   const parentId = parent.trackId ?? parent.postId!;
 
-  let uploaded = 0;
+  const ids: string[] = [];
   for (const photo of photos) {
     const resized = await resizeForUpload(photo);
     const path = `${coupleId}/${parentId}/${Crypto.randomUUID()}.jpg`;
@@ -131,19 +131,23 @@ export async function uploadPhotos(
       .from('photos')
       .upload(path, body, { contentType: 'image/jpeg' });
     if (upError) throw upError;
-    const { error: rowError } = await supabase.from('photos').insert({
-      track_id: parent.trackId ?? null,
-      post_id: parent.postId ?? null,
-      uploader_id: uid,
-      storage_path: path,
-      width: resized.width,
-      height: resized.height,
-      taken_at: photo.takenAt,
-    });
+    const { data: row, error: rowError } = await supabase
+      .from('photos')
+      .insert({
+        track_id: parent.trackId ?? null,
+        post_id: parent.postId ?? null,
+        uploader_id: uid,
+        storage_path: path,
+        width: resized.width,
+        height: resized.height,
+        taken_at: photo.takenAt,
+      })
+      .select('id')
+      .single();
     if (rowError) throw rowError;
-    uploaded++;
+    ids.push(row.id);
   }
-  return uploaded;
+  return ids;
 }
 
 /** 트랙 사진 추가 (트랙 상세) */

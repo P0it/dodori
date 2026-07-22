@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from './supabase';
 import { useMyCouple } from './couple';
-import { thumbUrl } from './photos';
+import { thumbUrl, uploadPhotos, type PickedPhoto } from './photos';
 import type { ISODate } from '@/lib/date';
 
 export interface MonthTrack {
@@ -229,6 +229,28 @@ export function useUpdateTrack(id: string) {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['track', id] });
+      qc.invalidateQueries({ queryKey: ['tracks'] });
+    },
+  });
+}
+
+/** 앨범 커버 지정 — 사진 1장 업로드 후 그 photo id를 cover_photo_id로. 계획·발매 양쪽 */
+export function useSetTrackCover(trackId: string) {
+  const qc = useQueryClient();
+  const couple = useMyCouple();
+  return useMutation({
+    mutationFn: async (photo: PickedPhoto) => {
+      const coupleId = couple.data?.coupleId;
+      if (!coupleId) throw new Error('연결이 필요해요');
+      const [photoId] = await uploadPhotos({ trackId }, coupleId, [photo]);
+      const { error } = await supabase
+        .from('tracks')
+        .update({ cover_photo_id: photoId })
+        .eq('id', trackId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['track', trackId] });
       qc.invalidateQueries({ queryKey: ['tracks'] });
     },
   });

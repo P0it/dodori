@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -12,9 +12,18 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { color, role, typeface } from '@/theme/tokens';
 import { isReleased, formatDday } from '@/lib/date';
-import { useTrack, useUpdateTrack, useDeleteTrack, useAddNote, type TrackDetail } from '@/api/tracks';
+import {
+  useTrack,
+  useUpdateTrack,
+  useDeleteTrack,
+  useAddNote,
+  useSetTrackCover,
+  type TrackDetail,
+  type TrackPlace,
+} from '@/api/tracks';
 import { pickPhotos, thumbUrl, useUploadPhotos } from '@/api/photos';
-import { useRemoveTrackPlace } from '@/api/places';
+import { useRemoveTrackPlace, useReorderTrackPlaces } from '@/api/places';
+import { DraggableCourseList } from '@/components/track/DraggableCourseList';
 import { useSession } from '@/api/auth';
 import { useCoupleProfiles } from '@/api/couple';
 import { TopBar } from '@/components/TopBar';
@@ -24,6 +33,9 @@ import { Divider } from '@/components/Divider';
 import { Dday } from '@/components/Dday';
 import { OwnerDot } from '@/components/OwnerDot';
 import { TrackCover } from '@/components/TrackCover';
+
+/** 코스 한 행의 고정 높이 — 드래그 재정렬(절대배치)이 기준으로 삼는다 */
+const COURSE_ROW_H = 62;
 
 /** Track 상세 — released 여부로 플랜/아카이브 모드 파생 (§7.2, 목업 11~13) */
 export default function TrackScreen() {
@@ -59,10 +71,19 @@ function TrackBody({ t }: { t: TrackDetail }) {
   const addNote = useAddNote(t.id);
   const upload = useUploadPhotos({ trackId: t.id });
   const removePlace = useRemoveTrackPlace(t.id);
+  const reorder = useReorderTrackPlaces(t.id);
+  const setCover = useSetTrackCover(t.id);
 
   const [noteDraft, setNoteDraft] = useState('');
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState(t.title);
+  const [reordering, setReordering] = useState(false); // 드래그 중 부모 스크롤 잠금
+
+  const placeById = useMemo(() => {
+    const m: Record<string, TrackPlace> = {};
+    for (const p of t.places) m[p.placeId] = p;
+    return m;
+  }, [t.places]);
 
   const photoPaths = t.photos.map((p) => p.storagePath);
   const nameOf = (userId: string) =>
@@ -78,6 +99,15 @@ function TrackBody({ t }: { t: TrackDetail }) {
       }
     } catch (e) {
       Alert.alert('업로드 실패', e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  const onSetCover = async () => {
+    try {
+      const picked = await pickPhotos(1);
+      if (picked.length) await setCover.mutateAsync(picked[0]);
+    } catch (e) {
+      Alert.alert('커버 변경 실패', e instanceof Error ? e.message : String(e));
     }
   };
 
@@ -98,6 +128,46 @@ function TrackBody({ t }: { t: TrackDetail }) {
     if (v && v !== t.title) update.mutate({ title: v });
   };
 
+  // 코스 한 행 — 발매(정적)·계획(드래그) 공용. draggable이면 그립(≡) 힌트 표시
+  const courseRow = (p: TrackPlace, opts: { dragging?: boolean; draggable?: boolean }) => (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        height: COURSE_ROW_H,
+        paddingHorizontal: 4,
+        borderRadius: 8,
+        backgroundColor: opts.dragging ? color.surface2 : 'transparent',
+      }}
+    >
+      <View style={{ width: 42, alignItems: 'center' }}>
+        <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 13, color: released ? role.me : color.white }}>
+          {p.visitTime ? p.visitTime.slice(0, 5) : `${p.sortOrder + 1}`}
+        </Text>
+      </View>
+      <View style={{ width: 1, height: 34, backgroundColor: 'rgba(255,255,255,0.1)' }} />
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Text numberOfLines={1} style={{ fontFamily: typeface, fontWeight: '600', fontSize: 15, color: color.white }}>
+          {p.name}
+        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 3 }}>
+          <Meta style={{ fontSize: 12 }}>{p.category ?? '장소'}</Meta>
+          <OwnerDot who={p.addedBy === uid ? 'me' : 'partner'} size={6} />
+          <Meta style={{ fontSize: 12 }}>{nameOf(p.addedBy)} 추가</Meta>
+        </View>
+      </View>
+      {opts.draggable && (
+        <Text style={{ fontFamily: typeface, color: color.muted, fontSize: 17, paddingHorizontal: 2 }}>≡</Text>
+      )}
+      {!released && (
+        <Pressable hitSlop={8} onPress={() => removePlace.mutate(p.placeId)}>
+          <Text style={{ fontFamily: typeface, color: color.muted, fontSize: 16 }}>×</Text>
+        </Pressable>
+      )}
+    </View>
+  );
+
   return (
     <View style={{ flex: 1, backgroundColor: color.bg }}>
       <TopBar
@@ -108,13 +178,15 @@ function TrackBody({ t }: { t: TrackDetail }) {
           </Pressable>
         }
       />
-      <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 40 }} scrollEnabled={!reordering}>
         {/* 헤더: 커버 + 제목 + 메타 */}
         <View style={{ alignItems: 'center', paddingHorizontal: 24, paddingTop: 6 }}>
-          <View>
+          {/* 커버 탭 → 사진 선택 → 커버 지정 (계획·발매 양쪽) */}
+          <Pressable onPress={onSetCover} disabled={setCover.isPending}>
             <TrackCover coverPhotoPath={t.coverPhotoPath} photoPaths={photoPaths} size={168} />
             {!released && (
               <View
+                pointerEvents="none"
                 style={{
                   position: 'absolute',
                   top: 0,
@@ -133,7 +205,42 @@ function TrackBody({ t }: { t: TrackDetail }) {
                 <Dday>{formatDday(t.date)}</Dday>
               </View>
             )}
-          </View>
+            {/* 탭 가능 힌트 배지 */}
+            <View
+              pointerEvents="none"
+              style={{
+                position: 'absolute',
+                right: 6,
+                bottom: 6,
+                width: 26,
+                height: 26,
+                borderRadius: 13,
+                backgroundColor: 'rgba(0,0,0,0.55)',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Text style={{ fontFamily: typeface, fontSize: 13, color: color.white }}>✎</Text>
+            </View>
+            {setCover.isPending && (
+              <View
+                pointerEvents="none"
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  borderRadius: 6,
+                  backgroundColor: 'rgba(0,0,0,0.45)',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <ActivityIndicator color={role.me} />
+              </View>
+            )}
+          </Pressable>
           {editingTitle ? (
             <TextInput
               value={titleDraft}
@@ -235,32 +342,26 @@ function TrackBody({ t }: { t: TrackDetail }) {
             <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 17, color: color.white }}>코스</Text>
             <Meta style={{ fontSize: 12.5 }}>{t.places.length}곳</Meta>
           </View>
-          {t.places.map((p) => (
-            <View
-              key={p.placeId}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10 }}
-            >
-              <View style={{ width: 42, alignItems: 'center' }}>
-                <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 13, color: released ? role.me : color.white }}>
-                  {p.visitTime ? p.visitTime.slice(0, 5) : `${p.sortOrder + 1}`}
-                </Text>
-              </View>
-              <View style={{ width: 1, alignSelf: 'stretch', backgroundColor: 'rgba(255,255,255,0.1)' }} />
-              <View style={{ flex: 1, minWidth: 0 }}>
-                <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 15, color: color.white }}>{p.name}</Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 3 }}>
-                  <Meta style={{ fontSize: 12 }}>{p.category ?? '장소'}</Meta>
-                  <OwnerDot who={p.addedBy === uid ? 'me' : 'partner'} size={6} />
-                  <Meta style={{ fontSize: 12 }}>{nameOf(p.addedBy)} 추가</Meta>
-                </View>
-              </View>
-              {!released && (
-                <Pressable hitSlop={8} onPress={() => removePlace.mutate(p.placeId)}>
-                  <Text style={{ fontFamily: typeface, color: color.muted, fontSize: 16 }}>×</Text>
-                </Pressable>
-              )}
+          {released ? (
+            <View style={{ marginTop: 4 }}>
+              {t.places.map((p) => (
+                <View key={p.placeId}>{courseRow(p, { draggable: false })}</View>
+              ))}
             </View>
-          ))}
+          ) : (
+            <View style={{ marginTop: 4 }}>
+              <DraggableCourseList
+                ids={t.places.map((p) => p.placeId)}
+                rowHeight={COURSE_ROW_H}
+                onDragActiveChange={setReordering}
+                onReorder={(orderedIds) => reorder.mutate(orderedIds)}
+                renderItem={(id, dragging) => {
+                  const p = placeById[id];
+                  return p ? courseRow(p, { dragging, draggable: true }) : null;
+                }}
+              />
+            </View>
+          )}
           {!released && (
             <Pressable
               onPress={() =>

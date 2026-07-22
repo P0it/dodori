@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Platform, View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -56,6 +57,7 @@ export default function RootLayout() {
   }, []);
 
   return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
     <PersistQueryClientProvider client={queryClient} persistOptions={{ persister }}>
       <AuthBridge />
       <StatusBar style="light" />
@@ -76,5 +78,6 @@ export default function RootLayout() {
         {!splashDone && <BrandSplash onDone={onSplashDone} />}
       </View>
     </PersistQueryClientProvider>
+    </GestureHandlerRootView>
   );
 }

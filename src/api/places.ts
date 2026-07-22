@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from './supabase';
+import type { TrackDetail } from './tracks';
 
 export interface SearchPlace {
   naver_id: string;
@@ -71,6 +72,43 @@ export function useAddTrackPlace(trackId: string) {
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['track', trackId] }),
+  });
+}
+
+/** 코스 순서 변경 — 드롭 시점의 새 순서(placeId[])를 받아 각 행 sort_order = index로 갱신 */
+export function useReorderTrackPlaces(trackId: string) {
+  const qc = useQueryClient();
+  const key = ['track', trackId];
+  return useMutation({
+    mutationFn: async (orderedPlaceIds: string[]) => {
+      for (let i = 0; i < orderedPlaceIds.length; i++) {
+        const { error } = await supabase
+          .from('track_places')
+          .update({ sort_order: i })
+          .eq('track_id', trackId)
+          .eq('place_id', orderedPlaceIds[i]);
+        if (error) throw error;
+      }
+    },
+    // 낙관적: 캐시의 places를 새 순서로 즉시 재정렬 (연타에도 즉각 반응)
+    onMutate: async (orderedPlaceIds) => {
+      await qc.cancelQueries({ queryKey: key });
+      const prev = qc.getQueryData<TrackDetail>(key);
+      if (prev) {
+        const rank = new Map(orderedPlaceIds.map((id, i) => [id, i]));
+        qc.setQueryData<TrackDetail>(key, {
+          ...prev,
+          places: prev.places
+            .map((p) => ({ ...p, sortOrder: rank.get(p.placeId) ?? p.sortOrder }))
+            .sort((a, b) => a.sortOrder - b.sortOrder),
+        });
+      }
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => {
+      if (ctx?.prev) qc.setQueryData(key, ctx.prev);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: key }),
   });
 }
 
