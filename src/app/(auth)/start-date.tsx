@@ -38,7 +38,7 @@ export default function StartDate() {
     complete.mutate(
       { startedAt, myBirthday: birthday || undefined },
       {
-        onSuccess: () => router.replace('/(tabs)/playlist'),
+        onSuccess: () => router.replace('/(tabs)/home'),
         onError: (e) => setError(e instanceof Error ? e.message : String(e)),
       },
     );
@@ -80,7 +80,7 @@ export default function StartDate() {
             >
               <StarGlyph size={15} />
               <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 13.5, color: color.white }}>
-                이런 싱글이 만들어져요
+                이런 기념일이 만들어져요
               </Text>
             </View>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7 }}>

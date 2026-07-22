@@ -90,7 +90,7 @@ Deno.serve(async (req) => {
           to,
           title: `${a.label} ${t.dday} ⭐`,
           body: t.dday === 'D-1' ? '내일이에요! 계획은 세우셨나요?' : '일주일 남았어요',
-          data: { url: '/(tabs)/playlist/singles' },
+          data: { url: '/(tabs)/calendar' },
         });
       }
     }

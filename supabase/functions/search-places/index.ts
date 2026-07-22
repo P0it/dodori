@@ -1,7 +1,7 @@
 // search-places — 네이버 지역검색 프록시 (PRD §7.4)
 // API 키는 함수 시크릿(NAVER_CLIENT_ID/SECRET)으로만 — 클라이언트 노출 금지.
 // 카텍(mapx/mapy ×1e7 경위도) → WGS84 변환, 정규화 Place 반환. 저장은 클라이언트가 담을 때만.
-import { callerId, json } from '../_shared/client.ts';
+import { callerId, json, preflight } from '../_shared/client.ts';
 
 interface NaverItem {
   title: string;
@@ -16,6 +16,8 @@ interface NaverItem {
 const stripTags = (s: string) => s.replace(/<[^>]+>/g, '');
 
 Deno.serve(async (req) => {
+  const pre = preflight(req);
+  if (pre) return pre;
   if (req.method !== 'POST') return json({ error: 'method not allowed' }, 405);
   if (!(await callerId(req))) return json({ error: '로그인이 필요해요' }, 401);
 

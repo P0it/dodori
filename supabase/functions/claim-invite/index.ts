@@ -1,9 +1,11 @@
 // claim-invite — 초대 코드 수락 (PRD §7.1)
 // 코드 검증 → 멤버 2인 확정 → 코드 무효화를 원자적으로 처리해 race를 방지한다.
 // 원자성은 DB 함수(claim_invite) 안에서 invite_code를 조건부 null 업데이트로 잡는다.
-import { adminClient, callerId, json } from '../_shared/client.ts';
+import { adminClient, callerId, json, preflight } from '../_shared/client.ts';
 
 Deno.serve(async (req) => {
+  const pre = preflight(req);
+  if (pre) return pre;
   if (req.method !== 'POST') return json({ error: 'method not allowed' }, 405);
 
   const uid = await callerId(req);

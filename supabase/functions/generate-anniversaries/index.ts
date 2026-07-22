@@ -1,7 +1,7 @@
 // generate-anniversaries — 연결 완료 시 기념일 자동 생성 (PRD §7.1)
 // 100/200/300일(1회) + 1주년·생일(repeat_yearly). 시작일·생일 변경 시 재호출하면 재계산(멱등).
 // 규칙은 클라이언트 src/lib/anniversaries.ts와 동치 — 테스트로 검증한다.
-import { adminClient, callerId, json, userClient } from '../_shared/client.ts';
+import { adminClient, callerId, json, preflight, userClient } from '../_shared/client.ts';
 
 const DAY_MS = 86_400_000;
 
@@ -20,6 +20,8 @@ const isDate = (s: unknown): s is string =>
   typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s);
 
 Deno.serve(async (req) => {
+  const pre = preflight(req);
+  if (pre) return pre;
   if (req.method !== 'POST') return json({ error: 'method not allowed' }, 405);
 
   const uid = await callerId(req);

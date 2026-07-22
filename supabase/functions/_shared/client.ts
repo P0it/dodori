@@ -17,10 +17,21 @@ export function adminClient() {
   );
 }
 
+/** 브라우저(Expo Web) 호출용 CORS 헤더 — 네이티브는 CORS를 강제하지 않아 무해하다 */
+export const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+/** OPTIONS preflight면 CORS 헤더만 담아 응답, 아니면 null (호출부에서 계속 진행) */
+export function preflight(req: Request): Response | null {
+  return req.method === 'OPTIONS' ? new Response('ok', { headers: corsHeaders }) : null;
+}
+
 export function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   });
 }
 

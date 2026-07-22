@@ -27,7 +27,7 @@ export default function SendInvite() {
   // 상대 수락 감지 — 5초 폴링 (M2에서 Realtime 구독으로 교체 여지)
   useEffect(() => {
     if (couple.data && couple.data.memberCount >= 2) {
-      router.replace(couple.data.startedAt ? '/(tabs)/playlist' : '/(auth)/start-date');
+      router.replace(couple.data.startedAt ? '/(tabs)/home' : '/(auth)/start-date');
       return;
     }
     const t = setInterval(() => couple.refetch(), 5000);
