@@ -69,6 +69,7 @@
           "imageWidth": 76
         }
       ],
+      "expo-audio",
       "@sentry/react-native",
       [
         "expo-build-properties",
