@@ -8,7 +8,7 @@
 export const role = {
   me: '#1ED760', // 나 (brand green)
   partner: '#E8688F', // 상대 (pink)
-  anniv: '#E8B84B', // 기념일 / Single (amber)
+  anniv: '#E8B84B', // 기념일 (amber)
 } as const;
 
 export type OwnerRole = keyof typeof role;
@@ -31,16 +31,35 @@ export const color = {
   kakao: '#FEE500',
   kakaoText: '#191600',
   danger: '#E8567A',
+  /** 데이트(트랙) — 3역할(나=green·상대=pink·기념일=amber)과 겹치지 않는 보라 */
+  date: '#A78BFA',
   /** 공휴일 — role.partner(핑크)와 혼동되지 않도록 채도 높은 적색으로 분리 */
   holiday: '#FF5C5C',
+  /** 요일 표시 — 토요일 파랑 / 일요일 빨강 (일요일은 공휴일과 같은 적색 계열) */
+  saturday: '#8FB4FF',
+  sunday: '#FF5C5C',
 } as const;
 
-/** 역할별 반투명 배경 (D-day pill 등) */
+/** 칩·pill 반투명 배경 (3역할 + 데이트) */
 export const roleBg = {
   me: 'rgba(30,215,96,0.15)',
   partner: 'rgba(232,104,143,0.15)',
   anniv: 'rgba(232,184,75,0.16)',
+  date: 'rgba(167,139,250,0.16)',
 } as const;
+
+/**
+ * 생성 커버(자켓) 팔레트 — 사진 없는 앨범에 트랙 id로 결정적 배정 (§6.4 placeholder 대체).
+ * 각 항목은 대각 그라디언트 [밝은 쪽, 어두운 쪽]. 같은 앨범은 항상 같은 자켓.
+ */
+export const coverPalette: readonly (readonly [string, string])[] = [
+  ['#1DB954', '#0B3B1E'],
+  ['#A78BFA', '#2E2154'],
+  ['#E8688F', '#4A1C2C'],
+  ['#E8B84B', '#4A3611'],
+  ['#4FA8FF', '#12314F'],
+  ['#FF7A45', '#4A2013'],
+] as const;
 
 export const radius = {
   mini: 3,

@@ -3,16 +3,18 @@ import { supabase } from './supabase';
 import { useMyCouple } from './couple';
 import type { Database } from '@/types/database.types';
 
-/** 조회는 반드시 events_visible 뷰 — 상대의 title_hidden 일정은 '바쁨'으로 치환됨 (§5) */
+/** 조회는 events_visible 뷰(커플 공유 읽기 표면) 경유 */
 export type VisibleEvent = Database['public']['Views']['events_visible']['Row'];
 
 export interface EventInput {
   title: string;
+  /** 일정 주인 — 나/상대 중 선택 (couple_members 중 하나여야 RLS 통과) */
+  ownerId: string;
   /** 'YYYY-MM-DD' + 시각은 KST 기준으로 조합해 timestamptz로 저장 */
   startsAt: string; // ISO datetime
   endsAt?: string | null;
   allDay: boolean;
-  titleHidden: boolean;
+  description?: string | null;
 }
 
 /** 월 범위 events 조회 (KST 월 경계, 뷰 경유) */
@@ -43,17 +45,15 @@ export function useCreateEvent() {
   const couple = useMyCouple();
   return useMutation({
     mutationFn: async (input: EventInput) => {
-      const { data: userData } = await supabase.auth.getUser();
-      const uid = userData.user?.id;
-      if (!uid || !couple.data) throw new Error('로그인·연결이 필요해요');
+      if (!couple.data) throw new Error('로그인·연결이 필요해요');
       const { error } = await supabase.from('events').insert({
         couple_id: couple.data.coupleId,
-        owner_id: uid,
+        owner_id: input.ownerId,
         title: input.title,
         starts_at: input.startsAt,
         ends_at: input.endsAt ?? null,
         all_day: input.allDay,
-        title_hidden: input.titleHidden,
+        description: input.description ?? null,
       });
       if (error) throw error;
     },
@@ -69,10 +69,11 @@ export function useUpdateEvent() {
         .from('events')
         .update({
           title: input.title,
+          owner_id: input.ownerId,
           starts_at: input.startsAt,
           ends_at: input.endsAt ?? null,
           all_day: input.allDay,
-          title_hidden: input.titleHidden,
+          description: input.description ?? null,
         })
         .eq('id', id);
       if (error) throw error;

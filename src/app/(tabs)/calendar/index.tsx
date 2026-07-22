@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
 import { color, typeface } from '@/theme/tokens';
 import { monthCells, addMonths, monthLabel } from '@/lib/calendar';
@@ -7,7 +8,7 @@ import { monthKey as toMonthKey, todayKST, isReleased, toKSTDate } from '@/lib/d
 import { occurrenceInMonth } from '@/lib/anniversaries';
 import { holidayMapForMonth } from '@/lib/holidays';
 import { useMonthEvents } from '@/api/events';
-import { useMonthTracks, useAllTracks } from '@/api/tracks';
+import { useMonthTracks } from '@/api/tracks';
 import { useAnniversaries } from '@/api/anniversaries';
 import { useCoupleProfiles } from '@/api/couple';
 import { useHolidayExtras } from '@/api/holidays';
@@ -21,6 +22,7 @@ type Filter = 'us' | 'me' | 'partner';
 
 /** 캘린더 탭 — 월간 뷰 (목업 17·20) */
 export default function Calendar() {
+  const router = useRouter();
   const [month, setMonth] = useState(() => toMonthKey(todayKST()));
   const [filter, setFilter] = useState<Filter>('us');
   const [selected, setSelected] = useState(() => todayKST());
@@ -29,7 +31,6 @@ export default function Calendar() {
   const uid = session.data?.user.id;
   const events = useMonthEvents(month);
   const tracks = useMonthTracks(month);
-  const allTracks = useAllTracks(); // 어젠다의 "다음 일정" 한 줄 — 달을 넘어간 트랙도 봐야 한다
   const annivs = useAnniversaries();
   const profiles = useCoupleProfiles(); // Realtime은 루트 useCoupleRealtime이 담당 (§7.5)
 
@@ -53,7 +54,7 @@ export default function Calendar() {
         if (t.coverThumbUrl) m.releasedThumb = t.coverThumbUrl;
         else m.releasedNoPhoto = true;
       } else {
-        m.upcoming = true;
+        m.upcomingTitle = t.title;
       }
     }
     for (const a of annivs.data ?? []) {
@@ -66,11 +67,7 @@ export default function Calendar() {
       const who: 'me' | 'partner' = e.owner_id === uid ? 'me' : 'partner';
       if (filter !== 'us' && filter !== who) continue;
       const m = at(day);
-      if (e.title_hidden && who === 'partner') {
-        m.busy = true;
-      } else {
-        m.owners = [...new Set([...(m.owners ?? []), who])];
-      }
+      m.events = [...(m.events ?? []), { title: e.title ?? '일정', who }];
     }
     return map;
   }, [holidays, tracks.data, annivs.data, events.data, month, filter, uid]);
@@ -135,7 +132,7 @@ export default function Calendar() {
         <MonthGrid cells={cells} marks={marks} selected={selected} onSelectDay={setSelected} />
       </View>
 
-      <View style={{ height: '34%', borderTopWidth: 1, borderTopColor: color.surface2 }}>
+      <View style={{ height: '30%', borderTopWidth: 1, borderTopColor: color.surface2 }}>
         <DayAgenda
           date={selected}
           events={(events.data ?? []).filter(
@@ -146,10 +143,34 @@ export default function Calendar() {
             (a) => occurrenceInMonth(a.date, a.repeatYearly, month) === selected,
           )}
           uid={uid}
-          allTracks={allTracks.data ?? []}
-          allAnnivs={annivs.data ?? []}
         />
       </View>
+
+      {/* 선택일에 일정 추가 — 어젠다 한 줄을 먹지 않게 떠 있는 (+) */}
+      <Pressable
+        onPress={() => router.push({ pathname: '/modals/add-event', params: { date: selected } })}
+        style={({ pressed }) => ({
+          position: 'absolute',
+          right: 16,
+          bottom: 16,
+          width: 56,
+          height: 56,
+          borderRadius: 28,
+          backgroundColor: color.me,
+          alignItems: 'center',
+          justifyContent: 'center',
+          shadowColor: '#000',
+          shadowOpacity: 0.35,
+          shadowRadius: 8,
+          shadowOffset: { width: 0, height: 4 },
+          elevation: 6,
+          opacity: pressed ? 0.85 : 1,
+        })}
+      >
+        <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+          <Path d="M12 5v14M5 12h14" stroke={color.onPrimary} strokeWidth={2.5} strokeLinecap="round" />
+        </Svg>
+      </Pressable>
     </View>
   );
 }

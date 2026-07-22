@@ -9,7 +9,8 @@ import {
   View,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { color, role, typeface } from '@/theme/tokens';
+import Svg, { Path } from 'react-native-svg';
+import { color, role, roleBg, typeface } from '@/theme/tokens';
 import { isISODate, todayKST, toKSTDate } from '@/lib/date';
 import {
   useCreateEvent,
@@ -21,7 +22,7 @@ import { OwnerDot } from '@/components/OwnerDot';
 import { Meta } from '@/components/Meta';
 import { useCoupleProfiles } from '@/api/couple';
 
-/** 내 일정 추가/수정 (목업 21) — 제목·날짜·시간·종일·제목 숨김 */
+/** 일정 추가/수정 (목업 21) — 주인(나/상대)·제목·날짜·시간·종일·설명 */
 export default function AddEvent() {
   const router = useRouter();
   const params = useLocalSearchParams<{ date?: string; id?: string }>();
@@ -32,7 +33,8 @@ export default function AddEvent() {
   const [startTime, setStartTime] = useState('19:00');
   const [endTime, setEndTime] = useState('');
   const [allDay, setAllDay] = useState(false);
-  const [titleHidden, setTitleHidden] = useState(false);
+  const [description, setDescription] = useState('');
+  const [ownerId, setOwnerId] = useState('');
 
   // 수정 모드: 기존 값 로드 (해당 월 캐시에서)
   const monthEvents = useMonthEvents(date.slice(0, 7));
@@ -43,9 +45,10 @@ export default function AddEvent() {
     setTitle(e.title ?? '');
     setDate(toKSTDate(new Date(e.starts_at)));
     setAllDay(!!e.all_day);
-    setTitleHidden(!!e.title_hidden);
+    setDescription(e.description ?? '');
     setStartTime(kstTime(e.starts_at));
     setEndTime(e.ends_at ? kstTime(e.ends_at) : '');
+    setOwnerId(e.owner_id ?? '');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editingId, monthEvents.data]);
 
@@ -55,16 +58,24 @@ export default function AddEvent() {
   const profiles = useCoupleProfiles();
   const busy = create.isPending || update.isPending || remove.isPending;
 
-  const valid = title.trim().length > 0 && isISODate(date) && (allDay || isTime(startTime));
+  // 새 일정 기본 주인은 나
+  useEffect(() => {
+    if (editingId || ownerId) return;
+    const meId = profiles.data?.me?.id;
+    if (meId) setOwnerId(meId);
+  }, [editingId, ownerId, profiles.data]);
+
+  const valid = title.trim().length > 0 && isISODate(date) && !!ownerId && (allDay || isTime(startTime));
 
   const save = () => {
     if (!valid || busy) return;
     const input = {
       title: title.trim(),
+      ownerId,
       startsAt: allDay ? `${date}T00:00:00+09:00` : `${date}T${startTime}:00+09:00`,
       endsAt: !allDay && isTime(endTime) ? `${date}T${endTime}:00+09:00` : null,
       allDay,
-      titleHidden,
+      description: description.trim() || null,
     };
     const done = { onSuccess: () => router.back(), onError: showError };
     if (editingId) update.mutate({ id: editingId, ...input }, done);
@@ -96,10 +107,18 @@ export default function AddEvent() {
         }}
       >
         <Pressable onPress={() => router.back()} hitSlop={8}>
-          <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 15, color: color.sub }}>취소</Text>
+          <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+            <Path
+              d="M15 5l-7 7 7 7"
+              stroke={color.white}
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </Svg>
         </Pressable>
         <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 16, color: color.white }}>
-          {editingId ? '일정 수정' : '내 일정'}
+          {editingId ? '일정 수정' : '일정 추가'}
         </Text>
         <Pressable onPress={save} hitSlop={8} disabled={!valid || busy}>
           {busy ? (
@@ -119,11 +138,43 @@ export default function AddEvent() {
       </View>
 
       <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 32 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 18 }}>
-          <OwnerDot who="me" size={12} />
-          <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 13, color: role.me }}>
-            {profiles.data?.me?.nickname || '나'}의 일정
-          </Text>
+        {/* 누구 일정인가 — 나/상대 중 선택 (owner_id) */}
+        <View style={{ flexDirection: 'row', gap: 8, marginBottom: 18 }}>
+          {(['me', 'partner'] as const).map((who) => {
+            const p = who === 'me' ? profiles.data?.me : profiles.data?.partner;
+            const on = !!p && ownerId === p.id;
+            return (
+              <Pressable
+                key={who}
+                disabled={!p}
+                onPress={() => p && setOwnerId(p.id)}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 7,
+                  paddingHorizontal: 14,
+                  height: 36,
+                  borderRadius: 999,
+                  borderWidth: 1,
+                  borderColor: on ? role[who] : color.surface3,
+                  backgroundColor: on ? roleBg[who] : 'transparent',
+                  opacity: p ? 1 : 0.4,
+                }}
+              >
+                <OwnerDot who={who} size={9} />
+                <Text
+                  style={{
+                    fontFamily: typeface,
+                    fontWeight: '700',
+                    fontSize: 13,
+                    color: on ? role[who] : color.sub,
+                  }}
+                >
+                  {p?.nickname || (who === 'me' ? '나' : '상대')}
+                </Text>
+              </Pressable>
+            );
+          })}
         </View>
 
         <TextInput
@@ -161,22 +212,27 @@ export default function AddEvent() {
           </FieldRow>
         </View>
 
-        {/* 제목 숨김 (§5 title_hidden) */}
-        <View
-          style={{ marginTop: 8, padding: 16, borderRadius: 12, backgroundColor: color.surface1 }}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 15, color: color.white }}>
-                제목 숨김
-              </Text>
-              <Meta style={{ marginTop: 5, fontSize: 12, lineHeight: 18 }}>
-                상대에게 제목 없이 "바쁨"으로만 보여요
-              </Meta>
-            </View>
-            <Toggle on={titleHidden} onToggle={() => setTitleHidden((v) => !v)} />
-          </View>
-        </View>
+        {/* 설명 (메모) — 상대에게 그대로 공유됨 */}
+        <TextInput
+          value={description}
+          onChangeText={setDescription}
+          placeholder="설명 (선택)"
+          placeholderTextColor={color.muted}
+          multiline
+          style={{
+            marginTop: 10,
+            minHeight: 92,
+            padding: 16,
+            borderRadius: 12,
+            backgroundColor: color.surface1,
+            fontFamily: typeface,
+            fontWeight: '500',
+            fontSize: 15,
+            lineHeight: 22,
+            color: color.white,
+            textAlignVertical: 'top',
+          }}
+        />
 
         <Meta style={{ fontSize: 11.5, textAlign: 'center', marginTop: 18 }}>
           상대 캘린더에 바로 반영돼요

@@ -15,7 +15,7 @@ export interface AnnivItem {
   nextDate: ISODate;
 }
 
-/** 커플 기념일 전체 — 캘린더 마커·Singles·Queue 공용 */
+/** 커플 기념일 전체 — 캘린더 마커·Queue 공용 */
 export function useAnniversaries() {
   const couple = useMyCouple();
   return useQuery({

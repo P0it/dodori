@@ -10,13 +10,11 @@ type Props = {
   small?: string;
   /** 사진이 있으면 사진 커버로 렌더 */
   photo?: string;
-  /** Singles 디스크 표기 */
-  disc?: boolean;
   style?: StyleProp<ViewStyle>;
 };
 
-/** 기념일 "싱글" 커버 — 플랫 사각 + amber 텍스트, 사진 있으면 사진 (목업 AnnivCover) */
-export function AnnivCover({ size = 56, big, small, photo, disc, style }: Props) {
+/** 기념일 커버 — 플랫 사각 + amber 텍스트, 사진 있으면 사진 (목업 AnnivCover) */
+export function AnnivCover({ size = 56, big, small, photo, style }: Props) {
   const rad = size > 90 ? 8 : 6;
   if (photo) {
     return (
@@ -43,15 +41,15 @@ export function AnnivCover({ size = 56, big, small, photo, disc, style }: Props)
       <Text
         style={{
           fontFamily: typeface, fontWeight: '700',
-          fontSize: size * (disc ? 0.24 : 0.36),
+          fontSize: size * 0.36,
           color: color.anniv,
           letterSpacing: -0.3,
-          lineHeight: size * (disc ? 0.28 : 0.4),
+          lineHeight: size * 0.4,
         }}
       >
-        {disc ? 'Singles' : big}
+        {big}
       </Text>
-      {!disc && small ? (
+      {small ? (
         <Text
           style={{
             fontFamily: typeface, fontWeight: '600',

@@ -1,8 +1,7 @@
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { color, role, typeface } from '@/theme/tokens';
+import { color, role, roleBg, typeface } from '@/theme/tokens';
 import { formatDday, todayKST } from '@/lib/date';
-import { pickNextUp } from '@/lib/nextup';
 import type { VisibleEvent } from '@/api/events';
 import type { MonthTrack } from '@/api/tracks';
 import type { AnnivItem } from '@/api/anniversaries';
@@ -19,39 +18,55 @@ type Props = {
   tracks: MonthTrack[];
   annivs: AnnivItem[];
   uid?: string;
-  /** "다음 일정" 한 줄용 — 선택일이 비어 있을 때만 쓴다 */
-  allTracks: { id: string; title: string; date: string }[];
-  allAnnivs: AnnivItem[];
 };
 
 const WEEKDAY = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
 
 /** 선택일 어젠다 — 캘린더 그리드 아래에 상주한다 (목업 18·19 본문) */
-export function DayAgenda({ date, events, tracks, annivs, uid, allTracks, allAnnivs }: Props) {
+export function DayAgenda({ date, events, tracks, annivs, uid }: Props) {
   const router = useRouter();
 
   const [y, m, d] = date.split('-').map(Number);
   const weekday = WEEKDAY[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
   const anniv = annivs[0];
   const isToday = date === todayKST();
-  const isBlank = !anniv && tracks.length === 0 && events.length === 0;
-  const next = isBlank
-    ? pickNextUp(
-        allTracks,
-        allAnnivs.map((a) => ({ id: a.id, label: a.label, nextDate: a.nextDate })),
-      )
-    : null;
 
   return (
-    <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 14, paddingBottom: 16 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8, marginBottom: 8 }}>
-        <Text style={{ fontFamily: typeface, fontWeight: '800', fontSize: 22, color: color.white }}>
-          {m}월 {d}일
-        </Text>
-        <Text style={{ fontFamily: typeface, fontWeight: '500', fontSize: 13, color: color.sub }}>{weekday}</Text>
-        {isToday && (
-          <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 12, color: role.me }}>오늘</Text>
-        )}
+    <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 14, paddingBottom: 80 }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: 8,
+        }}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8 }}>
+          <Text style={{ fontFamily: typeface, fontWeight: '800', fontSize: 22, color: color.white }}>
+            {m}월 {d}일
+          </Text>
+          <Text style={{ fontFamily: typeface, fontWeight: '500', fontSize: 13, color: color.sub }}>{weekday}</Text>
+          {isToday && (
+            <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 12, color: role.me }}>오늘</Text>
+          )}
+        </View>
+        {/* 데이트 만들기 — 보조 동작이라 헤더 여백에 붙인다 (세로 한 줄을 먹지 않게) */}
+        <Pressable
+          onPress={() => router.push({ pathname: '/modals/create-track', params: { date } })}
+          style={({ pressed }) => ({
+            paddingHorizontal: 12,
+            height: 30,
+            borderRadius: 999,
+            backgroundColor: roleBg.date,
+            alignItems: 'center',
+            justifyContent: 'center',
+            opacity: pressed ? 0.7 : 1,
+          })}
+        >
+          <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 12.5, color: color.date }}>
+            ＋ 데이트
+          </Text>
+        </Pressable>
       </View>
 
       {/* 기념일 (목업 19) */}
@@ -60,7 +75,7 @@ export function DayAgenda({ date, events, tracks, annivs, uid, allTracks, allAnn
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 8 }}>
             <AnnivCover size={60} big={anniv.label.replace(/[^0-9]/g, '') || anniv.label[0]} small={/일$/.test(anniv.label) ? '일' : undefined} />
             <View style={{ flex: 1 }}>
-              <Eyebrow color={role.anniv}>Single · 기념일</Eyebrow>
+              <Eyebrow color={role.anniv}>기념일</Eyebrow>
               <Text
                 style={{ fontFamily: typeface, fontWeight: '800', fontSize: 22, color: color.white, marginTop: 2 }}
               >
@@ -85,7 +100,7 @@ export function DayAgenda({ date, events, tracks, annivs, uid, allTracks, allAnn
                 아직 계획이 없어요
               </Text>
               <Meta style={{ marginTop: 4, lineHeight: 19 }}>
-                이 날을 특별하게 만들어 볼까요? 데이트를 만들면 {anniv.label}이 하나의 싱글로 남아요.
+                이 날을 특별하게 만들어 볼까요? 데이트를 만들면 {anniv.label}을 데이트로 남길 수 있어요.
               </Meta>
             </View>
           )}
@@ -109,7 +124,7 @@ export function DayAgenda({ date, events, tracks, annivs, uid, allTracks, allAnn
                 </Text>
                 <Meta style={{ marginTop: 2 }}>{t.date.replaceAll('-', '.')}</Meta>
               </View>
-              <Dday>{formatDday(t.date)}</Dday>
+              <Dday tone="date">{formatDday(t.date)}</Dday>
             </Pressable>
           ))}
           <Divider style={{ marginVertical: 2 }} />
@@ -134,11 +149,7 @@ export function DayAgenda({ date, events, tracks, annivs, uid, allTracks, allAnn
           return (
             <Pressable
               key={e.id}
-              onPress={
-                mine
-                  ? () => router.push({ pathname: '/modals/add-event', params: { id: e.id! } })
-                  : undefined
-              }
+              onPress={() => router.push({ pathname: '/modals/add-event', params: { id: e.id! } })}
               style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 11 }}
             >
               <View style={{ width: 44, alignItems: 'center', gap: 6 }}>
@@ -149,73 +160,21 @@ export function DayAgenda({ date, events, tracks, annivs, uid, allTracks, allAnn
                 <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 15, color: color.white }}>
                   {e.title}
                 </Text>
-                {mine && e.title_hidden ? (
-                  <Meta style={{ marginTop: 2, fontSize: 12 }}>상대에겐 "바쁨"으로 보여요</Meta>
+                {e.description ? (
+                  <Text
+                    numberOfLines={1}
+                    style={{ fontFamily: typeface, fontSize: 12, color: color.sub, marginTop: 2 }}
+                  >
+                    {e.description}
+                  </Text>
                 ) : null}
               </View>
-              {mine && <Text style={{ fontFamily: typeface, fontSize: 12, color: color.muted }}>수정</Text>}
+              <Text style={{ fontFamily: typeface, fontSize: 12, color: color.muted }}>수정</Text>
             </Pressable>
           );
         })
       )}
 
-      {/* 비어 있는 날이면 "다음 일정" 한 줄 — 앱 전체에서 여기 한 번만 */}
-      {next && (
-        <Pressable
-          onPress={() =>
-            next.kind === 'track'
-              ? router.push(`/track/${next.id}`)
-              : router.push('/(tabs)/playlist/singles')
-          }
-          style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 14 }}
-        >
-          <Eyebrow color={next.kind === 'anniv' ? role.anniv : role.me}>다음 일정</Eyebrow>
-          <Text
-            numberOfLines={1}
-            style={{ flex: 1, fontFamily: typeface, fontWeight: '600', fontSize: 13.5, color: color.white }}
-          >
-            {next.kind === 'track' ? next.title : next.label}
-          </Text>
-          <Meta style={{ fontSize: 12 }}>
-            {next.date.slice(5).replace('-', '.')} · {formatDday(next.date)}
-          </Meta>
-        </Pressable>
-      )}
-
-      {/* CTA */}
-      <View style={{ flexDirection: 'row', gap: 10, marginTop: 16 }}>
-        <Pressable
-          onPress={() => router.push({ pathname: '/modals/create-track', params: { date } })}
-          style={({ pressed }) => ({
-            flex: 1,
-            height: 46,
-            borderRadius: 999,
-            backgroundColor: anniv ? role.anniv : role.me,
-            alignItems: 'center',
-            justifyContent: 'center',
-            opacity: pressed ? 0.85 : 1,
-          })}
-        >
-          <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 14, color: color.onPrimary }}>
-            {anniv ? `${anniv.label} 데이트 계획하기` : '이 날 데이트 만들기'}
-          </Text>
-        </Pressable>
-        <Pressable
-          onPress={() => router.push({ pathname: '/modals/add-event', params: { date } })}
-          style={({ pressed }) => ({
-            paddingHorizontal: 18,
-            height: 46,
-            borderRadius: 999,
-            borderWidth: 1,
-            borderColor: 'rgba(255,255,255,0.3)',
-            alignItems: 'center',
-            justifyContent: 'center',
-            opacity: pressed ? 0.7 : 1,
-          })}
-        >
-          <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 14, color: color.white }}>일정 추가</Text>
-        </Pressable>
-      </View>
     </ScrollView>
   );
 }
