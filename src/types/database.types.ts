@@ -516,6 +516,45 @@ export type Database = {
         }
         Relationships: []
       }
+      song_pool: {
+        Row: {
+          apple_url: string
+          artist: string
+          artwork_url: string
+          created_at: string
+          id: string
+          itunes_id: number
+          mood: string | null
+          preview_url: string
+          seq: number
+          title: string
+        }
+        Insert: {
+          apple_url: string
+          artist: string
+          artwork_url: string
+          created_at?: string
+          id?: string
+          itunes_id: number
+          mood?: string | null
+          preview_url: string
+          seq: number
+          title: string
+        }
+        Update: {
+          apple_url?: string
+          artist?: string
+          artwork_url?: string
+          created_at?: string
+          id?: string
+          itunes_id?: number
+          mood?: string | null
+          preview_url?: string
+          seq?: number
+          title?: string
+        }
+        Relationships: []
+      }
       topic_comments: {
         Row: {
           author_id: string
@@ -780,6 +819,7 @@ export type Database = {
       invoke_daily_release: { Args: never; Returns: undefined }
       invoke_sync_holidays: { Args: never; Returns: undefined }
       my_couple_id: { Args: never; Returns: string }
+      partner_voted: { Args: { p_topic_id: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
