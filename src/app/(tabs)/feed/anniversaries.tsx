@@ -281,7 +281,7 @@ function AddCustomAnniv({ onClose }: { onClose: () => void }) {
           </View>
         </Pressable>
         <Meta style={{ fontSize: 12, lineHeight: 18, marginTop: 14, color: '#e5c98a' }}>
-          저장하면 Singles에 추가되고, 당일 기록하면 하나의 싱글로 발매돼요.
+          저장하면 기념일 목록에 추가되고 캘린더에 표시돼요.
         </Meta>
       </View>
     </Modal>

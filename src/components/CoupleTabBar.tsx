@@ -2,13 +2,13 @@ import { Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { color } from '@/theme/tokens';
-import { CalGlyph, DiscGlyph, LibGlyph, TalkGlyph } from '@/components/glyphs';
+import { CalGlyph, FeedGlyph, HomeGlyph, LibGlyph } from '@/components/glyphs';
 
 const TABS = [
-  { name: 'today', label: '오늘', Glyph: TalkGlyph },
+  { name: 'home', label: '홈', Glyph: HomeGlyph },
   { name: 'calendar', label: '캘린더', Glyph: CalGlyph },
   { name: 'playlist', label: '플레이리스트', Glyph: LibGlyph },
-  { name: 'studio', label: '우리', Glyph: DiscGlyph },
+  { name: 'feed', label: '피드', Glyph: FeedGlyph },
 ] as const;
 
 /** expo-router가 넘기는 tabBar props의 구조적 최소 타입 (라이브러리 간 타입 충돌 회피) */

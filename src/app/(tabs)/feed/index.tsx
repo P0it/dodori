@@ -39,7 +39,7 @@ export default function Studio() {
           thumbUrl={p.gridThumbUrl}
           caption={p.caption}
           multiple={p.photos.length > 1}
-          onPress={() => router.push(`/studio/post/${p.id}`)}
+          onPress={() => router.push(`/feed/post/${p.id}`)}
         />
       )}
     />
@@ -108,7 +108,7 @@ function AccountHeader() {
         <Pressable hitSlop={10} onPress={() => router.push('/modals/create-post')}>
           <PlusGlyph size={24} />
         </Pressable>
-        <Pressable hitSlop={10} onPress={() => router.push('/studio/settings')}>
+        <Pressable hitSlop={10} onPress={() => router.push('/feed/settings')}>
           <MenuGlyph size={21} />
         </Pressable>
       </View>

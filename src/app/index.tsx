@@ -22,5 +22,5 @@ export default function Index() {
   if (!c) return <Redirect href="/(auth)/connect" />;
   if (c.memberCount < 2) return <Redirect href="/(auth)/send-invite" />;
   if (!c.startedAt) return <Redirect href="/(auth)/start-date" />;
-  return <Redirect href="/(tabs)/playlist" />;
+  return <Redirect href="/(tabs)/home" />;
 }

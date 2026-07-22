@@ -4,13 +4,15 @@ import { color, role, typeface } from '@/theme/tokens';
 import { todayKST } from '@/lib/date';
 import { useCoupleProfiles } from '@/api/couple';
 import { useTodayTopic, useTopicVotes, useTopicComments, usePastTopics } from '@/api/topics';
+import { useTodaySong } from '@/api/songs';
 import { Meta } from '@/components/Meta';
 import { Eyebrow } from '@/components/Eyebrow';
 import { OwnerDot } from '@/components/OwnerDot';
+import { SongCard } from '@/components/SongCard';
 
 const WEEKDAY = ['일', '월', '화', '수', '목', '금', '토'];
 
-/** 오늘 탭 — 오늘의 주제 카드 하나. 투표·토론은 상세(topic/[id])에서 */
+/** 오늘 탭 — 오늘의 추천곡(히어로) + 오늘의 주제. 투표·토론은 상세(topic/[id])에서 */
 export default function Today() {
   const router = useRouter();
   const profiles = useCoupleProfiles();
@@ -18,6 +20,7 @@ export default function Today() {
   const votes = useTopicVotes(topic.data?.id);
   const comments = useTopicComments(topic.data?.id);
   const past = usePastTopics();
+  const song = useTodaySong();
 
   const partnerName = profiles.data?.partner?.nickname || '상대';
 
@@ -47,7 +50,7 @@ export default function Today() {
           style={{
             fontFamily: typeface,
             fontWeight: '800',
-            fontSize: 28,
+            fontSize: 22,
             letterSpacing: -0.5,
             color: color.white,
           }}
@@ -59,7 +62,10 @@ export default function Today() {
         </Meta>
       </View>
 
-      {/* 오늘의 주제 카드 — 화면의 주인공 */}
+      {/* 오늘의 추천곡 — 화면의 주인공. 곡 풀이 비었거나 못 불러오면 조용히 생략 */}
+      {song && <SongCard song={song} />}
+
+      {/* 오늘의 주제 카드 */}
       <Pressable
         onPress={() => router.push(`/topic/${topic.data!.id}`)}
         style={({ pressed }) => ({
@@ -79,8 +85,8 @@ export default function Today() {
           style={{
             fontFamily: typeface,
             fontWeight: '800',
-            fontSize: 25,
-            lineHeight: 35,
+            fontSize: 21,
+            lineHeight: 30,
             letterSpacing: -0.4,
             color: color.white,
             marginTop: 10,

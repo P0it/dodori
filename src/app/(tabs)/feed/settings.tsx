@@ -42,14 +42,14 @@ export default function StudioSettings() {
           icon={<StarGlyph size={17} />}
           label="기념일 관리"
           sub={`자동 ${(annivs.data?.length ?? 0) - customCount} · 커스텀 ${customCount}`}
-          onPress={() => router.push('/studio/anniversaries')}
+          onPress={() => router.push('/feed/anniversaries')}
         />
         <Divider />
         <LinkRow
           icon={<Text style={{ fontFamily: typeface, color: color.me, fontSize: 16 }}>♥</Text>}
           label="Favorites"
           sub={`아껴둔 앨범 ${favorites.length}`}
-          onPress={() => router.push('/studio/favorites')}
+          onPress={() => router.push('/feed/favorites')}
         />
         <Divider />
         <LinkRow

@@ -19,55 +19,59 @@ export function CalGlyph({ size = 24, filled, color: fg = color.white }: GlyphPr
       />
       <Path d="M3 9.5h18" stroke={filled ? color.bg : fg} strokeWidth={1.7} />
       <Path d="M8 3v4M16 3v4" stroke={fg} strokeWidth={1.7} strokeLinecap="round" />
-      {filled && (
-        <G fill={color.bg}>
-          <Circle cx={8} cy={14} r={1.4} />
-          <Circle cx={12} cy={14} r={1.4} />
-          <Circle cx={16} cy={14} r={1.4} />
-          <Circle cx={8} cy={18} r={1.4} />
-          <Circle cx={12} cy={18} r={1.4} />
-        </G>
-      )}
+      <G fill={filled ? color.bg : fg}>
+        <Circle cx={8} cy={14} r={1.4} />
+        <Circle cx={12} cy={14} r={1.4} />
+        <Circle cx={16} cy={14} r={1.4} />
+        <Circle cx={8} cy={18} r={1.4} />
+        <Circle cx={12} cy={18} r={1.4} />
+      </G>
     </Svg>
   );
 }
 
-/** 오늘 탭 글리프 — 서로 주고받는 말풍선 두 개 */
-export function TalkGlyph({ size = 24, filled, color: fg = color.white }: GlyphProps) {
+/** 홈 탭 글리프 — 지붕 + 몸통 */
+export function HomeGlyph({ size = 24, filled, color: fg = color.white }: GlyphProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Path
-        d="M3 6.5A2.5 2.5 0 015.5 4h8A2.5 2.5 0 0116 6.5v4A2.5 2.5 0 0113.5 13H8l-5 3.5v-10z"
+        d="M3.5 10.2 12 3.5l8.5 6.7V19a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 19v-8.8z"
         stroke={fg}
         strokeWidth={1.7}
         strokeLinejoin="round"
         fill={filled ? fg : 'none'}
       />
       <Path
-        d="M18.5 9H19a2 2 0 012 2v4.5a2 2 0 01-2 2h-.5L15 20v-3"
-        stroke={fg}
-        strokeWidth={1.7}
-        strokeLinejoin="round"
-        fill={filled ? fg : 'none'}
-      />
-    </Svg>
-  );
-}
-
-/** 스튜디오 탭 글리프 (목업 DiscGlyph) */
-export function DiscGlyph({ size = 24, filled, color: fg = color.white }: GlyphProps) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <Circle cx={12} cy={12} r={9} stroke={fg} strokeWidth={1.7} fill={filled ? fg : 'none'} />
-      <Circle
-        cx={12}
-        cy={12}
-        r={3.2}
+        d="M9.5 20.5v-6h5v6"
         stroke={filled ? color.bg : fg}
         strokeWidth={1.7}
+        strokeLinejoin="round"
         fill="none"
       />
-      <Circle cx={12} cy={12} r={0.9} fill={filled ? color.bg : fg} />
+    </Svg>
+  );
+}
+
+/** 피드 탭 글리프 — 겹친 카드 두 장 */
+export function FeedGlyph({ size = 24, filled, color: fg = color.white }: GlyphProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M17 20.5H6A2.5 2.5 0 0 1 3.5 18V7"
+        stroke={fg}
+        strokeWidth={1.7}
+        strokeLinecap="round"
+      />
+      <Rect
+        x={7.5}
+        y={3.5}
+        width={13}
+        height={13}
+        rx={2.5}
+        stroke={fg}
+        strokeWidth={1.7}
+        fill={filled ? fg : 'none'}
+      />
     </Svg>
   );
 }
@@ -142,6 +146,25 @@ export function StackGlyph({ size = 15, color: fg = color.white }: GlyphProps) {
         strokeWidth={1.9}
         strokeLinecap="round"
       />
+    </Svg>
+  );
+}
+
+/** 재생 (▶) — 오늘의 추천곡 30초 미리듣기 */
+export function PlayGlyph({ size = 22, color: fg = color.onPrimary }: GlyphProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill={fg}>
+      <Path d="M8 4.8v14.4l11.2-7.2z" />
+    </Svg>
+  );
+}
+
+/** 정지 (❚❚) */
+export function PauseGlyph({ size = 22, color: fg = color.onPrimary }: GlyphProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill={fg}>
+      <Rect x={7} y={5} width={3.6} height={14} rx={1.2} />
+      <Rect x={13.4} y={5} width={3.6} height={14} rx={1.2} />
     </Svg>
   );
 }
