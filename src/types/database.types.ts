@@ -139,34 +139,34 @@ export type Database = {
           all_day: boolean
           couple_id: string
           created_at: string
+          description: string | null
           ends_at: string | null
           id: string
           owner_id: string
           starts_at: string
           title: string
-          title_hidden: boolean
         }
         Insert: {
           all_day?: boolean
           couple_id: string
           created_at?: string
+          description?: string | null
           ends_at?: string | null
           id?: string
           owner_id: string
           starts_at: string
           title: string
-          title_hidden?: boolean
         }
         Update: {
           all_day?: boolean
           couple_id?: string
           created_at?: string
+          description?: string | null
           ends_at?: string | null
           id?: string
           owner_id?: string
           starts_at?: string
           title?: string
-          title_hidden?: boolean
         }
         Relationships: [
           {
@@ -734,34 +734,34 @@ export type Database = {
           all_day: boolean | null
           couple_id: string | null
           created_at: string | null
+          description: string | null
           ends_at: string | null
           id: string | null
           owner_id: string | null
           starts_at: string | null
           title: string | null
-          title_hidden: boolean | null
         }
         Insert: {
           all_day?: boolean | null
           couple_id?: string | null
           created_at?: string | null
+          description?: string | null
           ends_at?: string | null
           id?: string | null
           owner_id?: string | null
           starts_at?: string | null
-          title?: never
-          title_hidden?: boolean | null
+          title?: string | null
         }
         Update: {
           all_day?: boolean | null
           couple_id?: string | null
           created_at?: string | null
+          description?: string | null
           ends_at?: string | null
           id?: string | null
           owner_id?: string | null
           starts_at?: string | null
-          title?: never
-          title_hidden?: boolean | null
+          title?: string | null
         }
         Relationships: [
           {
