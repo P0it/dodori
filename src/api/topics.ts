@@ -108,7 +108,7 @@ export function useTopicVotes(topicId: string | undefined) {
   });
 }
 
-/** 투표 — 한 번 고르면 못 바꾼다 (update 정책 자체가 없음) */
+/** 투표 — 상대가 고르기 전까진 바꿀 수 있다. 상대가 고르는 순간 RLS가 update를 막는다 */
 export function useVote(topicId: string | undefined) {
   const qc = useQueryClient();
   const couple = useMyCouple();
@@ -117,7 +117,7 @@ export function useVote(topicId: string | undefined) {
       const { data: userData } = await supabase.auth.getUser();
       const uid = userData.user?.id;
       if (!uid || !couple.data || !topicId) throw new Error('로그인·연결이 필요해요');
-      const { error } = await supabase.from('topic_votes').insert({
+      const { error } = await supabase.from('topic_votes').upsert({
         couple_id: couple.data.coupleId,
         topic_id: topicId,
         user_id: uid,

@@ -49,6 +49,8 @@ export default function TopicDetail() {
   const mine = votes.data?.mine ?? null;
   const partner = votes.data?.partner ?? null;
   const locked = mine === null;
+  /** 상대가 고르기 전이면 다시 고를 수 있다 — 볼 상대 답이 없으니 뒤집기가 성립하지 않는다 */
+  const editable = mine === null || partner === null;
 
   const pickedBy = (c: Choice): ('me' | 'partner')[] => {
     const who: ('me' | 'partner')[] = [];
@@ -110,14 +112,14 @@ export default function TopicDetail() {
             label={topic.data.optionA}
             pickedBy={pickedBy('a')}
             selected={mine === 'a'}
-            disabled={!locked || vote.isPending}
+            disabled={!editable || vote.isPending}
             onPress={() => vote.mutate('a')}
           />
           <ChoiceRow
             label={topic.data.optionB}
             pickedBy={pickedBy('b')}
             selected={mine === 'b'}
-            disabled={!locked || vote.isPending}
+            disabled={!editable || vote.isPending}
             onPress={() => vote.mutate('b')}
           />
         </View>
@@ -268,7 +270,7 @@ function Verdict({
   const waiting = partner === null;
   const same = partner === mine;
   const text = waiting
-    ? `${partnerName}님을 기다리는 중`
+    ? `${partnerName}님을 기다리는 중 · 아직 바꿀 수 있어요`
     : same
       ? '취향 일치. 오늘은 싸울 일 없겠네요'
       : '갈렸어요. 할 말 있으면 아래에';

@@ -38,6 +38,11 @@ export function useCoupleRealtime() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'posts', filter }, () =>
         qc.invalidateQueries({ queryKey: ['posts'] }),
       )
+      // 상대가 투표하면 내 표도 잠긴다 — 그 순간을 놓치면 수정 버튼이 열린 채로 남는다
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'topic_votes', filter }, () => {
+        qc.invalidateQueries({ queryKey: ['topicVotes'] });
+        qc.invalidateQueries({ queryKey: ['pastTopics'] });
+      })
       // post_reactions·post_comments는 couple_id 컬럼이 없어 필터 없이 구독 (photos·notes와 동일)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'post_reactions' }, () =>
         qc.invalidateQueries({ queryKey: ['posts'] }),

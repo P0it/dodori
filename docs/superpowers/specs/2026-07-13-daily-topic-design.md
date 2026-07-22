@@ -87,7 +87,11 @@ $$;
 - `topics`: 인증 유저 전체 읽기, 쓰기 없음(시드는 마이그레이션).
 - `topic_votes` **select**: `couple_id = my_couple_id() and (user_id = auth.uid() or public.has_voted(topic_id))`
   → 내 표는 항상 보이고, 상대 표는 내가 투표한 뒤에만 보인다.
-- `topic_votes` **insert**: `couple_id = my_couple_id() and user_id = auth.uid()`. update/delete 없음 — **한 번 고르면 못 바꾼다** (바꿀 수 있으면 상대 답을 보고 뒤집을 수 있다).
+- `topic_votes` **insert**: `couple_id = my_couple_id() and user_id = auth.uid()`.
+- `topic_votes` **update** (2026-07-14 완화): 위 조건 + `not public.partner_voted(topic_id)`. delete는 없다.
+  → **상대가 고르기 전까지만 바꿀 수 있다.** 원래는 update 정책 자체가 없었지만(뒤집기 방지), 상대가 아직
+  투표하지 않았다면 내가 볼 상대 답이 애초에 없으므로 뒤집기가 성립하지 않는다. 그 구간에서만 열어 오탭을 구제한다.
+  상대가 고르는 순간 내 표도 함께 잠긴다. `partner_voted()`는 `has_voted()`와 같은 이유로 `security definer`.
 - `topic_comments` **select/insert**: 둘 다 `couple_id = my_couple_id() and public.has_voted(topic_id)`.
   → 투표 전에는 댓글을 읽지도 쓰지도 못한다. 잠금이 진짜 잠금이 된다.
 - Realtime: `topic_votes`, `topic_comments`를 publication에 추가 (상대가 투표/댓글하면 즉시 반영).
