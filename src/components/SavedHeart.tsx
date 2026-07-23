@@ -17,7 +17,8 @@ export function SavedHeart({
       hitSlop={10}
       style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1, padding: 2 })}
     >
-      <Text style={{ fontFamily: typeface, fontWeight: '400', fontSize: size, color: saved ? color.date : color.muted }}>
+      {/* 채워진 하트는 붉은 계열 — color.date를 쓰면 데이트(아쿠아) 색이 장소 하트에 묻는다 */}
+      <Text style={{ fontFamily: typeface, fontWeight: '400', fontSize: size, color: saved ? color.danger : color.muted }}>
         {saved ? '♥' : '♡'}
       </Text>
     </Pressable>

@@ -186,8 +186,16 @@ export default function AddEvent() {
           })}
         </View>
 
-        {/* 일정 색 — 사람이 아니라 이 일정의 색 */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 18 }}>
+        {/* 일정 색 — 사람이 아니라 이 일정의 색. 9색이라 한 줄에 안 들어가면 접힌다 */}
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: 10,
+            marginBottom: 18,
+          }}
+        >
           {EVENT_COLOR_KEYS.map((key) => {
             const on = eventColorKey === key;
             return (

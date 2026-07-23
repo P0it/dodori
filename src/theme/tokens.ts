@@ -25,8 +25,12 @@ export const color = {
   kakao: '#FEE500',
   kakaoText: '#191600',
   danger: '#E8567A',
-  /** 데이트(트랙) — 3역할(나=green·상대=pink·기념일=amber)과 겹치지 않는 보라 */
-  date: '#A78BFA',
+  /**
+   * 데이트(트랙) — 아쿠아. 일정 팔레트의 purple과 hex가 똑같아 사용자가 고른 보라 일정과
+   * 데이트 칩이 구분되지 않던 걸 끊는다. 남은 색환에서 accent(green 140°)·holiday(red 0°)·
+   * anniv(amber 43°)·pink(340°)와 가장 멀리 떨어진 자리가 여기(187°)다.
+   */
+  date: '#22D3EE',
   /** 공휴일 — role.partner(핑크)와 혼동되지 않도록 채도 높은 적색으로 분리 */
   holiday: '#FF5C5C',
   /** 요일 표시 — 토요일 파랑 / 일요일 빨강 (일요일은 공휴일과 같은 적색 계열) */
@@ -38,18 +42,25 @@ export const color = {
 export const tintBg = {
   accent: 'rgba(30,215,96,0.15)',
   anniv: 'rgba(232,184,75,0.16)',
-  date: 'rgba(167,139,250,0.16)',
+  date: 'rgba(34,211,238,0.16)',
 } as const;
 
 /**
  * 일정 색 팔레트 — 사람이 아니라 **일정의 속성**. 등록할 때 직접 고른다.
  * DB(events.color)에는 이 키가 그대로 들어간다 (hex 저장 금지 — 리스킨이 이 파일 교체로 끝나야 한다).
+ *
+ * 아쿠아(청록) 자리는 비워둔다 — color.date가 쓴다. 데이트와 구분되지 않는 일정 색은
+ * 캘린더에서 종류를 못 읽게 만든다. blue도 같은 이유로 #4FA8FF에서 살짝 남색 쪽으로 옮겼다.
+ * 키를 추가하면 events.color CHECK 제약도 같이 넓혀야 한다 (마이그레이션).
  */
 export const eventColor = {
   green: { fg: '#1ED760', bg: 'rgba(30,215,96,0.15)' },
-  blue: { fg: '#4FA8FF', bg: 'rgba(79,168,255,0.16)' },
+  lime: { fg: '#A3E635', bg: 'rgba(163,230,53,0.16)' },
+  blue: { fg: '#4F8CFF', bg: 'rgba(79,140,255,0.16)' },
+  indigo: { fg: '#818CF8', bg: 'rgba(129,140,248,0.16)' },
   purple: { fg: '#A78BFA', bg: 'rgba(167,139,250,0.16)' },
   pink: { fg: '#E8688F', bg: 'rgba(232,104,143,0.15)' },
+  coral: { fg: '#FF8A65', bg: 'rgba(255,138,101,0.16)' },
   amber: { fg: '#E8B84B', bg: 'rgba(232,184,75,0.16)' },
   red: { fg: '#FF5C5C', bg: 'rgba(255,92,92,0.16)' },
 } as const;
