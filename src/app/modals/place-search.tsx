@@ -42,6 +42,10 @@ export default function PlaceSearch() {
     () => new Set((track.data?.places ?? []).map((p) => p.placeId)),
     [track.data],
   );
+  // 찜 탭에서 담을 순서 — 개수가 아니라 기존 최대 sortOrder + 1 기준.
+  // (삭제로 순서에 구멍이 나도 세션을 넘겨 값이 겹치지 않게)
+  const maxOrder = Math.max(-1, ...(track.data?.places ?? []).map((p) => p.sortOrder));
+  const nextSortOrder = (track.data ? maxOrder + 1 : 0) + addedIds.size;
 
   const add = (p: Parameters<typeof addToPlaylist.mutate>[0]) => {
     const done = { onSuccess: () => setAddedIds((s) => new Set(s).add(p.naver_id)) };
@@ -172,7 +176,7 @@ export default function PlaceSearch() {
                       addSaved.mutate(
                         {
                           placeId: p.placeId,
-                          sortOrder: (track.data?.places.length ?? 0) + addedIds.size,
+                          sortOrder: nextSortOrder,
                         },
                         {
                           onSuccess: () => setAddedIds((s) => new Set(s).add(p.placeId)),

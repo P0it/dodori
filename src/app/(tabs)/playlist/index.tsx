@@ -46,8 +46,11 @@ export default function PlaylistRoot() {
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
   // 요청 중인 장소 — 연타로 같은 sortOrder·중복 insert가 나가지 않게 스트립 전체를 잠근다
   const pendingId = addToUpcoming.isPending ? (addToUpcoming.variables?.placeId ?? null) : null;
-  // 새 장소는 코스 맨 뒤에 — 세션 중 담은 개수까지 더해야 0번(맨 앞)으로 끼어들지 않는다
-  const nextSortOrder = (upcomingTrack.data?.places.length ?? upcoming?.placeCount ?? 0) + addedIds.size;
+  // 새 장소는 코스 맨 뒤에 — 개수가 아니라 기존 최대 sortOrder + 1을 기준으로 한다.
+  // (삭제로 순서에 구멍이 나도 세션을 넘겨 값이 겹치지 않게)
+  const maxOrder = Math.max(-1, ...(upcomingTrack.data?.places ?? []).map((p) => p.sortOrder));
+  // 세션 중 담은 개수까지 더해야 리페치 전 연속 담기에서 0번(맨 앞)으로 끼어들지 않는다
+  const nextSortOrder = (upcomingTrack.data ? maxOrder + 1 : (upcoming?.placeCount ?? 0)) + addedIds.size;
 
   // 찜한 곳 중 이 데이트에 아직 안 담겼고 안 가본 곳.
   // "가본 곳" 판정은 visitCount로 한다 — photoThumbs로 대신하면 사진 없이 다녀온 곳이 새 곳으로 잡힌다.
@@ -105,7 +108,8 @@ export default function PlaylistRoot() {
       </View>
 
       {/* 다음 데이트 추천 — 찜한 곳 중 아직 안 담기고 안 가본 곳 */}
-      {upcoming && recommended.length > 0 && (
+      {/* upcomingTrack이 로드되기 전엔 숨긴다 — 이미 담긴 곳을 추천하거나 순서를 잘못 계산하는 창을 없앤다 */}
+      {upcoming && upcomingTrack.isSuccess && recommended.length > 0 && (
         <>
           <SectionHeader title={`${upcoming.date.slice(5).replace('-', '.')} 데이트에 담을 곳`} />
           <View style={{ paddingTop: 10 }}>

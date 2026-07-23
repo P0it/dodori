@@ -54,7 +54,8 @@ export function RecommendStrip({
                 backgroundColor: added ? color.surface3 : color.date,
                 alignItems: 'center',
                 justifyContent: 'center',
-                opacity: pressed ? 0.85 : 1,
+                // 담는 중엔 스트립 전체가 잠기므로, 아직 안 담긴 버튼은 흐리게 해서 잠금을 보이게 한다
+                opacity: pressed ? 0.85 : busy && !added ? 0.5 : 1,
               })}
             >
               <Text
