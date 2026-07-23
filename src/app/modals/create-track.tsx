@@ -312,7 +312,7 @@ function PickDate({
           })}
         >
           <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 15, color: color.onPrimary }}>
-            다음 · 장소 담기
+            다음 · 제목
           </Text>
         </Pressable>
       </View>
