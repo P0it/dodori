@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
 import { color, typeface } from '@/theme/tokens';
 import { daysSince, isReleased, todayKST } from '@/lib/date';
 import { nearestIndex } from '@/lib/albums';
 import { recommendPlaces } from '@/lib/recommend';
-import { useAllTracks } from '@/api/tracks';
+import { useAllTracks, useTrack } from '@/api/tracks';
 import { useMyCouple, useCoupleProfiles } from '@/api/couple';
 import { usePlaylists, useSavedPlaces } from '@/api/playlists';
 import { useAddSavedPlaceToTrack } from '@/api/places';
@@ -40,8 +40,14 @@ export default function PlaylistRoot() {
     return future[0];
   }, [tracks.data]);
 
+  // 다가오는 데이트의 코스 — 이미 담긴 장소와 현재 코스 길이(순서 기준)를 알아야 한다
+  const upcomingTrack = useTrack(upcoming?.id);
   const addToUpcoming = useAddSavedPlaceToTrack(upcoming?.id ?? '');
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
+  // 요청 중인 장소 — 연타로 같은 sortOrder·중복 insert가 나가지 않게 스트립 전체를 잠근다
+  const pendingId = addToUpcoming.isPending ? (addToUpcoming.variables?.placeId ?? null) : null;
+  // 새 장소는 코스 맨 뒤에 — 세션 중 담은 개수까지 더해야 0번(맨 앞)으로 끼어들지 않는다
+  const nextSortOrder = (upcomingTrack.data?.places.length ?? upcoming?.placeCount ?? 0) + addedIds.size;
 
   // 찜한 곳 중 이 데이트에 아직 안 담겼고 안 가본 곳.
   // "가본 곳" 판정은 visitCount로 한다 — photoThumbs로 대신하면 사진 없이 다녀온 곳이 새 곳으로 잡힌다.
@@ -49,8 +55,10 @@ export default function PlaylistRoot() {
     const all = savedPlaces.data ?? [];
     const saved = all.filter((p) => p.playlistKind === 'saved');
     const visited = all.filter((p) => p.visitCount > 0).map((p) => p.placeId);
-    return recommendPlaces(saved, { inCourse: [...addedIds], visited });
-  }, [savedPlaces.data, addedIds]);
+    // 마운트 전에 이미 코스에 담긴 곳도 제외 — addedIds만 보면 다시 추천된다
+    const inCourse = [...(upcomingTrack.data?.places ?? []).map((p) => p.placeId), ...addedIds];
+    return recommendPlaces(saved, { inCourse, visited });
+  }, [savedPlaces.data, addedIds, upcomingTrack.data]);
 
   const names = [profiles.data?.me?.nickname, profiles.data?.partner?.nickname]
     .filter(Boolean)
@@ -102,17 +110,22 @@ export default function PlaylistRoot() {
           <SectionHeader title={`${upcoming.date.slice(5).replace('-', '.')} 데이트에 담을 곳`} />
           <View style={{ paddingTop: 10 }}>
             <RecommendStrip
+              // thumbUrl은 넘기지 않는다 — 추천은 안 가본 곳만이라 사진이 있을 수 없고, PlaceThumb의 그라데이션이 의도한 모습
               items={recommended.map((p) => ({
                 placeId: p.placeId,
                 name: p.name,
                 category: p.category,
-                thumbUrl: p.photoThumbs[0],
               }))}
               addedIds={addedIds}
+              pendingId={pendingId}
               onAdd={(placeId) =>
                 addToUpcoming.mutate(
-                  { placeId, sortOrder: addedIds.size },
-                  { onSuccess: () => setAddedIds((s) => new Set(s).add(placeId)) },
+                  { placeId, sortOrder: nextSortOrder },
+                  {
+                    onSuccess: () => setAddedIds((s) => new Set(s).add(placeId)),
+                    onError: (e) =>
+                      Alert.alert('추가 실패', e instanceof Error ? e.message : '코스에 담지 못했어요.'),
+                  },
                 )
               }
             />

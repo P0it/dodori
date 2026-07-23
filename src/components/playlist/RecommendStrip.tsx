@@ -14,12 +14,16 @@ export type RecommendItem = {
 export function RecommendStrip({
   items,
   addedIds,
+  pendingId,
   onAdd,
 }: {
   items: RecommendItem[];
   addedIds: Set<string>;
+  /** 담기 요청이 진행 중인 장소 — 연타로 같은 순서·중복 insert가 나가지 않게 그동안 전체 비활성 */
+  pendingId?: string | null;
   onAdd: (placeId: string) => void;
 }) {
+  const busy = pendingId != null;
   return (
     <ScrollView
       horizontal
@@ -37,9 +41,11 @@ export function RecommendStrip({
             >
               {p.name}
             </Text>
-            <Meta style={{ marginTop: 1, fontSize: 11.5 }}>{p.category ?? ' '}</Meta>
+            <Meta numberOfLines={1} style={{ marginTop: 1, fontSize: 11.5 }}>
+              {p.category ?? ' '}
+            </Meta>
             <Pressable
-              disabled={added}
+              disabled={added || busy}
               onPress={() => onAdd(p.placeId)}
               style={({ pressed }) => ({
                 marginTop: 8,
@@ -59,7 +65,7 @@ export function RecommendStrip({
                   color: added ? color.sub : color.onPrimary,
                 }}
               >
-                {added ? '담김' : '이 데이트에 담기'}
+                {added ? '담김' : pendingId === p.placeId ? '담는 중…' : '이 데이트에 담기'}
               </Text>
             </Pressable>
           </View>

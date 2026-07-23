@@ -94,6 +94,8 @@ export function useAddSavedPlaceToTrack(trackId: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['track', trackId] });
       qc.invalidateQueries({ queryKey: ['tracks'] });
+      // 찜 목록 캐시는 AsyncStorage에 저장돼 살아남는다 — 담긴 뒤에도 낡은 상태로 남지 않게 무효화
+      qc.invalidateQueries({ queryKey: ['savedPlaces'] });
     },
   });
 }
