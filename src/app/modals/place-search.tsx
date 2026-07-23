@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { ActivityIndicator, Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { color, typeface } from '@/theme/tokens';
 import { TopBar } from '@/components/TopBar';
@@ -7,6 +7,7 @@ import { Meta } from '@/components/Meta';
 import { Eyebrow } from '@/components/Eyebrow';
 import { usePlaceSearch, useAddTrackPlace, useAddSavedPlaceToTrack } from '@/api/places';
 import { useAddPlaylistPlace, useSavedPlaces, useSaveSearchPlace } from '@/api/playlists';
+import { useTrack } from '@/api/tracks';
 import { PlaceThumb } from '@/components/PlaceThumb';
 import { FilterChip } from '@/components/FilterChip';
 import { SavedHeart } from '@/components/SavedHeart';
@@ -26,6 +27,7 @@ export default function PlaceSearch() {
   // 플리에 담으러 왔으면 찜에서 찜으로 담는 셈이라 검색이 기본.
   const [tab, setTab] = useState<'saved' | 'search'>(trackId ? 'saved' : 'search');
   const savedPlaces = useSavedPlaces();
+  const track = useTrack(trackId);
   const addSaved = useAddSavedPlaceToTrack(trackId ?? '');
   const saveSearch = useSaveSearchPlace();
   const [justSaved, setJustSaved] = useState<Set<string>>(new Set());
@@ -35,6 +37,11 @@ export default function PlaceSearch() {
   const addToPlaylist = useAddPlaylistPlace(playlistId ?? '');
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
   let order = Number(next ?? 0);
+  // 이미 이 날짜 코스에 담긴 찜한 곳 — + 버튼을 눌러도 조용히 실패하지 않도록 미리 added 처리
+  const existingPlaceIds = useMemo(
+    () => new Set((track.data?.places ?? []).map((p) => p.placeId)),
+    [track.data],
+  );
 
   const add = (p: Parameters<typeof addToPlaylist.mutate>[0]) => {
     const done = { onSuccess: () => setAddedIds((s) => new Set(s).add(p.naver_id)) };
@@ -144,7 +151,7 @@ export default function PlaceSearch() {
             </Meta>
           ) : (
             (savedPlaces.data ?? []).map((p) => {
-              const added = addedIds.has(p.placeId);
+              const added = existingPlaceIds.has(p.placeId) || addedIds.has(p.placeId);
               return (
                 <View
                   key={`${p.playlistId}:${p.placeId}`}
@@ -160,11 +167,18 @@ export default function PlaceSearch() {
                     </Meta>
                   </View>
                   <Pressable
-                    disabled={added || !trackId}
+                    disabled={added || !trackId || addSaved.isPending}
                     onPress={() =>
                       addSaved.mutate(
-                        { placeId: p.placeId, sortOrder: Number(next ?? 0) + addedIds.size },
-                        { onSuccess: () => setAddedIds((s) => new Set(s).add(p.placeId)) },
+                        {
+                          placeId: p.placeId,
+                          sortOrder: (track.data?.places.length ?? 0) + addedIds.size,
+                        },
+                        {
+                          onSuccess: () => setAddedIds((s) => new Set(s).add(p.placeId)),
+                          onError: (e) =>
+                            Alert.alert('추가 실패', e instanceof Error ? e.message : '코스에 담지 못했어요.'),
+                        },
                       )
                     }
                     style={{
