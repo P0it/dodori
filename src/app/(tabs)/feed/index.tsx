@@ -52,7 +52,7 @@ function EmptyPosts({ onPress }: { onPress: () => void }) {
       <Text
         style={{ fontFamily: typeface, fontWeight: '700', fontSize: 16, color: color.white }}
       >
-        아직 게시물이 없어요
+        아직 추억이 없어요
       </Text>
       <Meta style={{ marginTop: 7, textAlign: 'center' }}>
         특별한 날이 아니어도 좋아요. 오늘 한 컷을 남겨보세요.
@@ -73,7 +73,7 @@ function EmptyPosts({ onPress }: { onPress: () => void }) {
         <Text
           style={{ fontFamily: typeface, fontWeight: '700', fontSize: 14.5, color: color.onPrimary }}
         >
-          첫 게시물 올리기
+          첫 추억 올리기
         </Text>
       </Pressable>
     </View>
@@ -130,7 +130,7 @@ function AccountHeader() {
             )}
           </View>
         ) : (
-          <DodoriMark size={54} />
+          <DodoriMark size={68} />
         )}
         <Text
           style={{
@@ -147,19 +147,19 @@ function AccountHeader() {
         {couple.data?.startedAt && (
           <>
             <Meta style={{ marginTop: 5 }}>since {couple.data.startedAt.replaceAll('-', '.')}</Meta>
-            <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6, marginTop: 14 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4, marginTop: 10 }}>
               <Text
                 style={{
                   fontFamily: typeface,
-                  fontWeight: '800',
-                  fontSize: 34,
-                  color: color.accent,
-                  letterSpacing: -0.5,
+                  fontWeight: '700',
+                  fontSize: 20,
+                  color: color.sub,
+                  letterSpacing: -0.3,
                 }}
               >
                 {daysSince(couple.data.startedAt)}
               </Text>
-              <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 16, color: color.sub }}>
+              <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 13, color: color.muted }}>
                 일째
               </Text>
             </View>
@@ -170,7 +170,7 @@ function AccountHeader() {
       {/* 그리드 섹션 라벨 — 게시물이 있을 때만 */}
       {count > 0 && (
         <View style={{ paddingHorizontal: 8, paddingTop: 24, paddingBottom: 10 }}>
-          <Eyebrow>게시물 {count}</Eyebrow>
+          <Eyebrow>추억 {count}</Eyebrow>
         </View>
       )}
     </View>
@@ -188,20 +188,20 @@ function CoupleAvatar({
   overlap: boolean;
 }) {
   const base = {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     // 겹치는 쪽만 배경색 링으로 잘라낸다 (인스타 겹침 아바타)
     borderWidth: overlap ? 3 : 0,
     borderColor: color.bg,
-    marginLeft: overlap ? -12 : 0,
+    marginLeft: overlap ? -16 : 0,
     backgroundColor: color.surface2,
   } as const;
 
   if (avatarUrl) return <Image source={{ uri: avatarUrl }} style={base} />;
   return (
     <View style={[base, { alignItems: 'center', justifyContent: 'center' }]}>
-      <Text style={{ fontFamily: typeface, fontWeight: '800', fontSize: 20, color: color.sub }}>
+      <Text style={{ fontFamily: typeface, fontWeight: '800', fontSize: 26, color: color.sub }}>
         {name.slice(0, 1)}
       </Text>
     </View>
