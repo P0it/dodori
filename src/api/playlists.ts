@@ -7,6 +7,7 @@ import { thumbUrl } from './photos';
 export interface PlaylistSummary {
   id: string;
   name: string;
+  kind: 'custom' | 'saved';
   placeCount: number;
 }
 
@@ -18,16 +19,26 @@ export function usePlaylists() {
     queryFn: async (): Promise<PlaylistSummary[]> => {
       const { data, error } = await supabase
         .from('playlists')
-        .select('id, name, playlist_places(place_id)')
+        .select('id, name, kind, playlist_places(place_id)')
         .order('created_at');
       if (error) throw error;
-      return data.map((p) => ({
-        id: p.id,
-        name: p.name,
-        placeCount: p.playlist_places?.length ?? 0,
-      }));
+      return data
+        .map((p) => ({
+          id: p.id,
+          name: p.name,
+          kind: (p.kind === 'saved' ? 'saved' : 'custom') as 'custom' | 'saved',
+          placeCount: p.playlist_places?.length ?? 0,
+        }))
+        // 찜은 항상 맨 위
+        .sort((a, b) => (a.kind === b.kind ? 0 : a.kind === 'saved' ? -1 : 1));
     },
   });
+}
+
+/** 커플의 찜 플레이리스트 id — 트리거가 보장하므로 연결된 커플이면 항상 존재한다 */
+export function useSavedPlaylistId(): string | undefined {
+  const playlists = usePlaylists();
+  return playlists.data?.find((p) => p.kind === 'saved')?.id;
 }
 
 export function useCreatePlaylist() {
@@ -208,6 +219,82 @@ export function usePlaceDetail(id: string | undefined) {
         photoThumbs: thumbs,
         tracks: tracks.map((t) => ({ id: t.id, title: t.title, date: t.date })),
       };
+    },
+  });
+}
+
+/** 장소 찜 토글 — 찜 플레이리스트에 넣고 뺀다 */
+export function useToggleSavedPlace() {
+  const qc = useQueryClient();
+  const savedId = useSavedPlaylistId();
+  return useMutation({
+    mutationFn: async ({ placeId, saved }: { placeId: string; saved: boolean }) => {
+      if (!savedId) throw new Error('찜 목록을 찾지 못했어요');
+      if (saved) {
+        const { error } = await supabase
+          .from('playlist_places')
+          .delete()
+          .eq('playlist_id', savedId)
+          .eq('place_id', placeId);
+        if (error) throw error;
+      } else {
+        const { data: userData } = await supabase.auth.getUser();
+        const uid = userData.user?.id;
+        if (!uid) throw new Error('로그인이 필요해요');
+        const { error } = await supabase
+          .from('playlist_places')
+          .insert({ playlist_id: savedId, place_id: placeId, added_by: uid });
+        if (error && !error.message.includes('duplicate')) throw error;
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['playlists'] });
+      qc.invalidateQueries({ queryKey: ['savedPlaces'] });
+    },
+  });
+}
+
+export interface SavedPlaceItem {
+  placeId: string;
+  name: string;
+  category: string | null;
+  address: string | null;
+  playlistId: string;
+  playlistName: string;
+  playlistKind: 'custom' | 'saved';
+  savedAt: string;
+  /** 우리가 이 장소를 낀 데이트 수 — 추천에서 "이미 가본 곳"을 거르는 근거 */
+  visitCount: number;
+  photoThumbs: string[];
+}
+
+/** 모든 플레이리스트(찜 + 테마)의 장소를 평탄화 — 장소 피커·추천이 함께 쓴다 */
+export function useSavedPlaces() {
+  const couple = useMyCouple();
+  return useQuery({
+    enabled: !!couple.data,
+    queryKey: ['savedPlaces'],
+    queryFn: async (): Promise<SavedPlaceItem[]> => {
+      const { data, error } = await supabase
+        .from('playlist_places')
+        .select(
+          'place_id, added_at, playlists(id, name, kind), places(id, name, category, address)',
+        );
+      if (error) throw error;
+      const rows = (data ?? []).filter((r) => r.places && r.playlists);
+      const visits = await visitStats(rows.map((r) => r.place_id));
+      return rows.map((r) => ({
+        placeId: r.place_id,
+        name: r.places!.name,
+        category: r.places!.category,
+        address: r.places!.address,
+        playlistId: r.playlists!.id,
+        playlistName: r.playlists!.name,
+        playlistKind: (r.playlists!.kind === 'saved' ? 'saved' : 'custom') as 'custom' | 'saved',
+        savedAt: r.added_at,
+        visitCount: visits.get(r.place_id)?.count ?? 0,
+        photoThumbs: visits.get(r.place_id)?.thumbs ?? [],
+      }));
     },
   });
 }
