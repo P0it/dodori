@@ -1,4 +1,4 @@
-import { pickTodaySong, youtubeMusicSearchUrl, type Song } from '../song';
+import { MUSIC_SERVICES, pickTodaySong, type MusicService, type Song } from '../song';
 
 const song = (seq: number): Song => ({
   id: `id-${seq}`,
@@ -39,14 +39,31 @@ describe('pickTodaySong', () => {
   });
 });
 
-describe('youtubeMusicSearchUrl', () => {
+describe('MUSIC_SERVICES', () => {
+  const urlOf = (id: MusicService['id'], s: Song) => MUSIC_SERVICES.find((m) => m.id === id)!.url(s);
+  const hypeBoy: Song = { ...song(0), artist: 'NewJeans', title: 'Hype Boy' };
+
   it('아티스트와 제목을 한 검색어로 인코딩', () => {
-    expect(youtubeMusicSearchUrl('NewJeans', 'Hype Boy')).toBe(
-      'https://music.youtube.com/search?q=NewJeans%20Hype%20Boy',
+    expect(urlOf('youtube', hypeBoy)).toBe('https://music.youtube.com/search?q=NewJeans%20Hype%20Boy');
+    expect(urlOf('spotify', hypeBoy)).toBe('https://open.spotify.com/search/NewJeans%20Hype%20Boy');
+    expect(urlOf('melon', hypeBoy)).toBe(
+      'https://www.melon.com/search/total/index.htm?q=NewJeans%20Hype%20Boy',
     );
   });
 
   it('한글·특수문자도 인코딩', () => {
-    expect(youtubeMusicSearchUrl('아이유', 'Love wins all')).toContain('%EC%95%84%EC%9D%B4%EC%9C%A0');
+    const iu: Song = { ...song(0), artist: '아이유', title: 'Love wins all' };
+    for (const service of MUSIC_SERVICES) {
+      expect(service.url(iu)).toContain('%EC%95%84%EC%9D%B4%EC%9C%A0');
+    }
+  });
+
+  it('애플 뮤직은 검색이 아니라 곡 직링크', () => {
+    const withApple: Song = { ...hypeBoy, appleUrl: 'https://music.apple.com/kr/album/x/1?i=2' };
+    expect(urlOf('apple', withApple)).toBe('https://music.apple.com/kr/album/x/1?i=2');
+  });
+
+  it('곡 직링크가 없으면 애플 뮤직도 검색으로 폴백', () => {
+    expect(urlOf('apple', hypeBoy)).toBe('https://music.apple.com/kr/search?term=NewJeans%20Hype%20Boy');
   });
 });

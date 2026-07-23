@@ -1,18 +1,21 @@
+import { useState } from 'react';
 import { Linking, Pressable, Text, useWindowDimensions, View } from 'react-native';
 import { Image } from 'expo-image';
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { color, font, radius, space, typeface } from '@/theme/tokens';
-import { youtubeMusicSearchUrl, type Song } from '@/lib/song';
+import { type Song } from '@/lib/song';
 import { Eyebrow } from './Eyebrow';
+import { MusicServiceSheet } from './MusicServiceSheet';
 import { PauseGlyph, PlayGlyph } from './glyphs';
 
 /**
  * 오늘의 추천곡 — 오늘 탭의 히어로.
- * 30초 미리듣기는 카드가 로컬로 재생한다(기기 I/O). 전곡은 유튜브 뮤직으로 넘긴다.
+ * 30초 미리듣기는 카드가 로컬로 재생한다(기기 I/O). 전곡은 고른 음원 앱으로 넘긴다.
  */
 export function SongCard({ song }: { song: Song }) {
   const player = useAudioPlayer({ uri: song.previewUrl });
   const status = useAudioPlayerStatus(player);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const { width, height } = useWindowDimensions();
   // 세로가 짧은 기기에서도 주제 카드가 접히지 않게 화면 높이로도 한 번 더 제한
   const posterSize = Math.min(width - space[4] * 4, height * 0.32); // 화면 gutter + 카드 padding
@@ -102,7 +105,7 @@ export function SongCard({ song }: { song: Song }) {
       </View>
 
       <Pressable
-        onPress={() => Linking.openURL(youtubeMusicSearchUrl(song.artist, song.title))}
+        onPress={() => setPickerOpen(true)}
         hitSlop={6}
         style={({ pressed }) => ({ marginTop: space[3], opacity: pressed ? 0.6 : 1 })}
       >
@@ -110,6 +113,16 @@ export function SongCard({ song }: { song: Song }) {
           전곡 듣기 ›
         </Text>
       </Pressable>
+
+      <MusicServiceSheet
+        visible={pickerOpen}
+        song={song}
+        onSelect={(service) => {
+          setPickerOpen(false);
+          Linking.openURL(service.url(song));
+        }}
+        onClose={() => setPickerOpen(false)}
+      />
     </View>
   );
 }
