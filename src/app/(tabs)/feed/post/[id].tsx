@@ -1,7 +1,7 @@
 import { Alert, RefreshControl, useWindowDimensions, View } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useLocalSearchParams } from 'expo-router';
-import { color, role, type OwnerRole } from '@/theme/tokens';
+import { color } from '@/theme/tokens';
 import { useSession } from '@/api/auth';
 import { useCoupleProfiles } from '@/api/couple';
 import {
@@ -35,7 +35,6 @@ export default function PostFeed() {
     data.findIndex((p) => p.id === id),
   );
 
-  const who = (author: string): OwnerRole => (author === uid ? 'me' : 'partner');
   const profileOf = (author: string) =>
     author === uid ? profiles.data?.me : profiles.data?.partner;
   const name = (author: string): string =>
@@ -65,7 +64,7 @@ export default function PostFeed() {
             refreshing={posts.isRefetching}
             onRefresh={posts.refetch}
             tintColor={color.sub}
-            colors={[role.me]}
+            colors={[color.accent]}
           />
         }
         renderItem={({ item: p }) => (
@@ -73,7 +72,6 @@ export default function PostFeed() {
             post={p}
             width={width}
             myUid={uid}
-            who={who}
             name={name}
             avatarUrl={avatarUrl}
             onToggleReaction={(emoji, on) => toggleReaction.mutate({ postId: p.id, emoji, on })}

@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-import { color, role, typeface } from '@/theme/tokens';
+import { color, typeface } from '@/theme/tokens';
 import { useSession } from '@/api/auth';
 import { useCoupleProfiles } from '@/api/couple';
 import {
@@ -52,11 +52,11 @@ export default function TopicDetail() {
   /** 상대가 고르기 전이면 다시 고를 수 있다 — 볼 상대 답이 없으니 뒤집기가 성립하지 않는다 */
   const editable = mine === null || partner === null;
 
-  const pickedBy = (c: Choice): ('me' | 'partner')[] => {
-    const who: ('me' | 'partner')[] = [];
-    if (mine === c) who.push('me');
-    if (partner === c) who.push('partner');
-    return who;
+  const pickedBy = (c: Choice): string[] => {
+    const names: string[] = [];
+    if (mine === c) names.push(myName);
+    if (partner === c) names.push(partnerName);
+    return names;
   };
 
   const onSend = () => {
@@ -235,7 +235,7 @@ export default function TopicDetail() {
                   borderRadius: 999,
                   alignItems: 'center',
                   justifyContent: 'center',
-                  backgroundColor: draft.trim() ? role.me : color.surface2,
+                  backgroundColor: draft.trim() ? color.accent : color.surface2,
                   opacity: pressed ? 0.85 : 1,
                 })}
               >
@@ -280,7 +280,7 @@ function Verdict({
         fontFamily: typeface,
         fontWeight: '700',
         fontSize: 14,
-        color: waiting ? color.sub : same ? role.me : role.anniv,
+        color: waiting ? color.sub : same ? color.accent : color.anniv,
         marginTop: 16,
         textAlign: 'center',
       }}

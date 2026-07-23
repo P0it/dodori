@@ -1,7 +1,7 @@
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
-import { color, role, typeface } from '@/theme/tokens';
+import { color, typeface } from '@/theme/tokens';
 import { isReleased, monthKey } from '@/lib/date';
 import { useAllTracks } from '@/api/tracks';
 import { TopBar } from '@/components/TopBar';
@@ -75,7 +75,7 @@ export default function MonthDetail() {
                     backgroundColor: color.surface2,
                     borderWidth: upcoming ? 1.5 : 0,
                     borderStyle: 'dashed',
-                    borderColor: role.me,
+                    borderColor: color.accent,
                   }}
                 >
                   {t.coverThumbUrl && (
@@ -92,9 +92,9 @@ export default function MonthDetail() {
                         style={{
                           fontSize: 10,
                           fontFamily: typeface, fontWeight: '700',
-                          color: role.me,
+                          color: color.accent,
                           borderWidth: 1,
-                          borderColor: role.me,
+                          borderColor: color.accent,
                           borderRadius: 4,
                           paddingHorizontal: 5,
                           paddingVertical: 1,

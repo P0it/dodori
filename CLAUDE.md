@@ -33,7 +33,11 @@
 
 ## 불변 규칙
 
-- **모든 색상은 토큰 참조** — hex 하드코딩 금지 (PRD §6.2). 3역할 규약: 나=green / 상대=pink / 기념일=amber (`src/theme/tokens.ts`의 `role`)
+- **모든 색상은 토큰 참조** — hex 하드코딩 금지 (PRD §6.2)
+- **색으로 사람을 구분하지 않는다** (2026-07, 구 3역할 규약 폐기) — "나=green / 상대=pink"는 보는 사람마다 반대로 보여
+  같이 화면을 볼 때 혼선이 됐다. 누가 썼는지는 **이름·아바타**로만 표시한다. green(`color.accent`)은 브랜드 강조,
+  amber(`color.anniv`)는 기념일, 보라(`color.date`)는 데이트 — 전부 종류지 사람이 아니다.
+  일정 색은 등록할 때 고르는 **일정의 속성**(`eventColor` 6색 팔레트 → `events.color`에 키로 저장)
 - **모든 날짜 연산은 Asia/Seoul 고정** — `src/lib/date.ts` 경유. `new Date()` 직접 비교 금지
 - **tracks에 상태 컬럼 없음** — `date < today(KST)` → released, `isReleased()` 사용 (PRD §7.2)
 - 시크릿은 Edge Function 뒤로 (네이버 API 키 등 클라이언트 노출 금지)
@@ -47,6 +51,16 @@
 2. **Simplicity First** — 요청을 푸는 최소 코드만. 단일 사용 코드에 추상화 금지, 요청 없는 설정성·불가능한 시나리오의 에러 처리 금지
 3. **Surgical Changes** — 요청과 무관한 코드·주석·포맷을 "개선"하지 않는다. 내 변경이 만든 고아(import 등)만 정리. 모든 변경 라인은 요청으로 추적 가능해야 함
 4. **Goal-Driven Execution** — 작업을 검증 가능한 목표로 변환("버그 수정" → "재현 테스트 작성 후 통과"). 다단계 작업은 단계별 verify를 붙인 계획을 먼저 제시
+
+## 커밋 규칙
+
+작업이 끝나면 **기능 단위로 커밋하고 push까지 자동으로** 한다 (물어보지 않는다). 브랜치는 `main`.
+
+- 한 기능 = 한 커밋. 여러 기능을 한 번에 작업했으면 나눠서 커밋한다
+  (단, 토큰 교체처럼 파일이 서로 얽혀 중간 커밋이 빌드 불가면 하나로 묶고 메시지에 이유를 적는다)
+- 커밋 전 `npm run typecheck` + `npm test` 통과 확인. 깨지면 커밋하지 않고 보고한다
+- 메시지는 한글 Conventional Commits — `feat(feed): 인스타 배치 + 대댓글`
+- DB 마이그레이션은 코드와 같은 커밋에. 원격 적용(`npx supabase db push`)과 타입 재생성도 같이 끝낸다
 
 ## 아키텍처 규칙 (SOLID·Clean Architecture 실용 적용)
 

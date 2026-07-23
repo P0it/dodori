@@ -2,7 +2,7 @@ import { Pressable, RefreshControl, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
-import { color, radius, role, roleBg, typeface, type OwnerRole } from '@/theme/tokens';
+import { color, radius, typeface } from '@/theme/tokens';
 import { daysSince } from '@/lib/date';
 import { useMyCouple, useCoupleProfiles } from '@/api/couple';
 import { usePosts } from '@/api/posts';
@@ -29,7 +29,7 @@ export default function Studio() {
           refreshing={posts.isRefetching}
           onRefresh={posts.refetch}
           tintColor={color.sub}
-          colors={[role.me]}
+          colors={[color.accent]}
         />
       }
       ListHeaderComponent={<AccountHeader />}
@@ -64,7 +64,7 @@ function EmptyPosts({ onPress }: { onPress: () => void }) {
           height: 44,
           paddingHorizontal: 22,
           borderRadius: radius.pill,
-          backgroundColor: role.me,
+          backgroundColor: color.accent,
           alignItems: 'center',
           justifyContent: 'center',
           opacity: pressed ? 0.85 : 1,
@@ -117,17 +117,13 @@ function AccountHeader() {
       <View style={{ alignItems: 'center', paddingTop: 6 }}>
         {profiles.data?.me || profiles.data?.partner ? (
           <View style={{ flexDirection: 'row' }}>
-            {([
-              [profiles.data?.me, 'me'],
-              [profiles.data?.partner, 'partner'],
-            ] as const).map(
-              ([p, who], i) =>
+            {[profiles.data?.me, profiles.data?.partner].map(
+              (p, i) =>
                 p && (
                   <CoupleAvatar
                     key={p.id}
                     avatarUrl={p.avatar_url}
                     name={p.nickname}
-                    who={who}
                     overlap={i === 1}
                   />
                 ),
@@ -157,7 +153,7 @@ function AccountHeader() {
                   fontFamily: typeface,
                   fontWeight: '800',
                   fontSize: 34,
-                  color: role.me,
+                  color: color.accent,
                   letterSpacing: -0.5,
                 }}
               >
@@ -185,12 +181,10 @@ function AccountHeader() {
 function CoupleAvatar({
   avatarUrl,
   name,
-  who,
   overlap,
 }: {
   avatarUrl: string | null;
   name: string;
-  who: OwnerRole;
   overlap: boolean;
 }) {
   const base = {
@@ -201,13 +195,13 @@ function CoupleAvatar({
     borderWidth: overlap ? 3 : 0,
     borderColor: color.bg,
     marginLeft: overlap ? -12 : 0,
-    backgroundColor: avatarUrl ? color.surface2 : roleBg[who],
+    backgroundColor: color.surface2,
   } as const;
 
   if (avatarUrl) return <Image source={{ uri: avatarUrl }} style={base} />;
   return (
     <View style={[base, { alignItems: 'center', justifyContent: 'center' }]}>
-      <Text style={{ fontFamily: typeface, fontWeight: '800', fontSize: 20, color: role[who] }}>
+      <Text style={{ fontFamily: typeface, fontWeight: '800', fontSize: 20, color: color.sub }}>
         {name.slice(0, 1)}
       </Text>
     </View>

@@ -104,7 +104,7 @@ export function AlbumCarousel({
                 )}
                 {upcoming && isActive && (
                   <View style={{ position: 'absolute', left: 8, top: 8 }}>
-                    <Dday tone="me">{formatDday(a.date)}</Dday>
+                    <Dday tone="accent">{formatDday(a.date)}</Dday>
                   </View>
                 )}
               </View>

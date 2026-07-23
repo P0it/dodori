@@ -3,7 +3,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
 import { Image } from 'expo-image';
-import { color, role, typeface } from '@/theme/tokens';
+import { color, typeface } from '@/theme/tokens';
 import { daysSince, isReleased, monthKey, todayKST } from '@/lib/date';
 import { nearestIndex } from '@/lib/albums';
 import { useAllTracks, type TrackListItem } from '@/api/tracks';
@@ -66,7 +66,7 @@ export default function PlaylistRoot() {
           <Meta style={{ marginTop: 2, fontSize: 12.5 }}>
             {names || '우리'} ·{' '}
             {couple.data?.startedAt ? (
-              <Text style={{ color: role.me, fontFamily: typeface, fontWeight: '700' }}>
+              <Text style={{ color: color.accent, fontFamily: typeface, fontWeight: '700' }}>
                 {daysSince(couple.data.startedAt)}일째
               </Text>
             ) : null}
@@ -179,7 +179,7 @@ export default function PlaylistRoot() {
           width: 56,
           height: 56,
           borderRadius: 28,
-          backgroundColor: role.me,
+          backgroundColor: color.accent,
           alignItems: 'center',
           justifyContent: 'center',
           shadowColor: '#000',
@@ -239,7 +239,7 @@ function FirstTrackHero({ onPress }: { onPress: () => void }) {
           gap: 8,
         }}
       >
-        <Eyebrow color={role.me}>Track 01</Eyebrow>
+        <Eyebrow color={color.accent}>Track 01</Eyebrow>
         <Text style={{ fontFamily: typeface, fontWeight: '800', fontSize: 21, color: color.white }}>
           첫 데이트를 기록해보세요
         </Text>

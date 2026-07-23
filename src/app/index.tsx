@@ -12,7 +12,7 @@ export default function Index() {
   if (session.isPending || (session.data && couple.isPending)) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: color.bg }}>
-        <ActivityIndicator color={color.me} />
+        <ActivityIndicator color={color.accent} />
       </View>
     );
   }

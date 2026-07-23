@@ -1,6 +1,6 @@
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { color, role, typeface } from '@/theme/tokens';
+import { color, eventColor, toEventColor, typeface } from '@/theme/tokens';
 import { formatDday, todayKST } from '@/lib/date';
 import type { VisibleEvent } from '@/api/events';
 import type { MonthTrack } from '@/api/tracks';
@@ -8,7 +8,7 @@ import type { AnnivItem } from '@/api/anniversaries';
 import { Eyebrow } from '@/components/Eyebrow';
 import { Meta } from '@/components/Meta';
 import { Divider } from '@/components/Divider';
-import { OwnerDot } from '@/components/OwnerDot';
+import { Avatar } from '@/components/Avatar';
 import { Dday } from '@/components/Dday';
 import { AnnivCover } from '@/components/AnnivCover';
 
@@ -17,13 +17,15 @@ type Props = {
   events: VisibleEvent[];
   tracks: MonthTrack[];
   annivs: AnnivItem[];
-  uid?: string;
+  /** 일정 주인 표시용 — 화면이 프로필을 알고 있으니 조회 결과만 내려받는다 */
+  name: (uid: string) => string;
+  avatarUrl: (uid: string) => string | null;
 };
 
 const WEEKDAY = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
 
 /** 선택일 어젠다 — 캘린더 그리드 아래에 상주한다 (목업 18·19 본문) */
-export function DayAgenda({ date, events, tracks, annivs, uid }: Props) {
+export function DayAgenda({ date, events, tracks, annivs, name, avatarUrl }: Props) {
   const router = useRouter();
 
   const [y, m, d] = date.split('-').map(Number);
@@ -47,7 +49,7 @@ export function DayAgenda({ date, events, tracks, annivs, uid }: Props) {
           </Text>
           <Text style={{ fontFamily: typeface, fontWeight: '500', fontSize: 13, color: color.sub }}>{weekday}</Text>
           {isToday && (
-            <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 12, color: role.me }}>오늘</Text>
+            <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 12, color: color.accent }}>오늘</Text>
           )}
         </View>
       </View>
@@ -58,7 +60,7 @@ export function DayAgenda({ date, events, tracks, annivs, uid }: Props) {
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 8 }}>
             <AnnivCover size={60} big={anniv.label.replace(/[^0-9]/g, '') || anniv.label[0]} small={/일$/.test(anniv.label) ? '일' : undefined} />
             <View style={{ flex: 1 }}>
-              <Eyebrow color={role.anniv}>기념일</Eyebrow>
+              <Eyebrow color={color.anniv}>기념일</Eyebrow>
               <Text
                 style={{ fontFamily: typeface, fontWeight: '800', fontSize: 22, color: color.white, marginTop: 2 }}
               >
@@ -120,7 +122,7 @@ export function DayAgenda({ date, events, tracks, annivs, uid }: Props) {
         <Meta style={{ paddingVertical: 10 }}>일정이 없어요</Meta>
       ) : (
         events.map((e) => {
-          const mine = e.owner_id === uid;
+          const tint = eventColor[toEventColor(e.color)];
           const time = e.all_day
             ? '종일'
             : new Date(e.starts_at!).toLocaleTimeString('ko-KR', {
@@ -135,10 +137,9 @@ export function DayAgenda({ date, events, tracks, annivs, uid }: Props) {
               onPress={() => router.push({ pathname: '/modals/add-event', params: { id: e.id! } })}
               style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 11 }}
             >
-              <View style={{ width: 44, alignItems: 'center', gap: 6 }}>
-                <OwnerDot who={mine ? 'me' : 'partner'} size={9} />
-                <Text style={{ fontFamily: typeface, fontSize: 11, color: color.sub }}>{time}</Text>
-              </View>
+              {/* 일정 색 — 사람이 아니라 이 일정의 색 */}
+              <View style={{ width: 3, alignSelf: 'stretch', borderRadius: 2, backgroundColor: tint.fg }} />
+              <Text style={{ fontFamily: typeface, fontSize: 11, color: color.sub, width: 36 }}>{time}</Text>
               <View style={{ flex: 1 }}>
                 <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 15, color: color.white }}>
                   {e.title}
@@ -151,6 +152,13 @@ export function DayAgenda({ date, events, tracks, annivs, uid }: Props) {
                     {e.description}
                   </Text>
                 ) : null}
+                {/* 생성자 */}
+                {e.owner_id && (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4 }}>
+                    <Avatar url={avatarUrl(e.owner_id)} name={name(e.owner_id)} size={16} />
+                    <Meta style={{ fontSize: 11.5 }}>{name(e.owner_id)}</Meta>
+                  </View>
+                )}
               </View>
               <Text style={{ fontFamily: typeface, fontSize: 12, color: color.muted }}>수정</Text>
             </Pressable>

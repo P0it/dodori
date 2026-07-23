@@ -1,7 +1,7 @@
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
-import { color, role, typeface } from '@/theme/tokens';
+import { color, typeface } from '@/theme/tokens';
 import {
   usePlaylistDetail,
   useDeletePlaylist,
@@ -120,9 +120,9 @@ export default function CustomPlaylist() {
                       style={{
                         fontSize: 9.5,
                         fontFamily: typeface, fontWeight: '700',
-                        color: role.anniv,
+                        color: color.anniv,
                         borderWidth: 1,
-                        borderColor: role.anniv,
+                        borderColor: color.anniv,
                         borderRadius: 4,
                         paddingHorizontal: 5,
                         paddingVertical: 1,
@@ -155,7 +155,7 @@ export default function CustomPlaylist() {
               opacity: pressed ? 0.7 : 1,
             })}
           >
-            <Text style={{ color: role.me, fontFamily: typeface, fontWeight: '600', fontSize: 13.5 }}>+ 장소 담기</Text>
+            <Text style={{ color: color.accent, fontFamily: typeface, fontWeight: '600', fontSize: 13.5 }}>+ 장소 담기</Text>
           </Pressable>
         </View>
       </ScrollView>

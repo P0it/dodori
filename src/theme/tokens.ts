@@ -4,17 +4,11 @@
  * M6 브랜드 리스킨은 이 파일 값 교체로 끝나야 한다.
  */
 
-/** 데이터 인코딩 3역할 규약 (PRD §6.2) — 값은 바뀌어도 역할 구분은 유지 */
-export const role = {
-  me: '#1ED760', // 나 (brand green)
-  partner: '#E8688F', // 상대 (pink)
-  anniv: '#E8B84B', // 기념일 (amber)
-} as const;
-
-export type OwnerRole = keyof typeof role;
-
 export const color = {
-  ...role,
+  /** 브랜드 강조 — 버튼·링크·활성 상태. 사람을 뜻하지 않는다 */
+  accent: '#1ED760',
+  /** 기념일 (amber) */
+  anniv: '#E8B84B',
   greenBright: '#1ED760',
   greenCore: '#1DB954', // play button
   greenPress: '#17B54E',
@@ -40,13 +34,34 @@ export const color = {
   sunday: '#FF5C5C',
 } as const;
 
-/** 칩·pill 반투명 배경 (3역할 + 데이트) */
-export const roleBg = {
-  me: 'rgba(30,215,96,0.15)',
-  partner: 'rgba(232,104,143,0.15)',
+/** 칩·pill 반투명 배경 — 종류(기념일·데이트)를 뜻한다 */
+export const tintBg = {
+  accent: 'rgba(30,215,96,0.15)',
   anniv: 'rgba(232,184,75,0.16)',
   date: 'rgba(167,139,250,0.16)',
 } as const;
+
+/**
+ * 일정 색 팔레트 — 사람이 아니라 **일정의 속성**. 등록할 때 직접 고른다.
+ * DB(events.color)에는 이 키가 그대로 들어간다 (hex 저장 금지 — 리스킨이 이 파일 교체로 끝나야 한다).
+ */
+export const eventColor = {
+  green: { fg: '#1ED760', bg: 'rgba(30,215,96,0.15)' },
+  blue: { fg: '#4FA8FF', bg: 'rgba(79,168,255,0.16)' },
+  purple: { fg: '#A78BFA', bg: 'rgba(167,139,250,0.16)' },
+  pink: { fg: '#E8688F', bg: 'rgba(232,104,143,0.15)' },
+  amber: { fg: '#E8B84B', bg: 'rgba(232,184,75,0.16)' },
+  red: { fg: '#FF5C5C', bg: 'rgba(255,92,92,0.16)' },
+} as const;
+
+export type EventColorKey = keyof typeof eventColor;
+export const EVENT_COLOR_KEYS = Object.keys(eventColor) as EventColorKey[];
+export const DEFAULT_EVENT_COLOR: EventColorKey = 'green';
+
+/** DB에서 온 문자열을 팔레트 키로 좁힌다 (알 수 없는 값은 기본색) */
+export function toEventColor(value: string | null | undefined): EventColorKey {
+  return value && value in eventColor ? (value as EventColorKey) : DEFAULT_EVENT_COLOR;
+}
 
 /**
  * 생성 커버(자켓) 팔레트 — 사진 없는 앨범에 트랙 id로 결정적 배정 (§6.4 placeholder 대체).

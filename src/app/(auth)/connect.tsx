@@ -70,7 +70,7 @@ function ChoiceCard({
         borderRadius: 16,
         backgroundColor: active ? 'rgba(30,215,96,0.10)' : color.surface1,
         borderWidth: active ? 1.5 : 1,
-        borderColor: active ? color.me : 'rgba(255,255,255,0.06)',
+        borderColor: active ? color.accent : 'rgba(255,255,255,0.06)',
         opacity: pressed ? 0.8 : 1,
       })}
     >
@@ -79,7 +79,7 @@ function ChoiceCard({
           width: 44,
           height: 44,
           borderRadius: 12,
-          backgroundColor: active ? color.me : color.surface2,
+          backgroundColor: active ? color.accent : color.surface2,
           alignItems: 'center',
           justifyContent: 'center',
         }}

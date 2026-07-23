@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { color, radius, role, space, typeface } from '@/theme/tokens';
+import { color, radius, space, typeface } from '@/theme/tokens';
 import { TopBar } from '@/components/TopBar';
 import { Meta } from '@/components/Meta';
 import { PlusGlyph } from '@/components/glyphs';
@@ -121,7 +121,7 @@ export default function CreatePost() {
           style={({ pressed }) => ({
             height: 52,
             borderRadius: radius.pill,
-            backgroundColor: role.me,
+            backgroundColor: color.accent,
             alignItems: 'center',
             justifyContent: 'center',
             opacity: !canSave ? 0.4 : pressed || saving ? 0.85 : 1,

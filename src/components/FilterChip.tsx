@@ -5,7 +5,7 @@ type Props = {
   selected?: boolean;
   onPress?: () => void;
   children: string;
-  /** 라벨 앞 장식 (OwnerDot 등) */
+  /** 라벨 앞 장식 (색 점 등) */
   leading?: React.ReactNode;
 };
 

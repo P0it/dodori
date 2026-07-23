@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { color, role, typeface } from '@/theme/tokens';
+import { color, typeface } from '@/theme/tokens';
 import { formatDday, isISODate, todayKST } from '@/lib/date';
 import { useAnniversaries, type AnnivItem } from '@/api/anniversaries';
 import { useMyCouple } from '@/api/couple';
@@ -72,9 +72,9 @@ export default function AnnivManage() {
                 style={{
                   fontSize: 9.5,
                   fontFamily: typeface, fontWeight: '700',
-                  color: role.anniv,
+                  color: color.anniv,
                   borderWidth: 1,
-                  borderColor: role.anniv,
+                  borderColor: color.anniv,
                   borderRadius: 4,
                   paddingHorizontal: 5,
                   paddingVertical: 1,
@@ -100,7 +100,7 @@ export default function AnnivManage() {
         title="기념일 관리"
         right={
           <Pressable hitSlop={8} onPress={() => setAdding(true)}>
-            <Text style={{ fontFamily: typeface, color: role.anniv, fontSize: 22, lineHeight: 24 }}>+</Text>
+            <Text style={{ fontFamily: typeface, color: color.anniv, fontSize: 22, lineHeight: 24 }}>+</Text>
           </Pressable>
         }
       />
@@ -127,7 +127,7 @@ export default function AnnivManage() {
             opacity: pressed ? 0.7 : 1,
           })}
         >
-          <Text style={{ color: role.anniv, fontFamily: typeface, fontWeight: '600', fontSize: 14 }}>+ 기념일 추가</Text>
+          <Text style={{ color: color.anniv, fontFamily: typeface, fontWeight: '600', fontSize: 14 }}>+ 기념일 추가</Text>
         </Pressable>
         <Meta style={{ fontSize: 11.5, lineHeight: 19, marginTop: 16 }}>
           자동 기념일은 시작일·생일을 바꾸면 다시 계산돼요. 기록 없이 지나가도 카드는 남아요.
@@ -195,9 +195,9 @@ function AddCustomAnniv({ onClose }: { onClose: () => void }) {
           <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 16, color: color.white }}>기념일 추가</Text>
           <Pressable onPress={() => valid && add.mutate()} hitSlop={8} disabled={!valid}>
             {add.isPending ? (
-              <ActivityIndicator size="small" color={role.anniv} />
+              <ActivityIndicator size="small" color={color.anniv} />
             ) : (
-              <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 15, color: valid ? role.anniv : color.muted }}>
+              <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 15, color: valid ? color.anniv : color.muted }}>
                 저장
               </Text>
             )}
@@ -264,7 +264,7 @@ function AddCustomAnniv({ onClose }: { onClose: () => void }) {
               width: 46,
               height: 28,
               borderRadius: 999,
-              backgroundColor: repeat ? role.anniv : color.surface3,
+              backgroundColor: repeat ? color.anniv : color.surface3,
               justifyContent: 'center',
             }}
           >

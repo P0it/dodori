@@ -1,8 +1,7 @@
 import { Pressable, Text, View } from 'react-native';
-import { color, role, typeface } from '@/theme/tokens';
+import { color, typeface } from '@/theme/tokens';
 import { formatRelative } from '@/lib/date';
 import { Meta } from '@/components/Meta';
-import { OwnerDot } from '@/components/OwnerDot';
 import type { TopicComment } from '@/api/topics';
 
 type Props = {
@@ -85,13 +84,12 @@ function Body({
   return (
     <View>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-        <OwnerDot who={mine ? 'me' : 'partner'} size={8} />
         <Text
           style={{
             fontFamily: typeface,
             fontWeight: '700',
             fontSize: 13,
-            color: mine ? role.me : role.partner,
+            color: color.white,
           }}
         >
           {mine ? myName : partnerName}

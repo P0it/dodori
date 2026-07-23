@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { color, role, typeface } from '@/theme/tokens';
+import { color, typeface } from '@/theme/tokens';
 import { TopBar } from '@/components/TopBar';
 import { Meta } from '@/components/Meta';
 import { monthCells, addMonths, monthLabel } from '@/lib/calendar';
@@ -110,7 +110,7 @@ function PickTitle({
           style={({ pressed }) => ({
             height: 48,
             borderRadius: 999,
-            backgroundColor: role.me,
+            backgroundColor: color.accent,
             alignItems: 'center',
             justifyContent: 'center',
             opacity: pressed || saving ? 0.85 : 1,
@@ -198,7 +198,7 @@ function PickDate({
                 paddingVertical: 6,
                 fontSize: 11,
                 fontFamily: typeface, fontWeight: '600',
-                color: i === 0 ? role.partner : color.muted,
+                color: i === 0 ? color.sunday : color.muted,
               }}
             >
               {w}
@@ -222,7 +222,7 @@ function PickDate({
                     borderRadius: 18,
                     alignItems: 'center',
                     justifyContent: 'center',
-                    backgroundColor: selected ? role.me : 'transparent',
+                    backgroundColor: selected ? color.accent : 'transparent',
                   }}
                 >
                   <Text
@@ -234,7 +234,7 @@ function PickDate({
                         : selected
                           ? color.bg
                           : c.isToday
-                            ? role.me
+                            ? color.accent
                             : color.white,
                     }}
                   >
@@ -269,7 +269,7 @@ function PickDate({
               borderRadius: 12,
               backgroundColor: 'rgba(30,215,96,0.10)',
               borderWidth: 1,
-              borderColor: role.me,
+              borderColor: color.accent,
             }}
           >
             <View
@@ -277,7 +277,7 @@ function PickDate({
                 width: 40,
                 height: 40,
                 borderRadius: 10,
-                backgroundColor: role.me,
+                backgroundColor: color.accent,
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
@@ -305,7 +305,7 @@ function PickDate({
           style={({ pressed }) => ({
             height: 52,
             borderRadius: 999,
-            backgroundColor: role.me,
+            backgroundColor: color.accent,
             alignItems: 'center',
             justifyContent: 'center',
             opacity: !date ? 0.4 : pressed ? 0.85 : 1,

@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
-import { color, typeface } from '@/theme/tokens';
+import { color, toEventColor, typeface } from '@/theme/tokens';
 import { monthCells, addMonths, monthLabel } from '@/lib/calendar';
 import { monthKey as toMonthKey, todayKST, isReleased, toKSTDate } from '@/lib/date';
 import { occurrenceInMonth } from '@/lib/anniversaries';
@@ -14,7 +14,6 @@ import { useCoupleProfiles } from '@/api/couple';
 import { useHolidayExtras } from '@/api/holidays';
 import { useSession } from '@/api/auth';
 import { FilterChip } from '@/components/FilterChip';
-import { OwnerDot } from '@/components/OwnerDot';
 import { MonthGrid, type DayMarks } from '@/components/calendar/MonthGrid';
 import { DayAgenda } from '@/components/calendar/DayAgenda';
 
@@ -65,10 +64,10 @@ export default function Calendar() {
     for (const e of events.data ?? []) {
       if (!e.starts_at || !e.owner_id) continue;
       const day = toKSTDate(new Date(e.starts_at));
-      const who: 'me' | 'partner' = e.owner_id === uid ? 'me' : 'partner';
+      const who: Filter = e.owner_id === uid ? 'me' : 'partner';
       if (filter !== 'us' && filter !== who) continue;
       const m = at(day);
-      m.events = [...(m.events ?? []), { title: e.title ?? '일정', who }];
+      m.events = [...(m.events ?? []), { title: e.title ?? '일정', color: toEventColor(e.color) }];
     }
     return map;
   }, [holidays, tracks.data, annivs.data, events.data, month, filter, uid]);
@@ -76,6 +75,10 @@ export default function Calendar() {
   const lbl = monthLabel(month);
   const partnerName = profiles.data?.partner?.nickname || '상대';
   const myName = profiles.data?.me?.nickname || '나';
+
+  const profileOf = (id: string) => (id === uid ? profiles.data?.me : profiles.data?.partner);
+  const nameOf = (id: string) => profileOf(id)?.nickname || (id === uid ? myName : partnerName);
+  const avatarOf = (id: string) => profileOf(id)?.avatar_url ?? null;
 
   return (
     <View style={{ flex: 1, backgroundColor: color.bg }}>
@@ -112,18 +115,10 @@ export default function Calendar() {
             <FilterChip selected={filter === 'us'} onPress={() => setFilter('us')}>
               우리
             </FilterChip>
-            <FilterChip
-              selected={filter === 'me'}
-              onPress={() => setFilter('me')}
-              leading={<OwnerDot who="me" size={7} />}
-            >
+            <FilterChip selected={filter === 'me'} onPress={() => setFilter('me')}>
               {myName}
             </FilterChip>
-            <FilterChip
-              selected={filter === 'partner'}
-              onPress={() => setFilter('partner')}
-              leading={<OwnerDot who="partner" size={7} />}
-            >
+            <FilterChip selected={filter === 'partner'} onPress={() => setFilter('partner')}>
               {partnerName}
             </FilterChip>
           </View>
@@ -143,7 +138,8 @@ export default function Calendar() {
           annivs={(annivs.data ?? []).filter(
             (a) => occurrenceInMonth(a.date, a.repeatYearly, month) === selected,
           )}
-          uid={uid}
+          name={(id) => nameOf(id)}
+          avatarUrl={(id) => avatarOf(id)}
         />
       </View>
 
@@ -172,7 +168,7 @@ export default function Calendar() {
             />
             <FabAction
               label="일정"
-              tint={color.me}
+              tint={color.accent}
               onPress={() => {
                 setFabOpen(false);
                 router.push({ pathname: '/modals/add-event', params: { date: selected } });
@@ -190,7 +186,7 @@ export default function Calendar() {
           width: 56,
           height: 56,
           borderRadius: 28,
-          backgroundColor: color.me,
+          backgroundColor: color.accent,
           alignItems: 'center',
           justifyContent: 'center',
           shadowColor: '#000',

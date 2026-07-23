@@ -8,7 +8,7 @@ import {
   type NativeSyntheticEvent,
 } from 'react-native';
 import { Image } from 'expo-image';
-import { color, radius, role, space, typeface, type OwnerRole } from '@/theme/tokens';
+import { color, radius, space, typeface } from '@/theme/tokens';
 import { formatRelative } from '@/lib/date';
 import { REACTIONS } from '@/lib/posts';
 import { Avatar } from '@/components/Avatar';
@@ -21,7 +21,6 @@ type Props = {
   post: Post;
   width: number;
   myUid: string;
-  who: (uid: string) => OwnerRole;
   name: (uid: string) => string;
   avatarUrl: (uid: string) => string | null;
   onToggleReaction: (emoji: string, on: boolean) => void;
@@ -37,7 +36,6 @@ export function PostCard({
   post,
   width,
   myUid,
-  who,
   name,
   avatarUrl,
   onToggleReaction,
@@ -48,7 +46,6 @@ export function PostCard({
   const [page, setPage] = useState(0);
   const [expanded, setExpanded] = useState(false);
   const mine = post.authorId === myUid;
-  const authorRole = who(post.authorId);
 
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) =>
     setPage(Math.round(e.nativeEvent.contentOffset.x / width));
@@ -72,7 +69,7 @@ export function PostCard({
           paddingVertical: 10,
         }}
       >
-        <Avatar url={avatarUrl(post.authorId)} role={authorRole} name={name(post.authorId)} size={34} />
+        <Avatar url={avatarUrl(post.authorId)} name={name(post.authorId)} size={34} />
         <Text
           style={{
             fontFamily: typeface,
@@ -150,7 +147,7 @@ export function PostCard({
             accessibilityRole="button"
             accessibilityLabel={iLiked ? '좋아요 취소' : '좋아요'}
           >
-            <HeartGlyph size={25} filled={iLiked} color={iLiked ? role.me : color.white} />
+            <HeartGlyph size={25} filled={iLiked} color={iLiked ? color.accent : color.white} />
           </Pressable>
           <Pressable onPress={() => setExpanded(true)} hitSlop={8} accessibilityLabel="댓글">
             <CommentGlyph size={24} />
@@ -184,9 +181,10 @@ export function PostCard({
           </Text>
         )}
 
+        {/* 이름은 흰색 굵게, 본문은 한 톤 낮춰 — 한글 이름과 한글 본문이 붙어 읽히는 걸 막는다 */}
         {!!post.caption && (
-          <Text style={{ fontFamily: typeface, fontSize: 14.5, lineHeight: 21, color: color.white }}>
-            <Text style={{ fontWeight: '700', color: role[authorRole] }}>{name(post.authorId)}</Text>
+          <Text style={{ fontFamily: typeface, fontSize: 14.5, lineHeight: 21, color: color.sub }}>
+            <Text style={{ fontWeight: '700', color: color.white }}>{name(post.authorId)}</Text>
             {'   '}
             {post.caption}
           </Text>
@@ -197,7 +195,6 @@ export function PostCard({
         <CommentList
           comments={post.comments}
           myUid={myUid}
-          who={who}
           name={name}
           avatarUrl={avatarUrl}
           onAdd={onAddComment}

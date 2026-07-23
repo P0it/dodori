@@ -137,6 +137,7 @@ export type Database = {
       events: {
         Row: {
           all_day: boolean
+          color: string
           couple_id: string
           created_at: string
           description: string | null
@@ -148,6 +149,7 @@ export type Database = {
         }
         Insert: {
           all_day?: boolean
+          color?: string
           couple_id: string
           created_at?: string
           description?: string | null
@@ -159,6 +161,7 @@ export type Database = {
         }
         Update: {
           all_day?: boolean
+          color?: string
           couple_id?: string
           created_at?: string
           description?: string | null
@@ -778,6 +781,7 @@ export type Database = {
       events_visible: {
         Row: {
           all_day: boolean | null
+          color: string | null
           couple_id: string | null
           created_at: string | null
           description: string | null
@@ -789,6 +793,7 @@ export type Database = {
         }
         Insert: {
           all_day?: boolean | null
+          color?: string | null
           couple_id?: string | null
           created_at?: string | null
           description?: string | null
@@ -800,6 +805,7 @@ export type Database = {
         }
         Update: {
           all_day?: boolean | null
+          color?: string | null
           couple_id?: string | null
           created_at?: string | null
           description?: string | null

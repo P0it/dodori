@@ -1,11 +1,11 @@
 import { Pressable, Text, View } from 'react-native';
-import { color, role, typeface } from '@/theme/tokens';
-import { OwnerDot } from '@/components/OwnerDot';
+import { color, typeface } from '@/theme/tokens';
+import { Meta } from '@/components/Meta';
 
 type Props = {
   label: string;
-  /** 이 선택지를 고른 사람 — 투표 전엔 빈 배열 (RLS가 상대 답을 가림) */
-  pickedBy: ('me' | 'partner')[];
+  /** 이 선택지를 고른 사람 이름 — 투표 전엔 빈 배열 (RLS가 상대 답을 가림) */
+  pickedBy: string[];
   selected: boolean;
   disabled: boolean;
   onPress: () => void;
@@ -26,7 +26,7 @@ export function ChoiceRow({ label, pickedBy, selected, disabled, onPress }: Prop
         borderRadius: 14,
         backgroundColor: selected ? 'rgba(30,215,96,0.12)' : color.surface1,
         borderWidth: 1.5,
-        borderColor: selected ? role.me : color.surface2,
+        borderColor: selected ? color.accent : color.surface2,
         opacity: pressed ? 0.75 : 1,
       })}
     >
@@ -36,13 +36,13 @@ export function ChoiceRow({ label, pickedBy, selected, disabled, onPress }: Prop
           height: 22,
           borderRadius: 11,
           borderWidth: 2,
-          borderColor: selected ? role.me : color.muted,
+          borderColor: selected ? color.accent : color.muted,
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
         {selected && (
-          <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: role.me }} />
+          <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: color.accent }} />
         )}
       </View>
 
@@ -59,11 +59,7 @@ export function ChoiceRow({ label, pickedBy, selected, disabled, onPress }: Prop
         {label}
       </Text>
 
-      <View style={{ flexDirection: 'row', gap: 5 }}>
-        {pickedBy.map((who) => (
-          <OwnerDot key={who} who={who} size={10} />
-        ))}
-      </View>
+      {pickedBy.length > 0 && <Meta style={{ fontSize: 12 }}>{pickedBy.join(' · ')}</Meta>}
     </Pressable>
   );
 }

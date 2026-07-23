@@ -10,7 +10,15 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
-import { color, role, roleBg, typeface } from '@/theme/tokens';
+import {
+  color,
+  DEFAULT_EVENT_COLOR,
+  eventColor,
+  EVENT_COLOR_KEYS,
+  toEventColor,
+  typeface,
+  type EventColorKey,
+} from '@/theme/tokens';
 import { isISODate, todayKST, toKSTDate } from '@/lib/date';
 import {
   useCreateEvent,
@@ -18,7 +26,6 @@ import {
   useMonthEvents,
   useUpdateEvent,
 } from '@/api/events';
-import { OwnerDot } from '@/components/OwnerDot';
 import { Meta } from '@/components/Meta';
 import { useCoupleProfiles } from '@/api/couple';
 
@@ -35,6 +42,7 @@ export default function AddEvent() {
   const [allDay, setAllDay] = useState(false);
   const [description, setDescription] = useState('');
   const [ownerId, setOwnerId] = useState('');
+  const [eventColorKey, setEventColorKey] = useState<EventColorKey>(DEFAULT_EVENT_COLOR);
 
   // 수정 모드: 기존 값 로드 (해당 월 캐시에서)
   const monthEvents = useMonthEvents(date.slice(0, 7));
@@ -49,6 +57,7 @@ export default function AddEvent() {
     setStartTime(kstTime(e.starts_at));
     setEndTime(e.ends_at ? kstTime(e.ends_at) : '');
     setOwnerId(e.owner_id ?? '');
+    setEventColorKey(toEventColor(e.color));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editingId, monthEvents.data]);
 
@@ -76,6 +85,7 @@ export default function AddEvent() {
       endsAt: !allDay && isTime(endTime) ? `${date}T${endTime}:00+09:00` : null,
       allDay,
       description: description.trim() || null,
+      color: eventColorKey,
     };
     const done = { onSuccess: () => router.back(), onError: showError };
     if (editingId) update.mutate({ id: editingId, ...input }, done);
@@ -122,13 +132,13 @@ export default function AddEvent() {
         </Text>
         <Pressable onPress={save} hitSlop={8} disabled={!valid || busy}>
           {busy ? (
-            <ActivityIndicator size="small" color={role.me} />
+            <ActivityIndicator size="small" color={color.accent} />
           ) : (
             <Text
               style={{
                 fontFamily: typeface, fontWeight: '700',
                 fontSize: 15,
-                color: valid ? role.me : color.muted,
+                color: valid ? color.accent : color.muted,
               }}
             >
               저장
@@ -156,22 +166,55 @@ export default function AddEvent() {
                   height: 36,
                   borderRadius: 999,
                   borderWidth: 1,
-                  borderColor: on ? role[who] : color.surface3,
-                  backgroundColor: on ? roleBg[who] : 'transparent',
+                  borderColor: on ? color.white : color.surface3,
+                  backgroundColor: on ? 'rgba(255,255,255,0.10)' : 'transparent',
                   opacity: p ? 1 : 0.4,
                 }}
               >
-                <OwnerDot who={who} size={9} />
                 <Text
                   style={{
                     fontFamily: typeface,
                     fontWeight: '700',
                     fontSize: 13,
-                    color: on ? role[who] : color.sub,
+                    color: on ? color.white : color.sub,
                   }}
                 >
                   {p?.nickname || (who === 'me' ? '나' : '상대')}
                 </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        {/* 일정 색 — 사람이 아니라 이 일정의 색 */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 18 }}>
+          {EVENT_COLOR_KEYS.map((key) => {
+            const on = eventColorKey === key;
+            return (
+              <Pressable
+                key={key}
+                onPress={() => setEventColorKey(key)}
+                hitSlop={6}
+                accessibilityRole="button"
+                accessibilityLabel={`일정 색 ${key}`}
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: 14,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderWidth: on ? 2 : 0,
+                  borderColor: color.white,
+                }}
+              >
+                <View
+                  style={{
+                    width: on ? 16 : 22,
+                    height: on ? 16 : 22,
+                    borderRadius: 11,
+                    backgroundColor: eventColor[key].fg,
+                  }}
+                />
               </Pressable>
             );
           })}
@@ -334,7 +377,7 @@ function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
         width: 46,
         height: 28,
         borderRadius: 999,
-        backgroundColor: on ? role.me : color.surface3,
+        backgroundColor: on ? color.accent : color.surface3,
         justifyContent: 'center',
       }}
     >

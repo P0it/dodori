@@ -1,6 +1,6 @@
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { color, role, typeface } from '@/theme/tokens';
+import { color, typeface } from '@/theme/tokens';
 import { todayKST } from '@/lib/date';
 import { useCoupleProfiles } from '@/api/couple';
 import { useTodayTopic, useTopicVotes, useTopicComments } from '@/api/topics';
@@ -99,12 +99,12 @@ export default function Today() {
               height: 16,
               borderRadius: 8,
               borderWidth: 2,
-              borderColor: mine ? role.me : color.muted,
+              borderColor: mine ? color.accent : color.muted,
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            {mine && <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: role.me }} />}
+            {mine && <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: color.accent }} />}
           </View>
           <Meta style={{ fontSize: 12.5, flex: 1 }}>
             {mine === null

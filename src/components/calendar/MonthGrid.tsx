@@ -1,6 +1,6 @@
 import { Pressable, Text, View } from 'react-native';
 import { Image } from 'expo-image';
-import { color, role, roleBg, typeface } from '@/theme/tokens';
+import { color, eventColor, tintBg, typeface, type EventColorKey } from '@/theme/tokens';
 import type { DayCell } from '@/lib/calendar';
 import { shortHolidayName } from '@/lib/holidays';
 import { StarGlyph } from '@/components/glyphs';
@@ -16,8 +16,8 @@ export interface DayMarks {
   annivLabel?: string;
   /** 공휴일 이름 ('설날', '대체공휴일(광복절)' 등) */
   holidayLabel?: string;
-  /** 개인 일정 — 시간순, 제목·역할 */
-  events?: { title: string; who: 'me' | 'partner' }[];
+  /** 개인 일정 — 시간순, 제목·색(사람이 아니라 일정의 속성) */
+  events?: { title: string; color: EventColorKey }[];
 }
 
 const WEEK = ['일', '월', '화', '수', '목', '금', '토'];
@@ -123,7 +123,7 @@ function DayCellView({
           borderRadius: 12,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: cell.isToday ? role.me : 'transparent',
+          backgroundColor: cell.isToday ? color.accent : 'transparent',
         }}
       >
         <Text
@@ -141,7 +141,7 @@ function DayCellView({
                     : cell.weekday === 6
                       ? color.saturday
                       : m.annivLabel
-                        ? role.anniv
+                        ? color.anniv
                         : color.white,
           }}
         >
@@ -156,7 +156,7 @@ function DayCellView({
             <StarGlyph size={10} />
             <Text
               numberOfLines={1}
-              style={{ flex: 1, fontSize: 10, fontFamily: typeface, fontWeight: '700', color: role.anniv }}
+              style={{ flex: 1, fontSize: 10, fontFamily: typeface, fontWeight: '700', color: color.anniv }}
             >
               {m.annivLabel}
             </Text>
@@ -171,16 +171,16 @@ function DayCellView({
           </Text>
         )}
         {m.upcomingTitle && (
-          <Chip bg={roleBg.date} fg={color.date}>
+          <Chip bg={tintBg.date} fg={color.date}>
             {m.upcomingTitle}
           </Chip>
         )}
         {m.releasedThumb && (
           <Text style={{ fontSize: 10, fontFamily: typeface, fontWeight: '700', color: color.white }}>데이트</Text>
         )}
-        {m.releasedNoPhoto && <Chip bg={roleBg.date} fg={color.date}>데이트</Chip>}
+        {m.releasedNoPhoto && <Chip bg={tintBg.date} fg={color.date}>데이트</Chip>}
         {(m.events ?? []).map((e, i) => (
-          <Chip key={i} bg={roleBg[e.who]} fg={role[e.who]}>
+          <Chip key={i} bg={eventColor[e.color].bg} fg={eventColor[e.color].fg}>
             {e.title}
           </Chip>
         ))}

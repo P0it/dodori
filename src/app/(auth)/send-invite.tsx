@@ -70,7 +70,7 @@ export default function SendInvite() {
               fontFamily: typeface, fontWeight: '800',
               fontSize: 30,
               letterSpacing: 6,
-              color: code ? color.me : color.muted,
+              color: code ? color.accent : color.muted,
             }}
           >
             {code ?? '생성 중…'}
@@ -112,7 +112,7 @@ function PrimaryBtn({
       style={({ pressed }) => ({
         height: 52,
         borderRadius: 999,
-        backgroundColor: color.me,
+        backgroundColor: color.accent,
         alignItems: 'center',
         justifyContent: 'center',
         opacity: disabled ? 0.4 : pressed ? 0.85 : 1,

@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from './supabase';
 import { useMyCouple } from './couple';
 import type { Database } from '@/types/database.types';
+import type { EventColorKey } from '@/theme/tokens';
 
 /** 조회는 events_visible 뷰(커플 공유 읽기 표면) 경유 */
 export type VisibleEvent = Database['public']['Views']['events_visible']['Row'];
@@ -15,6 +16,8 @@ export interface EventInput {
   endsAt?: string | null;
   allDay: boolean;
   description?: string | null;
+  /** 일정 색 — 사람이 아니라 일정의 속성 (팔레트 키) */
+  color: EventColorKey;
 }
 
 /** 월 범위 events 조회 (KST 월 경계, 뷰 경유) */
@@ -54,6 +57,7 @@ export function useCreateEvent() {
         ends_at: input.endsAt ?? null,
         all_day: input.allDay,
         description: input.description ?? null,
+        color: input.color,
       });
       if (error) throw error;
     },
@@ -74,6 +78,7 @@ export function useUpdateEvent() {
           ends_at: input.endsAt ?? null,
           all_day: input.allDay,
           description: input.description ?? null,
+          color: input.color,
         })
         .eq('id', id);
       if (error) throw error;

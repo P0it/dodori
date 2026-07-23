@@ -2,7 +2,7 @@ import { Alert, Pressable, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { FlashList } from '@shopify/flash-list';
-import { color, role, typeface } from '@/theme/tokens';
+import { color, typeface } from '@/theme/tokens';
 import { useTrack, useUpdateTrack } from '@/api/tracks';
 import { thumbUrl, useDeletePhoto } from '@/api/photos';
 import { useSession } from '@/api/auth';
@@ -81,7 +81,7 @@ export default function Gallery() {
                   backgroundColor: 'rgba(0,0,0,0.55)',
                 }}
               >
-                <Text style={{ fontSize: 8.5, fontFamily: typeface, fontWeight: '700', color: role.me }}>커버</Text>
+                <Text style={{ fontSize: 8.5, fontFamily: typeface, fontWeight: '700', color: color.accent }}>커버</Text>
               </View>
             )}
           </Pressable>

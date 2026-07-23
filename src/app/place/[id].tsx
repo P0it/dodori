@@ -1,7 +1,7 @@
 import { Linking, Pressable, ScrollView, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
-import { color, role, typeface } from '@/theme/tokens';
+import { color, typeface } from '@/theme/tokens';
 import { formatDday, isReleased } from '@/lib/date';
 import { usePlaceDetail } from '@/api/playlists';
 import { TopBar } from '@/components/TopBar';
@@ -54,7 +54,7 @@ export default function PlaceDetail() {
               backgroundColor: 'rgba(30,215,96,0.12)',
             }}
           >
-            <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 12.5, color: role.me }}>
+            <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 12.5, color: color.accent }}>
               방문 {p?.visitCount ?? 0}회
             </Text>
           </View>
@@ -118,9 +118,9 @@ export default function PlaceDetail() {
                         style={{
                           fontSize: 10,
                           fontFamily: typeface, fontWeight: '700',
-                          color: role.me,
+                          color: color.accent,
                           borderWidth: 1,
-                          borderColor: role.me,
+                          borderColor: color.accent,
                           borderRadius: 4,
                           paddingHorizontal: 5,
                           paddingVertical: 1,

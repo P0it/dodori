@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
-import { color, radius, role, typeface, type OwnerRole } from '@/theme/tokens';
+import { color, radius, typeface } from '@/theme/tokens';
 import { formatRelative } from '@/lib/date';
 import { Meta } from '@/components/Meta';
 import { Avatar } from '@/components/Avatar';
@@ -9,7 +9,6 @@ import type { PostComment } from '@/api/posts';
 type Props = {
   comments: PostComment[];
   myUid: string;
-  who: (uid: string) => OwnerRole;
   name: (uid: string) => string;
   avatarUrl: (uid: string) => string | null;
   onAdd: (body: string, parentId: string | null) => void;
@@ -25,7 +24,6 @@ const PREVIEW = 2;
 export function CommentList({
   comments,
   myUid,
-  who,
   name,
   avatarUrl,
   onAdd,
@@ -66,7 +64,6 @@ export function CommentList({
           <Row
             comment={c}
             myUid={myUid}
-            who={who}
             name={name}
             avatarUrl={avatarUrl}
             onReply={() => startReply(c)}
@@ -77,7 +74,6 @@ export function CommentList({
               <Row
                 comment={r}
                 myUid={myUid}
-                who={who}
                 name={name}
                 avatarUrl={avatarUrl}
                 size={22}
@@ -98,7 +94,7 @@ export function CommentList({
       )}
 
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-        <Avatar url={avatarUrl(myUid)} role={who(myUid)} name={name(myUid)} size={26} />
+        <Avatar url={avatarUrl(myUid)} name={name(myUid)} size={26} />
         <TextInput
           value={draft}
           onChangeText={setDraft}
@@ -119,7 +115,7 @@ export function CommentList({
         />
         {!!draft.trim() && (
           <Pressable onPress={submit} hitSlop={10}>
-            <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 14, color: role.me }}>
+            <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 14, color: color.accent }}>
               등록
             </Text>
           </Pressable>
@@ -133,7 +129,6 @@ export function CommentList({
 function Row({
   comment,
   myUid,
-  who,
   name,
   avatarUrl,
   size = 26,
@@ -142,7 +137,6 @@ function Row({
 }: {
   comment: PostComment;
   myUid: string;
-  who: (uid: string) => OwnerRole;
   name: (uid: string) => string;
   avatarUrl: (uid: string) => string | null;
   size?: number;
@@ -151,18 +145,11 @@ function Row({
 }) {
   return (
     <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
-      <Avatar
-        url={avatarUrl(comment.authorId)}
-        role={who(comment.authorId)}
-        name={name(comment.authorId)}
-        size={size}
-      />
+      <Avatar url={avatarUrl(comment.authorId)} name={name(comment.authorId)} size={size} />
       <View style={{ flex: 1, minWidth: 0 }}>
-        <Text style={{ fontFamily: typeface, fontSize: 14, lineHeight: 20, color: color.white }}>
-          {/* 이름은 역할색 — 굵기만으로는 한글 이름과 한글 본문이 한 덩어리로 읽힌다 */}
-          <Text style={{ fontWeight: '700', color: role[who(comment.authorId)] }}>
-            {name(comment.authorId)}
-          </Text>
+        {/* 이름은 흰색 굵게, 본문은 한 톤 낮춰 구분한다 */}
+        <Text style={{ fontFamily: typeface, fontSize: 14, lineHeight: 20, color: color.sub }}>
+          <Text style={{ fontWeight: '700', color: color.white }}>{name(comment.authorId)}</Text>
           {'   '}
           {comment.body}
         </Text>

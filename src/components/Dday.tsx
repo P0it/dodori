@@ -1,14 +1,14 @@
 import { Text, View, type ViewStyle, type StyleProp } from 'react-native';
-import { color, roleBg, typeface } from '@/theme/tokens';
+import { color, tintBg, typeface } from '@/theme/tokens';
 
 type Props = {
   children: React.ReactNode;
-  tone?: 'me' | 'anniv' | 'date';
+  tone?: 'accent' | 'anniv' | 'date';
   style?: StyleProp<ViewStyle>;
 };
 
-/** D-day pill (목업 Dday) — 기본 green(나), 기념일 amber, 데이트 보라 */
-export function Dday({ children, tone = 'me', style }: Props) {
+/** D-day pill (목업 Dday) — 기본 green, 기념일 amber, 데이트 보라 */
+export function Dday({ children, tone = 'accent', style }: Props) {
   return (
     <View
       style={[
@@ -19,7 +19,7 @@ export function Dday({ children, tone = 'me', style }: Props) {
           height: 22,
           paddingHorizontal: 10,
           borderRadius: 999,
-          backgroundColor: roleBg[tone],
+          backgroundColor: tintBg[tone],
         },
         style,
       ]}

@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
-import { color, role, typeface } from '@/theme/tokens';
+import { color, typeface } from '@/theme/tokens';
 import { formatDday, isReleased, todayKST } from '@/lib/date';
 import { useAllTracks } from '@/api/tracks';
 import { useAnniversaries } from '@/api/anniversaries';
@@ -47,7 +47,7 @@ export default function Queue() {
         </View>
 
         <View style={{ paddingHorizontal: 16, paddingTop: 12 }}>
-          <Eyebrow color={role.me} style={{ marginBottom: 4 }}>
+          <Eyebrow color={color.accent} style={{ marginBottom: 4 }}>
             지금 다음
           </Eyebrow>
           {upcoming.length === 0 ? (

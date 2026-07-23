@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { color, role, typeface } from '@/theme/tokens';
+import { color, typeface } from '@/theme/tokens';
 import { useCreatePlaylist } from '@/api/playlists';
 import { Meta } from '@/components/Meta';
 
@@ -38,9 +38,9 @@ export default function NewPlaylist() {
         <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 16, color: color.white }}>새 플레이리스트</Text>
         <Pressable onPress={submit} hitSlop={8} disabled={!name.trim()}>
           {create.isPending ? (
-            <ActivityIndicator size="small" color={role.me} />
+            <ActivityIndicator size="small" color={color.accent} />
           ) : (
-            <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 15, color: name.trim() ? role.me : color.muted }}>
+            <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 15, color: name.trim() ? color.accent : color.muted }}>
               만들기
             </Text>
           )}

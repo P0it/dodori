@@ -7,8 +7,8 @@ import { signOut } from '@/api/auth';
 import { TopBar } from '@/components/TopBar';
 import { Meta } from '@/components/Meta';
 import { Divider } from '@/components/Divider';
+import { DodoriMark } from '@/components/DodoriMark';
 import { StarGlyph } from '@/components/glyphs';
-import { OwnerDot } from '@/components/OwnerDot';
 
 /** 스튜디오 관리 — 기념일·연결·로그아웃 (계정 화면에서 분리) */
 export default function StudioSettings() {
@@ -43,7 +43,7 @@ export default function StudioSettings() {
         />
         <Divider />
         <LinkRow
-          icon={<OwnerDot who="partner" size={14} />}
+          icon={<DodoriMark size={16} />}
           label="연결"
           sub={
             profiles.data?.partner
