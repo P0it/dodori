@@ -271,16 +271,6 @@ function TrackBody({ t }: { t: TrackDetail }) {
             {t.date.replaceAll('-', '.')}
             {released ? '' : ` · ${formatDday(t.date)}`}
           </Meta>
-          {/* Favorites */}
-          <Pressable
-            onPress={() => update.mutate({ liked: !t.liked })}
-            style={{ marginTop: 12, flexDirection: 'row', alignItems: 'center', gap: 6 }}
-          >
-            <Text style={{ fontFamily: typeface, fontSize: 18, color: t.liked ? role.me : color.muted }}>
-              {t.liked ? '♥' : '♡'}
-            </Text>
-            <Meta style={{ fontSize: 12 }}>{t.liked ? 'Favorites에 있음' : 'Favorites에 추가'}</Meta>
-          </Pressable>
         </View>
 
         {/* 아카이브: 사진 (목업 12·13) */}

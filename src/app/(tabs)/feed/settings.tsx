@@ -2,7 +2,6 @@ import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { color, typeface } from '@/theme/tokens';
 import { useCoupleProfiles } from '@/api/couple';
-import { useAllTracks } from '@/api/tracks';
 import { useAnniversaries } from '@/api/anniversaries';
 import { signOut } from '@/api/auth';
 import { TopBar } from '@/components/TopBar';
@@ -11,14 +10,12 @@ import { Divider } from '@/components/Divider';
 import { StarGlyph } from '@/components/glyphs';
 import { OwnerDot } from '@/components/OwnerDot';
 
-/** 스튜디오 관리 — 기념일·Favorites·연결·로그아웃 (계정 화면에서 분리) */
+/** 스튜디오 관리 — 기념일·연결·로그아웃 (계정 화면에서 분리) */
 export default function StudioSettings() {
   const router = useRouter();
   const profiles = useCoupleProfiles();
-  const tracks = useAllTracks();
   const annivs = useAnniversaries();
 
-  const favorites = (tracks.data ?? []).filter((t) => t.liked);
   const customCount = (annivs.data ?? []).filter((a) => a.type === 'custom').length;
 
   const onSignOut = () =>
@@ -43,13 +40,6 @@ export default function StudioSettings() {
           label="기념일 관리"
           sub={`자동 ${(annivs.data?.length ?? 0) - customCount} · 커스텀 ${customCount}`}
           onPress={() => router.push('/feed/anniversaries')}
-        />
-        <Divider />
-        <LinkRow
-          icon={<Text style={{ fontFamily: typeface, color: color.me, fontSize: 16 }}>♥</Text>}
-          label="Favorites"
-          sub={`아껴둔 앨범 ${favorites.length}`}
-          onPress={() => router.push('/feed/favorites')}
         />
         <Divider />
         <LinkRow
