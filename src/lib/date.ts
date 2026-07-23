@@ -112,3 +112,11 @@ export function formatRelative(at: string, now: Date = new Date()): string {
 export function monthKey(date: ISODate): string {
   return date.slice(0, 7);
 }
+
+const WEEKDAY_KO = ['일', '월', '화', '수', '목', '금', '토'] as const;
+
+/** 'YYYY-MM-DD' → '금' — 날짜 문자열은 이미 KST 기준이라 UTC 계산으로 충분 */
+export function weekdayKo(date: ISODate): string {
+  const [y, m, d] = date.split('-').map(Number);
+  return WEEKDAY_KO[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
+}

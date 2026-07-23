@@ -59,11 +59,18 @@ export default function PlaylistRoot() {
   const maxOrder = Math.max(-1, ...(upcomingTrack.data?.places ?? []).map((p) => p.sortOrder));
   const nextSortOrder = maxOrder + 1;
 
-  // 찜한 곳 중 이 데이트에 아직 안 담겼고 안 가본 곳.
+  // 플레이리스트에 담긴 곳 중 이 데이트에 아직 안 담겼고 안 가본 곳.
+  // 후보는 모든 플리 — 기본 플리("찜")만 보면 다른 플리에 담은 곳이 영영 추천되지 않는다.
+  // 같은 장소가 여러 플리에 있으면 한 번만, 가장 최근에 담긴 시각으로 합친다.
   // "가본 곳" 판정은 visitCount로 한다 — photoThumbs로 대신하면 사진 없이 다녀온 곳이 새 곳으로 잡힌다.
   const recommended = useMemo(() => {
     const all = savedPlaces.data ?? [];
-    const saved = all.filter((p) => p.playlistKind === 'saved');
+    const byPlace = new Map<string, (typeof all)[number]>();
+    for (const p of all) {
+      const prev = byPlace.get(p.placeId);
+      if (!prev || p.savedAt > prev.savedAt) byPlace.set(p.placeId, p);
+    }
+    const saved = [...byPlace.values()];
     const visited = all.filter((p) => p.visitCount > 0).map((p) => p.placeId);
     // 마운트 전에 이미 코스에 담긴 곳도 제외 — addedIds만 보면 다시 추천된다
     const inCourse = [...(upcomingTrack.data?.places ?? []).map((p) => p.placeId), ...addedIds];
@@ -114,7 +121,7 @@ export default function PlaylistRoot() {
         <AlbumCarousel albums={albums} focusIndex={focusIndex} onPress={(id) => router.push(`/track/${id}`)} />
       </View>
 
-      {/* 다음 데이트 추천 — 찜한 곳 중 아직 안 담기고 안 가본 곳 */}
+      {/* 다음 데이트 추천 — 플레이리스트에 담긴 곳 중 아직 안 담기고 안 가본 곳 */}
       {/* upcomingTrack이 로드되기 전엔 숨긴다 — 이미 담긴 곳을 추천하거나 순서를 잘못 계산하는 창을 없앤다 */}
       {upcoming && upcomingTrack.isSuccess && recommended.length > 0 && (
         <>
@@ -149,7 +156,7 @@ export default function PlaylistRoot() {
       {/* 테마 플레이리스트 — 첫 실행이고 만든 플리도 없으면 숨김 */}
       {!(noTracks && (playlists.data ?? []).length === 0) && (
       <>
-      <SectionHeader title="찜 · 플레이리스트" />
+      <SectionHeader title="플레이리스트" />
       <View style={{ paddingHorizontal: 16, paddingTop: 10 }}>
         {(playlists.data ?? []).map((p) => (
           <Pressable

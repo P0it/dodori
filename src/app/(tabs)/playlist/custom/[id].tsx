@@ -71,7 +71,7 @@ export default function CustomPlaylist() {
             {p?.name}
           </Text>
           <Meta style={{ marginTop: 6 }}>
-            {isSaved ? '찜한 곳' : '테마 플레이리스트'} · 장소 {p?.places.length ?? 0}곳 · 방문 {totalVisits}회
+            플레이리스트 · 장소 {p?.places.length ?? 0}곳 · 방문 {totalVisits}회
           </Meta>
         </View>
 

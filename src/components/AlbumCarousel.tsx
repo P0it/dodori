@@ -104,10 +104,11 @@ export function AlbumCarousel({
                 {a.coverThumbUrl ? (
                   <Image source={a.coverThumbUrl} style={{ width: '100%', height: '100%' }} contentFit="cover" />
                 ) : (
-                  <AlbumJacket seed={a.id} dateLabel={a.date.slice(5).replace('-', '.')} title={a.title} size={CARD} />
+                  <AlbumJacket seed={a.id} date={a.date} title={a.title} size={CARD} />
                 )}
+                {/* 제목·날짜가 위쪽을 쓰므로 D-day는 아래로 */}
                 {upcoming && isActive && (
-                  <View style={{ position: 'absolute', left: 8, top: 8 }}>
+                  <View style={{ position: 'absolute', left: 8, bottom: 8 }}>
                     <Dday tone="accent">{formatDday(a.date)}</Dday>
                   </View>
                 )}

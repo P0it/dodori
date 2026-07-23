@@ -5,12 +5,13 @@ import { color, typeface } from '@/theme/tokens';
 import { TopBar } from '@/components/TopBar';
 import { Meta } from '@/components/Meta';
 import { Eyebrow } from '@/components/Eyebrow';
-import { usePlaceSearch, useAddTrackPlace, useAddSavedPlaceToTrack } from '@/api/places';
-import { useAddPlaylistPlace, useSavedPlaces, useSaveSearchPlace } from '@/api/playlists';
+import { usePlaceSearch, useAddTrackPlace, useAddSavedPlaceToTrack, type SearchPlace } from '@/api/places';
+import { useAddPlaylistPlace, usePlaylists, useSavedPlaces, useSaveSearchPlace } from '@/api/playlists';
 import { useTrack } from '@/api/tracks';
 import { PlaceThumb } from '@/components/PlaceThumb';
 import { FilterChip } from '@/components/FilterChip';
 import { SavedHeart } from '@/components/SavedHeart';
+import { PlaylistPickerSheet } from '@/components/playlist/PlaylistPickerSheet';
 
 /**
  * 장소 검색 — 단일 공용 (§7.4).
@@ -22,14 +23,16 @@ export default function PlaceSearch() {
     trackId?: string;
     playlistId?: string;
   }>();
-  // 데이트에 담으러 왔으면 찜부터 — 이게 이 화면의 핵심 동선이다.
-  // 플리에 담으러 왔으면 찜에서 찜으로 담는 셈이라 검색이 기본.
-  const [tab, setTab] = useState<'saved' | 'search'>(trackId ? 'saved' : 'search');
+  // 검색이 기본. 플레이리스트 칩을 고르면 그 플리에 담긴 곳만 보여준다 (값 = playlistId)
+  const [tab, setTab] = useState<'search' | string>('search');
+  const playlists = usePlaylists();
   const savedPlaces = useSavedPlaces();
   const track = useTrack(trackId);
   const addSaved = useAddSavedPlaceToTrack(trackId ?? '');
   const saveSearch = useSaveSearchPlace();
   const [justSaved, setJustSaved] = useState<Set<string>>(new Set());
+  // 하트를 누른 장소 — 어느 플레이리스트에 담을지 고르는 동안 들고 있는다
+  const [pickerPlace, setPickerPlace] = useState<SearchPlace | null>(null);
   const [query, setQuery] = useState('');
   const search = usePlaceSearch(query);
   const addToTrack = useAddTrackPlace(trackId ?? '');
@@ -43,6 +46,11 @@ export default function PlaceSearch() {
   // 코스에 담을 순서 — 검색 탭·찜 탭이 함께 쓴다. 개수나 route param이 아니라 기존 최대 sortOrder + 1 기준.
   // (삭제로 순서에 구멍이 나면 개수 기준은 기존 행과 겹친다)
   // 담은 개수는 더하지 않는다 — 담기 뮤테이션이 코스 리페치까지 기다린 뒤 잠금을 풀므로 maxOrder는 항상 최신이다.
+  // 고른 칩(플레이리스트)에 담긴 장소만
+  const picked = useMemo(
+    () => (savedPlaces.data ?? []).filter((p) => p.playlistId === tab),
+    [savedPlaces.data, tab],
+  );
   const maxOrder = Math.max(-1, ...(track.data?.places ?? []).map((p) => p.sortOrder));
   const nextSortOrder = maxOrder + 1;
 
@@ -56,14 +64,21 @@ export default function PlaceSearch() {
     <View style={{ flex: 1, backgroundColor: color.bg }}>
       <TopBar title="장소 담기" />
       {trackId ? (
-        <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingBottom: 10 }}>
-          <FilterChip selected={tab === 'saved'} onPress={() => setTab('saved')}>
-            찜한 곳
-          </FilterChip>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={{ flexGrow: 0 }}
+          contentContainerStyle={{ flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingBottom: 10 }}
+        >
           <FilterChip selected={tab === 'search'} onPress={() => setTab('search')}>
             검색
           </FilterChip>
-        </View>
+          {(playlists.data ?? []).map((p) => (
+            <FilterChip key={p.id} selected={tab === p.id} onPress={() => setTab(p.id)}>
+              {p.name}
+            </FilterChip>
+          ))}
+        </ScrollView>
       ) : null}
       {tab === 'search' && (
         <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
@@ -111,14 +126,7 @@ export default function PlaceSearch() {
                         {[p.category, p.address].filter(Boolean).join(' · ')}
                       </Meta>
                     </View>
-                    <SavedHeart
-                      saved={justSaved.has(p.naver_id)}
-                      onPress={() =>
-                        saveSearch.mutate(p, {
-                          onSuccess: () => setJustSaved((s) => new Set(s).add(p.naver_id)),
-                        })
-                      }
-                    />
+                    <SavedHeart saved={justSaved.has(p.naver_id)} onPress={() => setPickerPlace(p)} />
                     <Pressable
                       // 담는 중엔 잠근다 — 연타하면 리페치 전 maxOrder로 같은 순서가 두 번 나간다
                       disabled={added || (!trackId && !playlistId) || addToTrack.isPending}
@@ -145,16 +153,16 @@ export default function PlaceSearch() {
           )}
         </ScrollView>
       )}
-      {tab === 'saved' && (
+      {tab !== 'search' && (
         <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 32 }}>
           {savedPlaces.isPending ? (
             <ActivityIndicator color={color.accent} style={{ marginTop: 24 }} />
-          ) : (savedPlaces.data ?? []).length === 0 ? (
+          ) : picked.length === 0 ? (
             <Meta style={{ paddingVertical: 16 }}>
-              아직 찜한 곳이 없어요. 검색 탭에서 마음에 드는 곳을 찜해보세요.
+              이 플레이리스트엔 아직 장소가 없어요. 검색에서 마음에 드는 곳을 찜해보세요.
             </Meta>
           ) : (
-            (savedPlaces.data ?? []).map((p) => {
+            picked.map((p) => {
               const added = existingPlaceIds.has(p.placeId) || addedIds.has(p.placeId);
               return (
                 <View
@@ -221,6 +229,25 @@ export default function PlaceSearch() {
           <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 14.5, color: color.onPrimary }}>완료</Text>
         </Pressable>
       </View>
+
+      <PlaylistPickerSheet
+        visible={!!pickerPlace}
+        placeName={pickerPlace?.name ?? ''}
+        playlists={playlists.data ?? []}
+        onClose={() => setPickerPlace(null)}
+        onSelect={(playlistId) => {
+          const place = pickerPlace!;
+          setPickerPlace(null);
+          saveSearch.mutate(
+            { place, playlistId },
+            {
+              onSuccess: () => setJustSaved((s) => new Set(s).add(place.naver_id)),
+              onError: (e) =>
+                Alert.alert('담기 실패', e instanceof Error ? e.message : '플레이리스트에 담지 못했어요.'),
+            },
+          );
+        }}
+      />
     </View>
   );
 }

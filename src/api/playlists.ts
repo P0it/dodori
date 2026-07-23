@@ -265,20 +265,18 @@ export function useToggleSavedPlace() {
   });
 }
 
-/** 검색 결과(아직 places 행이 없는 장소)를 찜에 담기 */
+/** 검색 결과(아직 places 행이 없는 장소)를 고른 플레이리스트에 담기 */
 export function useSaveSearchPlace() {
   const qc = useQueryClient();
-  const savedId = useSavedPlaylistId();
   return useMutation({
-    mutationFn: async (place: SearchPlace) => {
-      if (!savedId) throw new Error('찜 목록을 찾지 못했어요');
+    mutationFn: async ({ place, playlistId }: { place: SearchPlace; playlistId: string }) => {
       const { data: userData } = await supabase.auth.getUser();
       const uid = userData.user?.id;
       if (!uid) throw new Error('로그인이 필요해요');
       const placeId = await upsertPlace(place);
       const { error } = await supabase
         .from('playlist_places')
-        .insert({ playlist_id: savedId, place_id: placeId, added_by: uid });
+        .insert({ playlist_id: playlistId, place_id: placeId, added_by: uid });
       if (error && !error.message.includes('duplicate')) throw error;
     },
     onSuccess: () => {

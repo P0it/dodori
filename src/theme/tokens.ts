@@ -76,6 +76,23 @@ export const coverPalette: readonly (readonly [string, string])[] = [
   ['#FF7A45', '#4A2013'],
 ] as const;
 
+/**
+ * 생성 자켓(LP) 톤 — 팔레트 6색으로 고르면 앨범 3개만 만들어도 색이 겹친다.
+ * seed 해시를 24단계 hue로 흩어 슬리브·라벨 색을 만든다 (같은 앨범 = 항상 같은 색).
+ */
+export const COVER_HUE_STEPS = 24;
+
+export function coverTones(hueIndex: number) {
+  const h = Math.round((hueIndex * 360) / COVER_HUE_STEPS);
+  return {
+    sleeveTop: `hsl(${h}, 40%, 17%)`,
+    sleeveBottom: `hsl(${h}, 32%, 6%)`,
+    /** LP 라벨 — 자켓에서 유일하게 밝은 면 */
+    label: `hsl(${h}, 60%, 62%)`,
+    vinyl: `hsl(${h}, 16%, 6%)`,
+  };
+}
+
 export const radius = {
   mini: 3,
   card: 4,
