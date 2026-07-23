@@ -17,7 +17,7 @@ export function SavedHeart({
       hitSlop={10}
       style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1, padding: 2 })}
     >
-      <Text style={{ fontFamily: typeface, fontSize: size, color: saved ? color.date : color.muted }}>
+      <Text style={{ fontFamily: typeface, fontWeight: '400', fontSize: size, color: saved ? color.date : color.muted }}>
         {saved ? '♥' : '♡'}
       </Text>
     </Pressable>

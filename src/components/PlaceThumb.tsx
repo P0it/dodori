@@ -50,7 +50,7 @@ export function PlaceThumb({
           color: color.white,
         }}
       >
-        {name.slice(0, 1)}
+        {name.trim().slice(0, 1) || '?'}
       </Text>
     </LinearGradient>
   );
