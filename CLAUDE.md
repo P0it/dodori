@@ -61,6 +61,12 @@
 - 커밋 전 `npm run typecheck` + `npm test` 통과 확인. 깨지면 커밋하지 않고 보고한다
 - 메시지는 한글 Conventional Commits — `feat(feed): 인스타 배치 + 대댓글`
 - DB 마이그레이션은 코드와 같은 커밋에. 원격 적용(`npx supabase db push`)과 타입 재생성도 같이 끝낸다
+- **`git add -A` / `git commit -a` 금지 — 내가 만진 파일만 경로로 명시해서 스테이징한다.**
+  여러 세션이 한 작업 트리를 공유하면 `-A`가 남의 미커밋 변경을 통째로 쓸어 담는다.
+  실제로 2026-07-23 작업에서 두 번 발생했고 한 번은 그대로 push까지 됐다 — 커밋 메시지가
+  내용을 설명하지 못하는 커밋이 남는다
+- 세션을 동시에 여러 개 돌릴 거면 `git worktree add ../dodori-<주제>`로 작업 트리를 분리한다.
+  분리하지 않았다면 커밋 전에 `git status`로 남의 변경이 섞여 있는지 먼저 본다
 
 ## 아키텍처 규칙 (SOLID·Clean Architecture 실용 적용)
 
