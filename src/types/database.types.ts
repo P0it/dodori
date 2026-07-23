@@ -734,7 +734,6 @@ export type Database = {
           date: string
           duration_min: number | null
           id: string
-          liked: boolean
           title: string
         }
         Insert: {
@@ -745,7 +744,6 @@ export type Database = {
           date: string
           duration_min?: number | null
           id?: string
-          liked?: boolean
           title?: string
         }
         Update: {
@@ -756,7 +754,6 @@ export type Database = {
           date?: string
           duration_min?: number | null
           id?: string
-          liked?: boolean
           title?: string
         }
         Relationships: [
