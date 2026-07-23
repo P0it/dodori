@@ -3,11 +3,10 @@ import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
 import { color, typeface } from '@/theme/tokens';
-import { daysSince, isReleased, todayKST } from '@/lib/date';
+import { isReleased, todayKST } from '@/lib/date';
 import { nearestIndex } from '@/lib/albums';
 import { recommendPlaces } from '@/lib/recommend';
 import { useAllTracks, useTrack } from '@/api/tracks';
-import { useMyCouple, useCoupleProfiles } from '@/api/couple';
 import { usePlaylists, useSavedPlaces } from '@/api/playlists';
 import { useAddSavedPlaceToTrack } from '@/api/places';
 import { Meta } from '@/components/Meta';
@@ -18,8 +17,6 @@ import { RecommendStrip } from '@/components/playlist/RecommendStrip';
 /** 플레이리스트 탭 루트 (목업 07) */
 export default function PlaylistRoot() {
   const router = useRouter();
-  const couple = useMyCouple();
-  const profiles = useCoupleProfiles();
   const tracks = useAllTracks();
   const playlists = usePlaylists();
 
@@ -77,10 +74,6 @@ export default function PlaylistRoot() {
     return recommendPlaces(saved, { inCourse, visited });
   }, [savedPlaces.data, addedIds, upcomingTrack.data]);
 
-  const names = [profiles.data?.me?.nickname, profiles.data?.partner?.nickname]
-    .filter(Boolean)
-    .join(' & ');
-
   // 기록 0개 첫 실행 — 빈 섹션들 대신 히어로 하나로 (isSuccess 가드: 로딩 중 깜빡임 방지)
   const noTracks = tracks.isSuccess && (tracks.data ?? []).length === 0;
 
@@ -88,69 +81,19 @@ export default function PlaylistRoot() {
     <View style={{ flex: 1, backgroundColor: color.bg }}>
     <ScrollView style={{ backgroundColor: color.bg }} contentContainerStyle={{ paddingBottom: 132 }}>
       {/* 헤더 */}
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          paddingHorizontal: 16,
-          paddingTop: 8,
-        }}
-      >
-        <View>
-          <Text style={{ fontFamily: typeface, fontWeight: '800', fontSize: 26, letterSpacing: -0.5, color: color.white }}>
-            플레이리스트
-          </Text>
-          <Meta style={{ marginTop: 2, fontSize: 12.5 }}>
-            {names || '우리'} ·{' '}
-            {couple.data?.startedAt ? (
-              <Text style={{ color: color.accent, fontFamily: typeface, fontWeight: '700' }}>
-                {daysSince(couple.data.startedAt)}일째
-              </Text>
-            ) : null}
-          </Meta>
-        </View>
+      <View style={{ paddingHorizontal: 16, paddingTop: 8 }}>
+        <Text style={{ fontFamily: typeface, fontWeight: '800', fontSize: 26, letterSpacing: -0.5, color: color.white }}>
+          플레이리스트
+        </Text>
       </View>
 
       {noTracks ? (
         <FirstTrackHero onPress={() => router.push('/modals/create-track')} />
       ) : (
-      <>
-      {/* 앨범 캐러셀 — 과거·미래를 한 줄에, 오늘 최근접이 포커스 */}
-      <View style={{ marginTop: 14 }}>
-        <AlbumCarousel albums={albums} focusIndex={focusIndex} onPress={(id) => router.push(`/track/${id}`)} />
-      </View>
-
-      {/* 다음 데이트 추천 — 플레이리스트에 담긴 곳 중 아직 안 담기고 안 가본 곳 */}
-      {/* upcomingTrack이 로드되기 전엔 숨긴다 — 이미 담긴 곳을 추천하거나 순서를 잘못 계산하는 창을 없앤다 */}
-      {upcoming && upcomingTrack.isSuccess && recommended.length > 0 && (
-        <>
-          <SectionHeader title={`${upcoming.date.slice(5).replace('-', '.')} 데이트에 담을 곳`} />
-          <View style={{ paddingTop: 10 }}>
-            <RecommendStrip
-              // thumbUrl은 넘기지 않는다 — 추천은 안 가본 곳만이라 사진이 있을 수 없고, PlaceThumb의 그라데이션이 의도한 모습
-              items={recommended.map((p) => ({
-                placeId: p.placeId,
-                name: p.name,
-                category: p.category,
-              }))}
-              addedIds={addedIds}
-              pendingId={pendingId}
-              onAdd={(placeId) =>
-                addToUpcoming.mutate(
-                  { placeId, sortOrder: nextSortOrder },
-                  {
-                    onSuccess: () => setAddedIds((s) => new Set(s).add(placeId)),
-                    onError: (e) =>
-                      Alert.alert('추가 실패', e instanceof Error ? e.message : '코스에 담지 못했어요.'),
-                  },
-                )
-              }
-            />
-          </View>
-        </>
-      )}
-      </>
+        /* 앨범 캐러셀 — 과거·미래를 한 줄에, 오늘 최근접이 포커스 */
+        <View style={{ marginTop: 14 }}>
+          <AlbumCarousel albums={albums} focusIndex={focusIndex} onPress={(id) => router.push(`/track/${id}`)} />
+        </View>
       )}
 
       {/* 테마 플레이리스트 — 첫 실행이고 만든 플리도 없으면 숨김 */}
@@ -203,6 +146,39 @@ export default function PlaylistRoot() {
         </Pressable>
       </View>
       </>
+      )}
+
+      {/* 다음 데이트 추천 — 플레이리스트에 담긴 곳 중 아직 안 담기고 안 가본 곳 */}
+      {/* upcomingTrack이 로드되기 전엔 숨긴다 — 이미 담긴 곳을 추천하거나 순서를 잘못 계산하는 창을 없앤다 */}
+      {upcoming && upcomingTrack.isSuccess && recommended.length > 0 && (
+        <>
+          <SectionHeader title="이런 곳은 어때요?" />
+          <Meta style={{ paddingHorizontal: 16, marginTop: 2, fontSize: 12.5 }}>
+            {upcoming.date.slice(5).replace('-', '.')} 데이트에 담을 수 있어요
+          </Meta>
+          <View style={{ paddingTop: 10 }}>
+            <RecommendStrip
+              // thumbUrl은 넘기지 않는다 — 추천은 안 가본 곳만이라 사진이 있을 수 없고, PlaceThumb의 그라데이션이 의도한 모습
+              items={recommended.map((p) => ({
+                placeId: p.placeId,
+                name: p.name,
+                category: p.category,
+              }))}
+              addedIds={addedIds}
+              pendingId={pendingId}
+              onAdd={(placeId) =>
+                addToUpcoming.mutate(
+                  { placeId, sortOrder: nextSortOrder },
+                  {
+                    onSuccess: () => setAddedIds((s) => new Set(s).add(placeId)),
+                    onError: (e) =>
+                      Alert.alert('추가 실패', e instanceof Error ? e.message : '코스에 담지 못했어요.'),
+                  },
+                )
+              }
+            />
+          </View>
+        </>
       )}
     </ScrollView>
 
