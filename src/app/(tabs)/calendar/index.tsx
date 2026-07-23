@@ -168,7 +168,6 @@ export default function Calendar() {
             />
             <FabAction
               label="일정"
-              tint={color.accent}
               onPress={() => {
                 setFabOpen(false);
                 router.push({ pathname: '/modals/add-event', params: { date: selected } });
@@ -211,8 +210,12 @@ export default function Calendar() {
   );
 }
 
-/** FAB에서 펼쳐지는 선택지 — 색으로 데이트(보라)·일정(green)을 구분한다 */
-function FabAction({ label, tint, onPress }: { label: string; tint: string; onPress: () => void }) {
+/**
+ * FAB에서 펼쳐지는 선택지.
+ * tint 점은 색이 시스템에 고정된 종류(데이트=보라)에만 찍는다 — 일정 색은 등록할 때 고르는
+ * 일정의 속성이라, 여기서 미리 색을 깔면 고르지도 않은 색을 약속하는 셈이 된다.
+ */
+function FabAction({ label, tint, onPress }: { label: string; tint?: string; onPress: () => void }) {
   return (
     <Pressable
       onPress={onPress}
@@ -232,7 +235,7 @@ function FabAction({ label, tint, onPress }: { label: string; tint: string; onPr
         opacity: pressed ? 0.85 : 1,
       })}
     >
-      <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: tint }} />
+      {tint ? <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: tint }} /> : null}
       <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 13.5, color: color.white }}>
         {label}
       </Text>
