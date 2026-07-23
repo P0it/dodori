@@ -10,10 +10,10 @@ import {
 import { Image } from 'expo-image';
 import { color, radius, role, space, typeface, type OwnerRole } from '@/theme/tokens';
 import { formatRelative } from '@/lib/date';
+import { REACTIONS } from '@/lib/posts';
 import { Avatar } from '@/components/Avatar';
 import { Meta } from '@/components/Meta';
-import { MoreGlyph } from '@/components/glyphs';
-import { ReactionBar } from './ReactionBar';
+import { CommentGlyph, HeartGlyph, MoreGlyph } from '@/components/glyphs';
 import { CommentList } from './CommentList';
 import type { Post } from '@/api/posts';
 
@@ -25,12 +25,14 @@ type Props = {
   name: (uid: string) => string;
   avatarUrl: (uid: string) => string | null;
   onToggleReaction: (emoji: string, on: boolean) => void;
-  onAddComment: (body: string) => void;
+  onAddComment: (body: string, parentId: string | null) => void;
   onDeleteComment: (commentId: string) => void;
   onDelete: () => void;
 };
 
-/** 피드 카드 — 작성자 / 사진 캐러셀 / 리액션 / 캡션 / 댓글 */
+const HEART = REACTIONS[0];
+
+/** 피드 카드 — 작성자 / 사진 캐러셀 / 좋아요·댓글 / 캡션 / 댓글 (인스타그램 배치) */
 export function PostCard({
   post,
   width,
@@ -44,9 +46,9 @@ export function PostCard({
   onDelete,
 }: Props) {
   const [page, setPage] = useState(0);
+  const [expanded, setExpanded] = useState(false);
   const mine = post.authorId === myUid;
   const authorRole = who(post.authorId);
-  const avatar = avatarUrl(post.authorId);
 
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) =>
     setPage(Math.round(e.nativeEvent.contentOffset.x / width));
@@ -55,8 +57,11 @@ export function PostCard({
   const ratio = first?.width && first?.height ? first.height / first.width : 1;
   const carouselH = Math.round(width * Math.min(1.25, Math.max(0.5625, ratio)));
 
+  const likedBy = post.reactions.find((r) => r.emoji === HEART)?.userIds ?? [];
+  const iLiked = likedBy.includes(myUid);
+
   return (
-    <View style={{ paddingBottom: space[5] }}>
+    <View style={{ paddingBottom: space[6] }}>
       {/* 작성자 */}
       <View
         style={{
@@ -64,18 +69,21 @@ export function PostCard({
           alignItems: 'center',
           gap: 10,
           paddingHorizontal: space[4],
-          paddingVertical: 11,
+          paddingVertical: 10,
         }}
       >
-        <Avatar url={avatar} role={authorRole} name={name(post.authorId)} size={32} />
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <Text
-            style={{ fontFamily: typeface, fontWeight: '700', fontSize: 14.5, color: color.white }}
-          >
-            {name(post.authorId)}
-          </Text>
-          <Meta style={{ fontSize: 11.5, marginTop: 1 }}>{formatRelative(post.createdAt)}</Meta>
-        </View>
+        <Avatar url={avatarUrl(post.authorId)} role={authorRole} name={name(post.authorId)} size={34} />
+        <Text
+          style={{
+            fontFamily: typeface,
+            fontWeight: '700',
+            fontSize: 14,
+            color: color.white,
+            flex: 1,
+          }}
+        >
+          {name(post.authorId)}
+        </Text>
         {mine && (
           <Pressable onPress={onDelete} hitSlop={10}>
             <MoreGlyph size={18} />
@@ -105,69 +113,86 @@ export function PostCard({
             ))}
           </ScrollView>
 
+          {/* n/m 카운터 */}
           {post.photos.length > 1 && (
-            <>
-              {/* n/m 카운터 */}
-              <View
-                style={{
-                  position: 'absolute',
-                  top: 10,
-                  right: 12,
-                  paddingHorizontal: 8,
-                  paddingVertical: 3,
-                  borderRadius: radius.pill,
-                  backgroundColor: 'rgba(0,0,0,0.6)',
-                }}
-              >
-                <Text
-                  style={{
-                    fontFamily: typeface,
-                    fontWeight: '700',
-                    fontSize: 11,
-                    color: color.white,
-                  }}
-                >
-                  {page + 1}/{post.photos.length}
-                </Text>
-              </View>
-              {/* 활성 페이지 인디케이터 */}
-              <View
-                style={{
-                  flexDirection: 'row',
-                  justifyContent: 'center',
-                  gap: 5,
-                  paddingTop: 10,
-                }}
-              >
-                {post.photos.map((p, i) => (
-                  <View
-                    key={p.id}
-                    style={{
-                      width: i === page ? 6 : 5,
-                      height: i === page ? 6 : 5,
-                      borderRadius: 3,
-                      backgroundColor: i === page ? role[authorRole] : color.surface4,
-                    }}
-                  />
-                ))}
-              </View>
-            </>
+            <View
+              style={{
+                position: 'absolute',
+                top: 10,
+                right: 12,
+                paddingHorizontal: 8,
+                paddingVertical: 3,
+                borderRadius: radius.pill,
+                backgroundColor: 'rgba(0,0,0,0.6)',
+              }}
+            >
+              <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 11, color: color.white }}>
+                {page + 1}/{post.photos.length}
+              </Text>
+            </View>
           )}
         </View>
       )}
 
-      <View style={{ paddingHorizontal: space[4], paddingTop: space[3], gap: 10 }}>
-        <ReactionBar reactions={post.reactions} myUid={myUid} onToggle={onToggleReaction} />
+      {/* 액션 줄 — 좋아요·댓글 좌측, 페이지 점은 가운데 (인스타 동일) */}
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingHorizontal: space[4],
+          paddingTop: 10,
+        }}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, flex: 1 }}>
+          <Pressable
+            onPress={() => onToggleReaction(HEART, !iLiked)}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={iLiked ? '좋아요 취소' : '좋아요'}
+          >
+            <HeartGlyph size={25} filled={iLiked} color={iLiked ? role.me : color.white} />
+          </Pressable>
+          <Pressable onPress={() => setExpanded(true)} hitSlop={8} accessibilityLabel="댓글">
+            <CommentGlyph size={24} />
+          </Pressable>
+        </View>
 
-        {!!post.caption && (
-          <Text style={{ fontFamily: typeface, fontSize: 14.5, color: color.white, lineHeight: 21 }}>
-            {post.caption}
+        {post.photos.length > 1 && (
+          <View style={{ flexDirection: 'row', gap: 5, alignItems: 'center' }}>
+            {post.photos.map((p, i) => (
+              <View
+                key={p.id}
+                style={{
+                  width: i === page ? 6 : 5,
+                  height: i === page ? 6 : 5,
+                  borderRadius: 3,
+                  backgroundColor: i === page ? color.white : color.surface4,
+                }}
+              />
+            ))}
+          </View>
+        )}
+
+        {/* 점을 정중앙에 두기 위한 좌우 균형 */}
+        <View style={{ flex: 1 }} />
+      </View>
+
+      <View style={{ paddingHorizontal: space[4], paddingTop: 8, gap: 7 }}>
+        {likedBy.length > 0 && (
+          <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 13.5, color: color.white }}>
+            {likedBy.length === 1 ? `${name(likedBy[0])}님이 좋아해요` : '둘 다 좋아해요'}
           </Text>
         )}
 
         {!!post.caption && (
-          <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.06)' }} />
+          <Text style={{ fontFamily: typeface, fontSize: 14.5, lineHeight: 21, color: color.white }}>
+            <Text style={{ fontWeight: '700', color: role[authorRole] }}>{name(post.authorId)}</Text>
+            {'   '}
+            {post.caption}
+          </Text>
         )}
+
+        <Meta style={{ fontSize: 11.5 }}>{formatRelative(post.createdAt)}</Meta>
 
         <CommentList
           comments={post.comments}
@@ -177,18 +202,10 @@ export function PostCard({
           avatarUrl={avatarUrl}
           onAdd={onAddComment}
           onDelete={onDeleteComment}
+          expanded={expanded}
+          onExpand={() => setExpanded(true)}
         />
       </View>
-
-      {/* 카드 구분 */}
-      <View
-        style={{
-          height: 1,
-          marginTop: space[5],
-          marginHorizontal: space[4],
-          backgroundColor: 'rgba(255,255,255,0.06)',
-        }}
-      />
     </View>
   );
 }

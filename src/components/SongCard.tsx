@@ -1,4 +1,4 @@
-import { Linking, Pressable, Text, View } from 'react-native';
+import { Linking, Pressable, Text, useWindowDimensions, View } from 'react-native';
 import { Image } from 'expo-image';
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { color, font, radius, space, typeface } from '@/theme/tokens';
@@ -13,6 +13,9 @@ import { PauseGlyph, PlayGlyph } from './glyphs';
 export function SongCard({ song }: { song: Song }) {
   const player = useAudioPlayer({ uri: song.previewUrl });
   const status = useAudioPlayerStatus(player);
+  const { width, height } = useWindowDimensions();
+  // 세로가 짧은 기기에서도 주제 카드가 접히지 않게 화면 높이로도 한 번 더 제한
+  const posterSize = Math.min(width - space[4] * 4, height * 0.32); // 화면 gutter + 카드 padding
 
   function toggle() {
     if (status.playing) {
@@ -36,23 +39,31 @@ export function SongCard({ song }: { song: Song }) {
     >
       <Eyebrow>오늘의 추천곡</Eyebrow>
 
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[4], marginTop: space[3] }}>
-        <Image
-          source={{ uri: song.artworkUrl }}
-          style={{ width: 96, height: 96, borderRadius: radius.cover, backgroundColor: color.surface2 }}
-          contentFit="cover"
-          transition={200}
-        />
+      {/* 포스터가 주인공이되 주제 카드까지 한 화면에 들어오는 크기 (스포티파이 Now Playing) */}
+      <Image
+        source={{ uri: song.artworkUrl }}
+        style={{
+          width: posterSize,
+          height: posterSize,
+          alignSelf: 'center',
+          borderRadius: 12,
+          backgroundColor: color.surface2,
+          marginTop: space[3],
+        }}
+        contentFit="cover"
+        transition={200}
+      />
 
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[4], marginTop: space[4] }}>
         <View style={{ flex: 1 }}>
           <Text
             numberOfLines={2}
             style={{
               fontFamily: typeface,
               fontWeight: '800',
-              fontSize: font.titleMd + 3,
-              lineHeight: 24,
-              letterSpacing: -0.3,
+              fontSize: font.section,
+              lineHeight: 30,
+              letterSpacing: -0.5,
               color: color.white,
             }}
           >
@@ -63,7 +74,7 @@ export function SongCard({ song }: { song: Song }) {
             style={{
               fontFamily: typeface,
               fontWeight: '600',
-              fontSize: font.bodySm,
+              fontSize: font.body,
               color: color.sub,
               marginTop: space[1],
             }}
@@ -78,8 +89,8 @@ export function SongCard({ song }: { song: Song }) {
           accessibilityLabel={status.playing ? '미리듣기 정지' : '30초 미리듣기'}
           hitSlop={8}
           style={({ pressed }) => ({
-            width: 52,
-            height: 52,
+            width: 60,
+            height: 60,
             borderRadius: radius.pill,
             backgroundColor: pressed ? color.greenPress : color.greenCore,
             alignItems: 'center',
@@ -93,7 +104,7 @@ export function SongCard({ song }: { song: Song }) {
       <Pressable
         onPress={() => Linking.openURL(youtubeMusicSearchUrl(song.artist, song.title))}
         hitSlop={6}
-        style={({ pressed }) => ({ marginTop: space[4], opacity: pressed ? 0.6 : 1 })}
+        style={({ pressed }) => ({ marginTop: space[3], opacity: pressed ? 0.6 : 1 })}
       >
         <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: font.meta, color: color.sub }}>
           전곡 듣기 ›

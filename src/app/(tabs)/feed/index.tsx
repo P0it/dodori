@@ -2,7 +2,7 @@ import { Pressable, RefreshControl, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
-import { color, radius, role, typeface, type OwnerRole } from '@/theme/tokens';
+import { color, radius, role, roleBg, typeface, type OwnerRole } from '@/theme/tokens';
 import { daysSince } from '@/lib/date';
 import { useMyCouple, useCoupleProfiles } from '@/api/couple';
 import { usePosts } from '@/api/posts';
@@ -181,7 +181,7 @@ function AccountHeader() {
   );
 }
 
-/** 커플 아바타 — 사진이 없으면 이름 첫 글자, 테두리는 역할색 */
+/** 커플 아바타 — 사진이 없으면 이름 첫 글자. 링 없이 배경 대비로만 겹침을 구분 */
 function CoupleAvatar({
   avatarUrl,
   name,
@@ -197,10 +197,11 @@ function CoupleAvatar({
     width: 56,
     height: 56,
     borderRadius: 28,
-    borderWidth: 2,
-    borderColor: role[who],
-    marginLeft: overlap ? -10 : 0,
-    backgroundColor: color.surface2,
+    // 겹치는 쪽만 배경색 링으로 잘라낸다 (인스타 겹침 아바타)
+    borderWidth: overlap ? 3 : 0,
+    borderColor: color.bg,
+    marginLeft: overlap ? -12 : 0,
+    backgroundColor: avatarUrl ? color.surface2 : roleBg[who],
   } as const;
 
   if (avatarUrl) return <Image source={{ uri: avatarUrl }} style={base} />;

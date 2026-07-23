@@ -1,6 +1,6 @@
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { color, role, roleBg, typeface } from '@/theme/tokens';
+import { color, role, typeface } from '@/theme/tokens';
 import { formatDday, todayKST } from '@/lib/date';
 import type { VisibleEvent } from '@/api/events';
 import type { MonthTrack } from '@/api/tracks';
@@ -50,23 +50,6 @@ export function DayAgenda({ date, events, tracks, annivs, uid }: Props) {
             <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 12, color: role.me }}>오늘</Text>
           )}
         </View>
-        {/* 데이트 만들기 — 보조 동작이라 헤더 여백에 붙인다 (세로 한 줄을 먹지 않게) */}
-        <Pressable
-          onPress={() => router.push({ pathname: '/modals/create-track', params: { date } })}
-          style={({ pressed }) => ({
-            paddingHorizontal: 12,
-            height: 30,
-            borderRadius: 999,
-            backgroundColor: roleBg.date,
-            alignItems: 'center',
-            justifyContent: 'center',
-            opacity: pressed ? 0.7 : 1,
-          })}
-        >
-          <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 12.5, color: color.date }}>
-            ＋ 데이트
-          </Text>
-        </Pressable>
       </View>
 
       {/* 기념일 (목업 19) */}

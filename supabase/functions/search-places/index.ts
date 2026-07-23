@@ -44,8 +44,9 @@ Deno.serve(async (req) => {
   const body = (await res.json()) as { items: NaverItem[] };
 
   const places = body.items.map((it) => ({
-    // link가 고유하지 않은 경우가 있어 이름+주소 해시 대신 link 우선, 없으면 null
-    naver_id: it.link || `${stripTags(it.title)}|${it.address}`,
+    // 네이버는 안정적인 장소 id를 주지 않는다. link는 지점끼리 공유되므로(예: 국립현대미술관 4개 관이
+    // 모두 mmca.go.kr) 키로 못 쓴다 — places.naver_id는 upsert 충돌 키라 겹치면 다른 장소를 덮어쓴다.
+    naver_id: [stripTags(it.title), it.roadAddress || it.address || `${it.mapx},${it.mapy}`].join('|'),
     name: stripTags(it.title),
     category: it.category || null,
     address: it.roadAddress || it.address || null,

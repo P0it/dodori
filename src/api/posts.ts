@@ -16,6 +16,8 @@ export interface PostComment {
   authorId: string;
   body: string;
   createdAt: string;
+  /** 1단계 답글 — 답글에는 다시 답글을 달지 않는다 */
+  parentId: string | null;
 }
 export interface Post {
   id: string;
@@ -33,7 +35,7 @@ export interface Post {
 const SELECT = `id, author_id, caption, created_at,
    photos!photos_post_id_fkey(id, storage_path, width, height, created_at),
    post_reactions(emoji, user_id),
-   post_comments(id, author_id, body, created_at)`;
+   post_comments(id, author_id, body, created_at, parent_id)`;
 
 type PostRow = {
   id: string;
@@ -42,7 +44,13 @@ type PostRow = {
   created_at: string;
   photos: { id: string; storage_path: string; width: number | null; height: number | null; created_at: string }[];
   post_reactions: { emoji: string; user_id: string }[];
-  post_comments: { id: string; author_id: string; body: string; created_at: string }[];
+  post_comments: {
+    id: string;
+    author_id: string;
+    body: string;
+    created_at: string;
+    parent_id: string | null;
+  }[];
 };
 
 async function toPost(row: PostRow): Promise<Post> {
@@ -68,7 +76,13 @@ async function toPost(row: PostRow): Promise<Post> {
     gridThumbUrl: sortedPhotos[0] ? await signedThumbUrl(sortedPhotos[0].storage_path, 'grid') : null,
     reactions: [...byEmoji.entries()].map(([emoji, userIds]) => ({ emoji, userIds })),
     comments: (row.post_comments ?? [])
-      .map((c) => ({ id: c.id, authorId: c.author_id, body: c.body, createdAt: c.created_at }))
+      .map((c) => ({
+        id: c.id,
+        authorId: c.author_id,
+        body: c.body,
+        createdAt: c.created_at,
+        parentId: c.parent_id,
+      }))
       .sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
   };
 }
@@ -152,13 +166,21 @@ export function useToggleReaction() {
 export function useAddComment() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ postId, body }: { postId: string; body: string }) => {
+    mutationFn: async ({
+      postId,
+      body,
+      parentId,
+    }: {
+      postId: string;
+      body: string;
+      parentId?: string | null;
+    }) => {
       const { data: userData } = await supabase.auth.getUser();
       const uid = userData.user?.id;
       if (!uid) throw new Error('로그인이 필요해요');
       const { error } = await supabase
         .from('post_comments')
-        .insert({ post_id: postId, author_id: uid, body: body.trim() });
+        .insert({ post_id: postId, author_id: uid, body: body.trim(), parent_id: parentId ?? null });
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['posts'] }),

@@ -150,6 +150,34 @@ export function StackGlyph({ size = 15, color: fg = color.white }: GlyphProps) {
   );
 }
 
+/** 좋아요 (♥) — 눌렀으면 채움 */
+export function HeartGlyph({ size = 24, filled, color: fg = color.white }: GlyphProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? fg : 'none'}>
+      <Path
+        d="M12 20.3 4.2 12.7a4.6 4.6 0 0 1 0-6.6 4.9 4.9 0 0 1 6.8 0l1 1 1-1a4.9 4.9 0 0 1 6.8 0 4.6 4.6 0 0 1 0 6.6L12 20.3z"
+        stroke={fg}
+        strokeWidth={1.7}
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+/** 댓글 (말풍선) */
+export function CommentGlyph({ size = 24, color: fg = color.white }: GlyphProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M21 11.5c0 4.4-4 8-9 8-1 0-2-.15-2.9-.42L4 20.5l1.5-3.7A7.5 7.5 0 0 1 3 11.5c0-4.4 4-8 9-8s9 3.6 9 8z"
+        stroke={fg}
+        strokeWidth={1.7}
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
 /** 재생 (▶) — 오늘의 추천곡 30초 미리듣기 */
 export function PlayGlyph({ size = 22, color: fg = color.onPrimary }: GlyphProps) {
   return (

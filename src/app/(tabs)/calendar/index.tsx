@@ -26,6 +26,7 @@ export default function Calendar() {
   const [month, setMonth] = useState(() => toMonthKey(todayKST()));
   const [filter, setFilter] = useState<Filter>('us');
   const [selected, setSelected] = useState(() => todayKST());
+  const [fabOpen, setFabOpen] = useState(false);
 
   const session = useSession();
   const uid = session.data?.user.id;
@@ -146,9 +147,42 @@ export default function Calendar() {
         />
       </View>
 
-      {/* 선택일에 일정 추가 — 어젠다 한 줄을 먹지 않게 떠 있는 (+) */}
+      {/* 선택일에 추가 — (+)를 누르면 데이트·일정 두 갈래로 펼쳐진다 */}
+      {fabOpen && (
+        <>
+          <Pressable
+            onPress={() => setFabOpen(false)}
+            style={{
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              top: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0,0,0,0.5)',
+            }}
+          />
+          <View style={{ position: 'absolute', right: 16, bottom: 84, alignItems: 'flex-end', gap: 10 }}>
+            <FabAction
+              label="데이트"
+              tint={color.date}
+              onPress={() => {
+                setFabOpen(false);
+                router.push({ pathname: '/modals/create-track', params: { date: selected } });
+              }}
+            />
+            <FabAction
+              label="일정"
+              tint={color.me}
+              onPress={() => {
+                setFabOpen(false);
+                router.push({ pathname: '/modals/add-event', params: { date: selected } });
+              }}
+            />
+          </View>
+        </>
+      )}
       <Pressable
-        onPress={() => router.push({ pathname: '/modals/add-event', params: { date: selected } })}
+        onPress={() => setFabOpen((v) => !v)}
         style={({ pressed }) => ({
           position: 'absolute',
           right: 16,
@@ -167,11 +201,46 @@ export default function Calendar() {
           opacity: pressed ? 0.85 : 1,
         })}
       >
-        <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+        <Svg
+          width={24}
+          height={24}
+          viewBox="0 0 24 24"
+          fill="none"
+          style={{ transform: [{ rotate: fabOpen ? '45deg' : '0deg' }] }}
+        >
           <Path d="M12 5v14M5 12h14" stroke={color.onPrimary} strokeWidth={2.5} strokeLinecap="round" />
         </Svg>
       </Pressable>
     </View>
+  );
+}
+
+/** FAB에서 펼쳐지는 선택지 — 색으로 데이트(보라)·일정(green)을 구분한다 */
+function FabAction({ label, tint, onPress }: { label: string; tint: string; onPress: () => void }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => ({
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        height: 40,
+        paddingHorizontal: 16,
+        borderRadius: 20,
+        backgroundColor: color.surface2,
+        shadowColor: '#000',
+        shadowOpacity: 0.35,
+        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 4 },
+        elevation: 6,
+        opacity: pressed ? 0.85 : 1,
+      })}
+    >
+      <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: tint }} />
+      <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 13.5, color: color.white }}>
+        {label}
+      </Text>
+    </Pressable>
   );
 }
 

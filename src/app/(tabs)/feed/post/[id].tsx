@@ -77,7 +77,7 @@ export default function PostFeed() {
             name={name}
             avatarUrl={avatarUrl}
             onToggleReaction={(emoji, on) => toggleReaction.mutate({ postId: p.id, emoji, on })}
-            onAddComment={(body) => addComment.mutate({ postId: p.id, body })}
+            onAddComment={(body, parentId) => addComment.mutate({ postId: p.id, body, parentId })}
             onDeleteComment={(commentId) => deleteComment.mutate(commentId)}
             onDelete={() => onDelete(p)}
           />

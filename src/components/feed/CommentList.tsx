@@ -12,64 +12,97 @@ type Props = {
   who: (uid: string) => OwnerRole;
   name: (uid: string) => string;
   avatarUrl: (uid: string) => string | null;
-  onAdd: (body: string) => void;
+  onAdd: (body: string, parentId: string | null) => void;
   onDelete: (commentId: string) => void;
+  /** 펼침은 카드가 소유한다 (말풍선 아이콘으로도 펼치므로) */
+  expanded: boolean;
+  onExpand: () => void;
 };
 
 const PREVIEW = 2;
 
-/** 게시물 댓글 — 기본 2개 미리보기 + 입력 */
-export function CommentList({ comments, myUid, who, name, avatarUrl, onAdd, onDelete }: Props) {
+/** 게시물 댓글 — 기본 2개 미리보기 + 1단계 답글 + 입력 */
+export function CommentList({
+  comments,
+  myUid,
+  who,
+  name,
+  avatarUrl,
+  onAdd,
+  onDelete,
+  expanded,
+  onExpand,
+}: Props) {
   const [draft, setDraft] = useState('');
-  const [expanded, setExpanded] = useState(false);
+  const [replyTo, setReplyTo] = useState<PostComment | null>(null);
 
-  const hidden = comments.length - PREVIEW;
-  const shown = expanded ? comments : comments.slice(0, PREVIEW);
+  const roots = comments.filter((c) => c.parentId === null);
+  const repliesOf = (id: string) => comments.filter((c) => c.parentId === id);
+  const shown = expanded ? roots : roots.slice(0, PREVIEW);
 
   const submit = () => {
     const body = draft.trim();
     if (!body) return;
-    onAdd(body);
+    onAdd(body, replyTo?.id ?? null);
     setDraft('');
+    setReplyTo(null);
+  };
+
+  const startReply = (c: PostComment) => {
+    setReplyTo(c);
+    onExpand();
   };
 
   return (
-    <View style={{ gap: 7 }}>
-      {!expanded && hidden > 0 && (
-        <Pressable onPress={() => setExpanded(true)} hitSlop={6}>
+    <View style={{ gap: 10 }}>
+      {!expanded && roots.length > PREVIEW && (
+        <Pressable onPress={onExpand} hitSlop={6}>
           <Meta style={{ fontSize: 13 }}>댓글 {comments.length}개 모두 보기</Meta>
         </Pressable>
       )}
 
       {shown.map((c) => (
-        <View key={c.id} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
-          <Avatar url={avatarUrl(c.authorId)} role={who(c.authorId)} name={name(c.authorId)} size={24} />
-          <Text
-            style={{ fontFamily: typeface, fontSize: 14, lineHeight: 20, color: color.white, flex: 1 }}
-          >
-            <Text style={{ fontWeight: '700', color: color.white }}>{name(c.authorId)}</Text>
-            {'  '}
-            {c.body}
-          </Text>
-          <Meta style={{ fontSize: 11, lineHeight: 20 }}>{formatRelative(c.createdAt)}</Meta>
-          {c.authorId === myUid && (
-            <Pressable onPress={() => onDelete(c.id)} hitSlop={10}>
-              <Text
-                style={{ fontFamily: typeface, fontSize: 13, lineHeight: 20, color: color.muted }}
-              >
-                ×
-              </Text>
-            </Pressable>
-          )}
+        <View key={c.id} style={{ gap: 10 }}>
+          <Row
+            comment={c}
+            myUid={myUid}
+            who={who}
+            name={name}
+            avatarUrl={avatarUrl}
+            onReply={() => startReply(c)}
+            onDelete={() => onDelete(c.id)}
+          />
+          {repliesOf(c.id).map((r) => (
+            <View key={r.id} style={{ paddingLeft: 34 }}>
+              <Row
+                comment={r}
+                myUid={myUid}
+                who={who}
+                name={name}
+                avatarUrl={avatarUrl}
+                size={22}
+                onDelete={() => onDelete(r.id)}
+              />
+            </View>
+          ))}
         </View>
       ))}
 
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2 }}>
-        <Avatar url={avatarUrl(myUid)} role={who(myUid)} name={name(myUid)} size={24} />
+      {replyTo && (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <Meta style={{ fontSize: 12, flex: 1 }}>{name(replyTo.authorId)}님에게 답글 남기는 중</Meta>
+          <Pressable onPress={() => setReplyTo(null)} hitSlop={10}>
+            <Text style={{ fontFamily: typeface, fontSize: 13, color: color.muted }}>취소</Text>
+          </Pressable>
+        </View>
+      )}
+
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <Avatar url={avatarUrl(myUid)} role={who(myUid)} name={name(myUid)} size={26} />
         <TextInput
           value={draft}
           onChangeText={setDraft}
-          placeholder="댓글 남기기"
+          placeholder={replyTo ? '답글 남기기' : '댓글 남기기'}
           placeholderTextColor={color.muted}
           onSubmitEditing={submit}
           returnKeyType="send"
@@ -86,13 +119,70 @@ export function CommentList({ comments, myUid, who, name, avatarUrl, onAdd, onDe
         />
         {!!draft.trim() && (
           <Pressable onPress={submit} hitSlop={10}>
-            <Text
-              style={{ fontFamily: typeface, fontWeight: '700', fontSize: 14, color: role.me }}
-            >
+            <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 14, color: role.me }}>
               등록
             </Text>
           </Pressable>
         )}
+      </View>
+    </View>
+  );
+}
+
+/** 댓글 한 줄 — 이름+본문 인라인, 아래 시간·답글·삭제 (인스타 동일). onReply 없으면 답글 버튼 없음 = 답글 줄 */
+function Row({
+  comment,
+  myUid,
+  who,
+  name,
+  avatarUrl,
+  size = 26,
+  onReply,
+  onDelete,
+}: {
+  comment: PostComment;
+  myUid: string;
+  who: (uid: string) => OwnerRole;
+  name: (uid: string) => string;
+  avatarUrl: (uid: string) => string | null;
+  size?: number;
+  onReply?: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
+      <Avatar
+        url={avatarUrl(comment.authorId)}
+        role={who(comment.authorId)}
+        name={name(comment.authorId)}
+        size={size}
+      />
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Text style={{ fontFamily: typeface, fontSize: 14, lineHeight: 20, color: color.white }}>
+          {/* 이름은 역할색 — 굵기만으로는 한글 이름과 한글 본문이 한 덩어리로 읽힌다 */}
+          <Text style={{ fontWeight: '700', color: role[who(comment.authorId)] }}>
+            {name(comment.authorId)}
+          </Text>
+          {'   '}
+          {comment.body}
+        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 3 }}>
+          <Meta style={{ fontSize: 11.5 }}>{formatRelative(comment.createdAt)}</Meta>
+          {onReply && (
+            <Pressable onPress={onReply} hitSlop={6}>
+              <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 11.5, color: color.sub }}>
+                답글 달기
+              </Text>
+            </Pressable>
+          )}
+          {comment.authorId === myUid && (
+            <Pressable onPress={onDelete} hitSlop={6}>
+              <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 11.5, color: color.muted }}>
+                삭제
+              </Text>
+            </Pressable>
+          )}
+        </View>
       </View>
     </View>
   );
