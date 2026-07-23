@@ -1,17 +1,19 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
-import { Image } from 'expo-image';
 import { color, typeface } from '@/theme/tokens';
-import { daysSince, isReleased, monthKey, todayKST } from '@/lib/date';
+import { daysSince, isReleased, todayKST } from '@/lib/date';
 import { nearestIndex } from '@/lib/albums';
-import { useAllTracks, type TrackListItem } from '@/api/tracks';
+import { recommendPlaces } from '@/lib/recommend';
+import { useAllTracks } from '@/api/tracks';
 import { useMyCouple, useCoupleProfiles } from '@/api/couple';
-import { usePlaylists } from '@/api/playlists';
+import { usePlaylists, useSavedPlaces } from '@/api/playlists';
+import { useAddSavedPlaceToTrack } from '@/api/places';
 import { Meta } from '@/components/Meta';
 import { Eyebrow } from '@/components/Eyebrow';
 import { AlbumCarousel } from '@/components/AlbumCarousel';
+import { RecommendStrip } from '@/components/playlist/RecommendStrip';
 
 /** 플레이리스트 탭 루트 (목업 07) */
 export default function PlaylistRoot() {
@@ -28,16 +30,27 @@ export default function PlaylistRoot() {
   );
   const focusIndex = useMemo(() => nearestIndex(albums.map((t) => t.date), todayKST()), [albums]);
 
-  // 아카이브(월별)는 지난 데이트만
-  const months = useMemo(() => {
-    const map = new Map<string, TrackListItem[]>();
-    for (const t of tracks.data ?? []) {
-      if (!isReleased(t.date)) continue;
-      const k = monthKey(t.date);
-      map.set(k, [...(map.get(k) ?? []), t]);
-    }
-    return [...map.entries()].sort((a, b) => b[0].localeCompare(a[0]));
+  const savedPlaces = useSavedPlaces();
+
+  // 다가오는 데이트 = 아직 안 온 앨범 중 가장 이른 것
+  const upcoming = useMemo(() => {
+    const future = (tracks.data ?? [])
+      .filter((t) => !isReleased(t.date))
+      .sort((a, b) => a.date.localeCompare(b.date));
+    return future[0];
   }, [tracks.data]);
+
+  const addToUpcoming = useAddSavedPlaceToTrack(upcoming?.id ?? '');
+  const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
+
+  // 찜한 곳 중 이 데이트에 아직 안 담겼고 안 가본 곳.
+  // "가본 곳" 판정은 visitCount로 한다 — photoThumbs로 대신하면 사진 없이 다녀온 곳이 새 곳으로 잡힌다.
+  const recommended = useMemo(() => {
+    const all = savedPlaces.data ?? [];
+    const saved = all.filter((p) => p.playlistKind === 'saved');
+    const visited = all.filter((p) => p.visitCount > 0).map((p) => p.placeId);
+    return recommendPlaces(saved, { inCourse: [...addedIds], visited });
+  }, [savedPlaces.data, addedIds]);
 
   const names = [profiles.data?.me?.nickname, profiles.data?.partner?.nickname]
     .filter(Boolean)
@@ -48,7 +61,7 @@ export default function PlaylistRoot() {
 
   return (
     <View style={{ flex: 1, backgroundColor: color.bg }}>
-    <ScrollView style={{ backgroundColor: color.bg }} contentContainerStyle={{ paddingBottom: 32 }}>
+    <ScrollView style={{ backgroundColor: color.bg }} contentContainerStyle={{ paddingBottom: 132 }}>
       {/* 헤더 */}
       <View
         style={{
@@ -83,42 +96,36 @@ export default function PlaylistRoot() {
         <AlbumCarousel albums={albums} focusIndex={focusIndex} onPress={(id) => router.push(`/track/${id}`)} />
       </View>
 
-      {/* 아카이브 — 달별로 모인 지난 데이트 */}
-      <SectionHeader title="아카이브" />
-      <View style={{ paddingHorizontal: 16, paddingTop: 10 }}>
-        {months.map(([k, list]) => (
-          <Pressable
-            key={k}
-            onPress={() => router.push(`/(tabs)/playlist/${k}`)}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8 }}
-          >
-            <View style={{ width: 52, height: 52, borderRadius: 8, overflow: 'hidden', backgroundColor: color.surface2 }}>
-              {list.find((t) => t.coverThumbUrl)?.coverThumbUrl && (
-                <Image
-                  source={list.find((t) => t.coverThumbUrl)!.coverThumbUrl!}
-                  style={{ width: '100%', height: '100%' }}
-                  contentFit="cover"
-                />
-              )}
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 15, color: color.white }}>
-                {k.slice(0, 4)}년 {Number(k.slice(5))}월
-              </Text>
-              <Meta style={{ marginTop: 2, fontSize: 12.5 }}>{list.length} 데이트</Meta>
-            </View>
-            <Text style={{ fontFamily: typeface, color: color.muted }}>›</Text>
-          </Pressable>
-        ))}
-        {months.length === 0 && <Meta style={{ paddingVertical: 10 }}>기록이 쌓이면 달별로 모여요</Meta>}
-      </View>
+      {/* 다음 데이트 추천 — 찜한 곳 중 아직 안 담기고 안 가본 곳 */}
+      {upcoming && recommended.length > 0 && (
+        <>
+          <SectionHeader title={`${upcoming.date.slice(5).replace('-', '.')} 데이트에 담을 곳`} />
+          <View style={{ paddingTop: 10 }}>
+            <RecommendStrip
+              items={recommended.map((p) => ({
+                placeId: p.placeId,
+                name: p.name,
+                category: p.category,
+                thumbUrl: p.photoThumbs[0],
+              }))}
+              addedIds={addedIds}
+              onAdd={(placeId) =>
+                addToUpcoming.mutate(
+                  { placeId, sortOrder: addedIds.size },
+                  { onSuccess: () => setAddedIds((s) => new Set(s).add(placeId)) },
+                )
+              }
+            />
+          </View>
+        </>
+      )}
       </>
       )}
 
       {/* 테마 플레이리스트 — 첫 실행이고 만든 플리도 없으면 숨김 */}
       {!(noTracks && (playlists.data ?? []).length === 0) && (
       <>
-      <SectionHeader title="테마 플레이리스트" />
+      <SectionHeader title="찜 · 플레이리스트" />
       <View style={{ paddingHorizontal: 16, paddingTop: 10 }}>
         {(playlists.data ?? []).map((p) => (
           <Pressable

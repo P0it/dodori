@@ -1,0 +1,70 @@
+import { Pressable, ScrollView, Text, View } from 'react-native';
+import { color, typeface } from '@/theme/tokens';
+import { Meta } from '@/components/Meta';
+import { PlaceThumb } from '@/components/PlaceThumb';
+
+export type RecommendItem = {
+  placeId: string;
+  name: string;
+  category: string | null;
+  thumbUrl?: string | null;
+};
+
+/** 다가오는 데이트에 담을 만한 찜 장소 — 가로 스트립. 담기 버튼이 코스에 바로 꽂는다. */
+export function RecommendStrip({
+  items,
+  addedIds,
+  onAdd,
+}: {
+  items: RecommendItem[];
+  addedIds: Set<string>;
+  onAdd: (placeId: string) => void;
+}) {
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={{ paddingHorizontal: 16, gap: 12, paddingVertical: 4 }}
+    >
+      {items.map((p) => {
+        const added = addedIds.has(p.placeId);
+        return (
+          <View key={p.placeId} style={{ width: 128 }}>
+            <PlaceThumb placeId={p.placeId} name={p.name} thumbUrl={p.thumbUrl} size={128} />
+            <Text
+              numberOfLines={1}
+              style={{ marginTop: 8, fontFamily: typeface, fontWeight: '600', fontSize: 13.5, color: color.white }}
+            >
+              {p.name}
+            </Text>
+            <Meta style={{ marginTop: 1, fontSize: 11.5 }}>{p.category ?? ' '}</Meta>
+            <Pressable
+              disabled={added}
+              onPress={() => onAdd(p.placeId)}
+              style={({ pressed }) => ({
+                marginTop: 8,
+                height: 30,
+                borderRadius: 999,
+                backgroundColor: added ? color.surface3 : color.date,
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: pressed ? 0.85 : 1,
+              })}
+            >
+              <Text
+                style={{
+                  fontFamily: typeface,
+                  fontWeight: '700',
+                  fontSize: 12.5,
+                  color: added ? color.sub : color.onPrimary,
+                }}
+              >
+                {added ? '담김' : '이 데이트에 담기'}
+              </Text>
+            </Pressable>
+          </View>
+        );
+      })}
+    </ScrollView>
+  );
+}
