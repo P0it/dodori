@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -38,8 +38,16 @@ const COURSE_ROW_H = 62;
 
 /** Track 상세 — released 여부로 플랜/아카이브 모드 파생 (§7.2, 목업 11~13) */
 export default function TrackScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, addPlaces } = useLocalSearchParams<{ id: string; addPlaces?: string }>();
   const track = useTrack(id);
+  const router = useRouter();
+  // 만들기 직후엔 장소 담기를 바로 연다 (create-track이 addPlaces=1로 넘긴다). 한 번만.
+  const opened = useRef(false);
+  useEffect(() => {
+    if (addPlaces !== '1' || opened.current) return;
+    opened.current = true;
+    router.push({ pathname: '/modals/place-search', params: { trackId: id } });
+  }, [addPlaces, id, router]);
 
   if (track.isPending) {
     return (

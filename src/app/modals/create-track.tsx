@@ -36,7 +36,8 @@ export default function CreateTrack() {
     try {
       const trackId = await create.mutateAsync({ date, title });
       router.dismiss();
-      router.push(`/track/${trackId}`);
+      // 만들자마자 장소부터 담는 동선 — 상세가 addPlaces를 보고 담기 모달을 연다
+      router.push({ pathname: '/track/[id]', params: { id: trackId, addPlaces: '1' } });
     } catch (e) {
       Alert.alert('저장 실패', e instanceof Error ? e.message : String(e));
     } finally {
@@ -82,7 +83,7 @@ function PickTitle({
           어떤 데이트인가요?
         </Text>
         <Meta style={{ marginTop: 8 }}>
-          {date.replaceAll('-', '.')} · 장소는 만든 뒤에 담을 수 있어요.
+          {date.replaceAll('-', '.')} · 만들면 바로 장소를 담을 수 있어요.
         </Meta>
         <TextInput
           value={title}
