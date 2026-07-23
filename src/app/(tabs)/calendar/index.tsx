@@ -160,7 +160,6 @@ export default function Calendar() {
           <View style={{ position: 'absolute', right: 16, bottom: 84, alignItems: 'flex-end', gap: 10 }}>
             <FabAction
               label="데이트"
-              tint={color.date}
               onPress={() => {
                 setFabOpen(false);
                 router.push({ pathname: '/modals/create-track', params: { date: selected } });
@@ -211,20 +210,20 @@ export default function Calendar() {
 }
 
 /**
- * FAB에서 펼쳐지는 선택지.
- * tint 점은 색이 시스템에 고정된 종류(데이트=보라)에만 찍는다 — 일정 색은 등록할 때 고르는
- * 일정의 속성이라, 여기서 미리 색을 깔면 고르지도 않은 색을 약속하는 셈이 된다.
+ * FAB에서 펼쳐지는 선택지 — 색 점을 찍지 않는다.
+ * 여기는 "무엇을 만들까"를 고르는 메뉴지 색 범례가 아니다. 일정 색은 등록할 때 고르는
+ * 일정의 속성이라 미리 깔면 고르지도 않은 색을 약속하는 셈이고, 데이트=보라도 여기서 보여줄
+ * 이유가 없다 (그 규칙은 그리드·아젠다에서 지킨다).
  */
-function FabAction({ label, tint, onPress }: { label: string; tint?: string; onPress: () => void }) {
+function FabAction({ label, onPress }: { label: string; onPress: () => void }) {
   return (
     <Pressable
       onPress={onPress}
       style={({ pressed }) => ({
-        flexDirection: 'row',
         alignItems: 'center',
-        gap: 8,
+        justifyContent: 'center',
         height: 40,
-        paddingHorizontal: 16,
+        paddingHorizontal: 18,
         borderRadius: 20,
         backgroundColor: color.surface2,
         shadowColor: '#000',
@@ -235,7 +234,6 @@ function FabAction({ label, tint, onPress }: { label: string; tint?: string; onP
         opacity: pressed ? 0.85 : 1,
       })}
     >
-      {tint ? <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: tint }} /> : null}
       <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 13.5, color: color.white }}>
         {label}
       </Text>
