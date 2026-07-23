@@ -75,6 +75,29 @@ export function useAddTrackPlace(trackId: string) {
   });
 }
 
+/** 이미 저장된 장소(찜·테마 플리)를 코스에 담기 — upsert 불필요 */
+export function useAddSavedPlaceToTrack(trackId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { placeId: string; sortOrder: number }) => {
+      const { data: userData } = await supabase.auth.getUser();
+      const uid = userData.user?.id;
+      if (!uid) throw new Error('로그인이 필요해요');
+      const { error } = await supabase.from('track_places').insert({
+        track_id: trackId,
+        place_id: input.placeId,
+        sort_order: input.sortOrder,
+        added_by: uid,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['track', trackId] });
+      qc.invalidateQueries({ queryKey: ['tracks'] });
+    },
+  });
+}
+
 /** 코스 순서 변경 — 드롭 시점의 새 순서(placeId[])를 받아 각 행 sort_order = index로 갱신 */
 export function useReorderTrackPlaces(trackId: string) {
   const qc = useQueryClient();

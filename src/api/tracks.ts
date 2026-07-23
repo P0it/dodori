@@ -47,7 +47,6 @@ export interface TrackListItem extends MonthTrack {
   photoCount: number;
   noteCount: number;
   placeCount: number;
-  liked: boolean;
 }
 
 /** 전체 트랙 (최신순) — 플레이리스트 루트·월별 그룹·Favorites 공용 */
@@ -60,7 +59,7 @@ export function useAllTracks() {
       const { data, error } = await supabase
         .from('tracks')
         .select(
-          `id, title, date, liked,
+          `id, title, date,
            cover:photos!tracks_cover_photo_fk(storage_path),
            photos!photos_track_id_fkey(id, storage_path),
            notes(id), track_places(place_id)`,
@@ -74,7 +73,6 @@ export function useAllTracks() {
           id: t.id,
           title: t.title,
           date: t.date,
-          liked: t.liked,
           coverThumbUrl: coverPath ? thumbUrl(coverPath, 'grid') : null,
           photoCount: t.photos?.length ?? 0,
           noteCount: t.notes?.length ?? 0,
@@ -117,7 +115,6 @@ export interface TrackDetail {
   date: string;
   coverPhotoId: string | null;
   coverPhotoPath: string | null;
-  liked: boolean;
   createdBy: string;
   photos: TrackPhoto[]; // taken_at(실패 시 created_at) 정렬 (§7.3)
   places: TrackPlace[];
@@ -132,7 +129,7 @@ export function useTrack(id: string | undefined) {
       const { data: t, error } = await supabase
         .from('tracks')
         .select(
-          `id, title, date, cover_photo_id, liked, created_by,
+          `id, title, date, cover_photo_id, created_by,
            cover:photos!tracks_cover_photo_fk(storage_path),
            photos!photos_track_id_fkey(id, storage_path, uploader_id, taken_at, created_at, width, height),
            track_places(place_id, visit_time, sort_order, added_by, done, places(name, category, address, link)),
@@ -158,7 +155,6 @@ export function useTrack(id: string | undefined) {
         date: t.date,
         coverPhotoId: t.cover_photo_id,
         coverPhotoPath: t.cover?.storage_path ?? null,
-        liked: t.liked,
         createdBy: t.created_by,
         photos,
         places: (t.track_places ?? [])
@@ -213,7 +209,6 @@ export function useUpdateTrack(id: string) {
     mutationFn: async (patch: {
       title?: string;
       coverPhotoId?: string | null;
-      liked?: boolean;
       date?: ISODate;
     }) => {
       const { error } = await supabase
@@ -221,7 +216,6 @@ export function useUpdateTrack(id: string) {
         .update({
           ...(patch.title !== undefined && { title: patch.title }),
           ...(patch.coverPhotoId !== undefined && { cover_photo_id: patch.coverPhotoId }),
-          ...(patch.liked !== undefined && { liked: patch.liked }),
           ...(patch.date !== undefined && { date: patch.date }),
         })
         .eq('id', id);
