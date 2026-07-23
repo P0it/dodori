@@ -68,7 +68,10 @@ export function useDeletePlaylist() {
       const { error } = await supabase.from('playlists').delete().eq('id', id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['playlists'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['playlists'] });
+      qc.invalidateQueries({ queryKey: ['savedPlaces'] });
+    },
   });
 }
 
@@ -85,6 +88,8 @@ export interface PlaylistPlaceItem {
 export interface PlaylistDetail {
   id: string;
   name: string;
+  /** 찜은 삭제·이름변경 불가 — 화면이 이 값으로 삭제 UI를 감춘다 */
+  kind: 'custom' | 'saved';
   places: PlaylistPlaceItem[];
 }
 
@@ -97,7 +102,7 @@ export function usePlaylistDetail(id: string | undefined) {
     queryFn: async (): Promise<PlaylistDetail> => {
       const { data: pl, error } = await supabase
         .from('playlists')
-        .select('id, name, playlist_places(place_id, places(id, name, category, address, link))')
+        .select('id, name, kind, playlist_places(place_id, places(id, name, category, address, link))')
         .eq('id', id!)
         .single();
       if (error) throw error;
@@ -106,6 +111,7 @@ export function usePlaylistDetail(id: string | undefined) {
       return {
         id: pl.id,
         name: pl.name,
+        kind: (pl.kind === 'saved' ? 'saved' : 'custom') as 'custom' | 'saved',
         places: (pl.playlist_places ?? []).map((pp) => ({
           placeId: pp.place_id,
           name: pp.places?.name ?? '',
@@ -154,6 +160,8 @@ export function useAddPlaylistPlace(playlistId: string) {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['playlists'] });
+      // 찜 상세에서 담아도 추천 스트립·장소 피커가 쓰는 savedPlaces가 낡지 않게
+      qc.invalidateQueries({ queryKey: ['savedPlaces'] });
     },
   });
 }
@@ -169,7 +177,10 @@ export function useRemovePlaylistPlace(playlistId: string) {
         .eq('place_id', placeId);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['playlists'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['playlists'] });
+      qc.invalidateQueries({ queryKey: ['savedPlaces'] });
+    },
   });
 }
 

@@ -19,6 +19,8 @@ export default function CustomPlaylist() {
   const delPlaylist = useDeletePlaylist();
 
   const p = detail.data;
+  // 찜은 커플당 하나뿐이고 다시 만들 수 없다 — 삭제 진입점 자체를 감춘다(DB 트리거가 최종 방어)
+  const isSaved = p?.kind === 'saved';
   const thumbs = p?.places.flatMap((pl) => pl.photoThumbs).slice(0, 4) ?? [];
   const totalVisits = p?.places.reduce((n, pl) => n + pl.visitCount, 0) ?? 0;
 
@@ -37,9 +39,11 @@ export default function CustomPlaylist() {
       <TopBar
         title={p?.name ?? ''}
         right={
-          <Pressable hitSlop={8} onPress={onDelete}>
-            <Text style={{ fontFamily: typeface, color: color.sub, fontSize: 18 }}>⋯</Text>
-          </Pressable>
+          isSaved ? undefined : (
+            <Pressable hitSlop={8} onPress={onDelete}>
+              <Text style={{ fontFamily: typeface, color: color.sub, fontSize: 18 }}>⋯</Text>
+            </Pressable>
+          )
         }
       />
       <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
@@ -67,7 +71,7 @@ export default function CustomPlaylist() {
             {p?.name}
           </Text>
           <Meta style={{ marginTop: 6 }}>
-            테마 플레이리스트 · 장소 {p?.places.length ?? 0}곳 · 방문 {totalVisits}회
+            {isSaved ? '찜한 곳' : '테마 플레이리스트'} · 장소 {p?.places.length ?? 0}곳 · 방문 {totalVisits}회
           </Meta>
         </View>
 

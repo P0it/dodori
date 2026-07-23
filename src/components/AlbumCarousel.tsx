@@ -21,10 +21,11 @@ export type CarouselAlbum = {
   coverThumbUrl: string | null;
 };
 
-const CARD = 190;
-/** 이웃 카드가 가운데 카드 뒤로 파고드는 폭 */
-const OVERLAP = 58;
-const STEP = CARD - OVERLAP;
+const CARD = 148;
+/** 캐러셀 좌우 여백 — 이웃 카드가 이 안쪽에 머문다 */
+const GUTTER = 20;
+/** 이웃이 가운데 뒤로 파고들 최소 폭 */
+const MIN_OVERLAP = 34;
 
 /**
  * 앨범 캐러셀 — 가운데가 현재, 왼쪽이 지난 데이트·오른쪽이 앞으로의 데이트.
@@ -44,15 +45,18 @@ export function AlbumCarousel({
   const { width: screen } = useWindowDimensions();
   const [active, setActive] = useState(focusIndex);
   const side = Math.max(0, (screen - CARD) / 2);
+  // 이웃 카드의 바깥 가장자리가 GUTTER 안쪽에 오도록 보폭을 잡는다 (화면 밖으로 나가지 않게)
+  const step = Math.min(CARD - MIN_OVERLAP, Math.max(CARD * 0.5, side - GUTTER));
+  const overlap = CARD - step;
 
   // 마운트·포커스 변경 시 해당 앨범을 가운데로
   useEffect(() => {
     setActive(focusIndex);
-    ref.current?.scrollTo({ x: focusIndex * STEP, animated: false });
-  }, [focusIndex, albums.length]);
+    ref.current?.scrollTo({ x: focusIndex * step, animated: false });
+  }, [focusIndex, albums.length, step]);
 
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const i = Math.round(e.nativeEvent.contentOffset.x / STEP);
+    const i = Math.round(e.nativeEvent.contentOffset.x / step);
     if (i !== active && i >= 0 && i < albums.length) setActive(i);
   };
 
@@ -64,7 +68,7 @@ export function AlbumCarousel({
         ref={ref}
         horizontal
         showsHorizontalScrollIndicator={false}
-        snapToInterval={STEP}
+        snapToInterval={step}
         decelerationRate="fast"
         onScroll={onScroll}
         scrollEventThrottle={16}
@@ -81,7 +85,7 @@ export function AlbumCarousel({
               style={{
                 width: CARD,
                 height: CARD,
-                marginRight: i === albums.length - 1 ? 0 : -OVERLAP,
+                marginRight: i === albums.length - 1 ? 0 : -overlap,
                 // 가운데가 맨 위, 멀어질수록 뒤로
                 zIndex: albums.length - dist,
                 opacity: isActive ? 1 : Math.max(0.25, 0.5 - (dist - 1) * 0.12),

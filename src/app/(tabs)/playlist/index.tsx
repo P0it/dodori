@@ -44,13 +44,20 @@ export default function PlaylistRoot() {
   const upcomingTrack = useTrack(upcoming?.id);
   const addToUpcoming = useAddSavedPlaceToTrack(upcoming?.id ?? '');
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
+  // 다가오는 데이트가 바뀌면(더 이른 날짜를 새로 만드는 등) 담김 표시는 이전 트랙 것이므로 비운다
+  const [addedFor, setAddedFor] = useState(upcoming?.id);
+  if (addedFor !== upcoming?.id) {
+    setAddedFor(upcoming?.id);
+    setAddedIds(new Set());
+  }
   // 요청 중인 장소 — 연타로 같은 sortOrder·중복 insert가 나가지 않게 스트립 전체를 잠근다
   const pendingId = addToUpcoming.isPending ? (addToUpcoming.variables?.placeId ?? null) : null;
   // 새 장소는 코스 맨 뒤에 — 개수가 아니라 기존 최대 sortOrder + 1을 기준으로 한다.
   // (삭제로 순서에 구멍이 나도 세션을 넘겨 값이 겹치지 않게)
+  // 담은 개수는 더하지 않는다 — 담기 뮤테이션이 코스 리페치까지 기다린 뒤에야 잠금을 풀므로
+  // 버튼이 눌릴 수 있는 시점의 maxOrder는 항상 최신이다. 더하면 이중 계산이 돼 순서에 구멍이 난다.
   const maxOrder = Math.max(-1, ...(upcomingTrack.data?.places ?? []).map((p) => p.sortOrder));
-  // 세션 중 담은 개수까지 더해야 리페치 전 연속 담기에서 0번(맨 앞)으로 끼어들지 않는다
-  const nextSortOrder = (upcomingTrack.data ? maxOrder + 1 : (upcoming?.placeCount ?? 0)) + addedIds.size;
+  const nextSortOrder = maxOrder + 1;
 
   // 찜한 곳 중 이 데이트에 아직 안 담겼고 안 가본 곳.
   // "가본 곳" 판정은 visitCount로 한다 — photoThumbs로 대신하면 사진 없이 다녀온 곳이 새 곳으로 잡힌다.

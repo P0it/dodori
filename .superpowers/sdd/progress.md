@@ -21,3 +21,6 @@ Task 9(playlist/index.tsx 재구성)는 다른 세션이 같은 파일을 미커
 다른 세션 작업: role/roleBg/OwnerRole 제거 → color.accent, OwnerDot.tsx 삭제. 현재 repo typecheck 42 errors.
 재개 조건: 해당 리팩토링 커밋 완료 + typecheck green.
 남은 작업: Task 9, Task 10(수동 검증), 최종 whole-branch 리뷰.
+Task 9: complete (commits d5f0dec..610aa5b, review 2 Critical+2 Important+2 Minor → 2라운드 수정 후 clean)
+이월(범위 밖): place-search 검색 탭의 order++ 는 여전히 next 파라미터(track places.length) 기반 — 같은 계열 약점
+이월(범위 밖): useRemoveTrackPlace가 renumber 안 함 — 최대값 기준 공식은 견디지만 sortOrder===index 가정은 깨짐

@@ -71,7 +71,14 @@ export function useAddTrackPlace(trackId: string) {
       });
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['track', trackId] }),
+    // 찜 탭 담기와 동일한 무효화 집합 — 앨범 캐러셀·목록의 placeCount가 한쪽에서만 낡지 않게.
+    // Promise를 돌려줘 코스 리페치가 끝날 때까지 isPending을 유지한다(다음 sortOrder 계산의 근거).
+    onSuccess: () =>
+      Promise.all([
+        qc.invalidateQueries({ queryKey: ['track', trackId] }),
+        qc.invalidateQueries({ queryKey: ['tracks'] }),
+        qc.invalidateQueries({ queryKey: ['savedPlaces'] }),
+      ]),
   });
 }
 
@@ -91,12 +98,14 @@ export function useAddSavedPlaceToTrack(trackId: string) {
       });
       if (error) throw error;
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['track', trackId] });
-      qc.invalidateQueries({ queryKey: ['tracks'] });
-      // 찜 목록 캐시는 AsyncStorage에 저장돼 살아남는다 — 담긴 뒤에도 낡은 상태로 남지 않게 무효화
-      qc.invalidateQueries({ queryKey: ['savedPlaces'] });
-    },
+    // 찜 목록 캐시는 AsyncStorage에 저장돼 살아남는다 — 담긴 뒤에도 낡은 상태로 남지 않게 무효화.
+    // Promise를 돌려줘 코스 리페치가 끝날 때까지 isPending을 유지한다(다음 sortOrder 계산의 근거).
+    onSuccess: () =>
+      Promise.all([
+        qc.invalidateQueries({ queryKey: ['track', trackId] }),
+        qc.invalidateQueries({ queryKey: ['tracks'] }),
+        qc.invalidateQueries({ queryKey: ['savedPlaces'] }),
+      ]),
   });
 }
 

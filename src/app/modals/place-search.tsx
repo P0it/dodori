@@ -18,9 +18,8 @@ import { SavedHeart } from '@/components/SavedHeart';
  */
 export default function PlaceSearch() {
   const router = useRouter();
-  const { trackId, next, playlistId } = useLocalSearchParams<{
+  const { trackId, playlistId } = useLocalSearchParams<{
     trackId?: string;
-    next?: string;
     playlistId?: string;
   }>();
   // 데이트에 담으러 왔으면 찜부터 — 이게 이 화면의 핵심 동선이다.
@@ -36,20 +35,20 @@ export default function PlaceSearch() {
   const addToTrack = useAddTrackPlace(trackId ?? '');
   const addToPlaylist = useAddPlaylistPlace(playlistId ?? '');
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
-  let order = Number(next ?? 0);
   // 이미 이 날짜 코스에 담긴 찜한 곳 — + 버튼을 눌러도 조용히 실패하지 않도록 미리 added 처리
   const existingPlaceIds = useMemo(
     () => new Set((track.data?.places ?? []).map((p) => p.placeId)),
     [track.data],
   );
-  // 찜 탭에서 담을 순서 — 개수가 아니라 기존 최대 sortOrder + 1 기준.
-  // (삭제로 순서에 구멍이 나도 세션을 넘겨 값이 겹치지 않게)
+  // 코스에 담을 순서 — 검색 탭·찜 탭이 함께 쓴다. 개수나 route param이 아니라 기존 최대 sortOrder + 1 기준.
+  // (삭제로 순서에 구멍이 나면 개수 기준은 기존 행과 겹친다)
+  // 담은 개수는 더하지 않는다 — 담기 뮤테이션이 코스 리페치까지 기다린 뒤 잠금을 풀므로 maxOrder는 항상 최신이다.
   const maxOrder = Math.max(-1, ...(track.data?.places ?? []).map((p) => p.sortOrder));
-  const nextSortOrder = (track.data ? maxOrder + 1 : 0) + addedIds.size;
+  const nextSortOrder = maxOrder + 1;
 
   const add = (p: Parameters<typeof addToPlaylist.mutate>[0]) => {
     const done = { onSuccess: () => setAddedIds((s) => new Set(s).add(p.naver_id)) };
-    if (trackId) addToTrack.mutate({ place: p, sortOrder: order++ }, done);
+    if (trackId) addToTrack.mutate({ place: p, sortOrder: nextSortOrder }, done);
     else if (playlistId) addToPlaylist.mutate(p, done);
   };
 
@@ -121,7 +120,8 @@ export default function PlaceSearch() {
                       }
                     />
                     <Pressable
-                      disabled={added || (!trackId && !playlistId)}
+                      // 담는 중엔 잠근다 — 연타하면 리페치 전 maxOrder로 같은 순서가 두 번 나간다
+                      disabled={added || (!trackId && !playlistId) || addToTrack.isPending}
                       onPress={() => add(p)}
                       style={{
                         width: 34,

@@ -355,7 +355,7 @@ function TrackBody({ t }: { t: TrackDetail }) {
               onPress={() =>
                 router.push({
                   pathname: '/modals/place-search',
-                  params: { trackId: t.id, next: String(t.places.length) },
+                  params: { trackId: t.id },
                 })
               }
               style={({ pressed }) => ({
