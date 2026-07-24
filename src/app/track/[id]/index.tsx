@@ -173,7 +173,6 @@ function TrackBody({ t }: { t: TrackDetail }) {
         </Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 3 }}>
           <Meta style={{ fontSize: 12 }}>{p.category ?? '장소'}</Meta>
-          <Meta style={{ fontSize: 12 }}>{nameOf(p.addedBy)} 추가</Meta>
         </View>
       </View>
       {opts.draggable && (
