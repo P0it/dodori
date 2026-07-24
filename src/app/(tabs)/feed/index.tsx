@@ -9,7 +9,7 @@ import { usePosts } from '@/api/posts';
 import { Meta } from '@/components/Meta';
 import { Eyebrow } from '@/components/Eyebrow';
 import { DodoriMark } from '@/components/DodoriMark';
-import { PlusGlyph, MenuGlyph } from '@/components/glyphs';
+import { PlusGlyph, MenuGlyph, StoryGlyph } from '@/components/glyphs';
 import { PostGridCell } from '@/components/feed/PostGridCell';
 
 /** 스튜디오 = 우리 계정 (목업 25 + 게시물 그리드) — 셀 탭 → 세로 스크롤 피드 */
@@ -105,6 +105,9 @@ function AccountHeader() {
           paddingHorizontal: 6,
         }}
       >
+        <Pressable hitSlop={10} onPress={() => router.push('/feed/stories')}>
+          <StoryGlyph size={22} />
+        </Pressable>
         <Pressable hitSlop={10} onPress={() => router.push('/modals/create-post')}>
           <PlusGlyph size={24} />
         </Pressable>

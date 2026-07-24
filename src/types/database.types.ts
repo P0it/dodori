@@ -238,6 +238,7 @@ export type Database = {
           id: string
           post_id: string | null
           storage_path: string
+          story_id: string | null
           taken_at: string | null
           track_id: string | null
           uploader_id: string
@@ -249,6 +250,7 @@ export type Database = {
           id?: string
           post_id?: string | null
           storage_path: string
+          story_id?: string | null
           taken_at?: string | null
           track_id?: string | null
           uploader_id: string
@@ -260,6 +262,7 @@ export type Database = {
           id?: string
           post_id?: string | null
           storage_path?: string
+          story_id?: string | null
           taken_at?: string | null
           track_id?: string | null
           uploader_id?: string
@@ -271,6 +274,13 @@ export type Database = {
             columns: ["post_id"]
             isOneToOne: false
             referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "photos_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
             referencedColumns: ["id"]
           },
           {
@@ -567,6 +577,80 @@ export type Database = {
           title?: string
         }
         Relationships: []
+      }
+      stories: {
+        Row: {
+          author_id: string
+          caption: string
+          couple_id: string
+          created_at: string
+          id: string
+          seen_at: string | null
+          track_id: string | null
+        }
+        Insert: {
+          author_id: string
+          caption?: string
+          couple_id: string
+          created_at?: string
+          id?: string
+          seen_at?: string | null
+          track_id?: string | null
+        }
+        Update: {
+          author_id?: string
+          caption?: string
+          couple_id?: string
+          created_at?: string
+          id?: string
+          seen_at?: string | null
+          track_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stories_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stories_track_id_fkey"
+            columns: ["track_id"]
+            isOneToOne: false
+            referencedRelation: "tracks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      story_reactions: {
+        Row: {
+          created_at: string
+          emoji: string
+          story_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          emoji: string
+          story_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string
+          story_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_reactions_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       topic_comments: {
         Row: {
@@ -968,3 +1052,4 @@ export const Constants = {
     Enums: {},
   },
 } as const
+

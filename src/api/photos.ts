@@ -104,8 +104,11 @@ async function resizeForUpload(photo: PickedPhoto) {
   return result; // { uri, width, height }
 }
 
-/** 사진의 부모 — 트랙(데이트) 또는 post(게시물). photos 테이블은 둘 중 하나만 가진다 */
-export type PhotoParent = { trackId: string; postId?: never } | { postId: string; trackId?: never };
+/** 사진의 부모 — 트랙(데이트)·post(게시물)·story(스토리). photos 테이블은 셋 중 하나만 가진다 */
+export type PhotoParent =
+  | { trackId: string; postId?: never; storyId?: never }
+  | { postId: string; trackId?: never; storyId?: never }
+  | { storyId: string; trackId?: never; postId?: never };
 
 /**
  * 부모(트랙 또는 게시물)에 사진 업로드 — 경로 {couple_id}/{parent_id}/{uuid}.jpg (§7.3).
@@ -119,7 +122,7 @@ export async function uploadPhotos(
   const { data: userData } = await supabase.auth.getUser();
   const uid = userData.user?.id;
   if (!uid) throw new Error('로그인이 필요해요');
-  const parentId = parent.trackId ?? parent.postId!;
+  const parentId = parent.trackId ?? parent.postId ?? parent.storyId!;
 
   const ids: string[] = [];
   for (const photo of photos) {
@@ -136,6 +139,7 @@ export async function uploadPhotos(
       .insert({
         track_id: parent.trackId ?? null,
         post_id: parent.postId ?? null,
+        story_id: parent.storyId ?? null,
         uploader_id: uid,
         storage_path: path,
         width: resized.width,

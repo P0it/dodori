@@ -22,6 +22,8 @@ export default function Gallery() {
   const photos = track.data?.photos ?? [];
 
   const onLongPress = (p: (typeof photos)[number]) => {
+    // 스토리에서 흘러온 사진은 앨범이 빌려 보여줄 뿐 — 커버 지정·삭제는 스토리 뷰어에서
+    if (p.storyId) return;
     const isCover = track.data?.coverPhotoId === p.id;
     const buttons: Parameters<typeof Alert.alert>[2] = [
       { text: '취소', style: 'cancel' },

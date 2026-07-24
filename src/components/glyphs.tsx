@@ -150,6 +150,16 @@ export function StackGlyph({ size = 15, color: fg = color.white }: GlyphProps) {
   );
 }
 
+/** 스토리 보관함 — 스토리 링을 그대로 축약한 이중 원 */
+export function StoryGlyph({ size = 22, color: fg = color.white }: GlyphProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Circle cx={12} cy={12} r={9} stroke={fg} strokeWidth={1.8} />
+      <Circle cx={12} cy={12} r={4.2} stroke={fg} strokeWidth={1.8} />
+    </Svg>
+  );
+}
+
 /** 좋아요 (♥) — 눌렀으면 채움 */
 export function HeartGlyph({ size = 24, filled, color: fg = color.white }: GlyphProps) {
   return (

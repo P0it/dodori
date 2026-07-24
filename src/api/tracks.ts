@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from './supabase';
 import { useMyCouple } from './couple';
 import { thumbUrl, uploadPhotos, type PickedPhoto } from './photos';
-import type { ISODate } from '@/lib/date';
+import { todayKST, type ISODate } from '@/lib/date';
 
 export interface MonthTrack {
   id: string;
@@ -83,6 +83,24 @@ export function useAllTracks() {
   });
 }
 
+/** 오늘(KST) 날짜의 트랙 — 스토리가 앨범에 자동으로 얹히는 기준 */
+export function useTodayTrack() {
+  const couple = useMyCouple();
+  return useQuery({
+    enabled: !!couple.data,
+    queryKey: ['tracks', 'today', todayKST()],
+    queryFn: async (): Promise<{ id: string; title: string } | null> => {
+      const { data, error } = await supabase
+        .from('tracks')
+        .select('id, title')
+        .eq('date', todayKST())
+        .maybeSingle();
+      if (error) throw error;
+      return data ?? null;
+    },
+  });
+}
+
 export interface TrackPhoto {
   id: string;
   storagePath: string;
@@ -91,6 +109,8 @@ export interface TrackPhoto {
   createdAt: string;
   width: number | null;
   height: number | null;
+  /** 스토리에서 흘러온 사진이면 그 스토리 id — 커버 지정·삭제 대상에서 뺀다 */
+  storyId: string | null;
 }
 export interface TrackPlace {
   placeId: string;
@@ -138,7 +158,21 @@ export function useTrack(id: string | undefined) {
         .eq('id', id!)
         .single();
       if (error) throw error;
-      const photos = (t.photos ?? [])
+      // 그날 스토리 사진도 앨범이 품는다 — 복사하지 않고 읽을 때 합친다 (스토리 설계 §앨범 연동)
+      const { data: stories, error: storyError } = await supabase
+        .from('stories')
+        .select(
+          `id, photos!photos_story_id_fkey(id, storage_path, uploader_id, taken_at, created_at, width, height)`,
+        )
+        .eq('track_id', id!);
+      if (storyError) throw storyError;
+      const storyPhotos = (stories ?? []).flatMap((s) =>
+        (s.photos ?? []).map((p) => ({ ...p, storyId: s.id })),
+      );
+      const photos = [
+        ...(t.photos ?? []).map((p) => ({ ...p, storyId: null as string | null })),
+        ...storyPhotos,
+      ]
         .map((p) => ({
           id: p.id,
           storagePath: p.storage_path,
@@ -147,6 +181,7 @@ export function useTrack(id: string | undefined) {
           createdAt: p.created_at,
           width: p.width,
           height: p.height,
+          storyId: p.storyId,
         }))
         .sort((a, b) => (a.takenAt ?? a.createdAt).localeCompare(b.takenAt ?? b.createdAt));
       return {

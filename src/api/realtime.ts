@@ -43,6 +43,14 @@ export function useCoupleRealtime() {
         qc.invalidateQueries({ queryKey: ['topicVotes'] });
         qc.invalidateQueries({ queryKey: ['pastTopics'] });
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'stories', filter }, () => {
+        qc.invalidateQueries({ queryKey: ['stories'] });
+        // 그날 앨범이 스토리 사진을 품는다 — 트랙 상세도 같이 갱신
+        qc.invalidateQueries({ queryKey: ['track'] });
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'story_reactions' }, () =>
+        qc.invalidateQueries({ queryKey: ['stories'] }),
+      )
       // post_reactions·post_comments는 couple_id 컬럼이 없어 필터 없이 구독 (photos·notes와 동일)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'post_reactions' }, () =>
         qc.invalidateQueries({ queryKey: ['posts'] }),
