@@ -127,8 +127,13 @@ export function clampOverlay(o: TextOverlay): TextOverlay {
 }
 
 /** 새 텍스트 — 사진 한가운데에서 시작한다 */
-export function createTextOverlay(id: string, text: string, color: StoryTextColorKey): TextOverlay {
-  return { id, text, x: 0.5, y: 0.5, size: OVERLAY_SIZE_DEFAULT, rotation: 0, color };
+export function createTextOverlay(
+  id: string,
+  text: string,
+  color: StoryTextColorKey,
+  size: number = OVERLAY_SIZE_DEFAULT,
+): TextOverlay {
+  return clampOverlay({ id, text, x: 0.5, y: 0.5, size, rotation: 0, color });
 }
 
 function isNumber(v: unknown): v is number {

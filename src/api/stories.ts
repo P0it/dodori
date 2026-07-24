@@ -19,6 +19,7 @@ export interface StoryPhoto {
 export interface Story {
   id: string;
   authorId: string;
+  /** 사진 위 텍스트가 생기기 전에 올린 스토리에만 남아 있다 — 새로 쓰지 않는다 */
   caption: string;
   createdAt: string;
   /** 상대가 본 시각 — 링 상태 판정 (lib/stories) */
@@ -114,12 +115,10 @@ export function useCreateStory() {
   const couple = useMyCouple();
   return useMutation({
     mutationFn: async ({
-      caption,
       photo,
       trackId,
       overlays,
     }: {
-      caption: string;
       photo: PickedPhoto;
       trackId: string | null;
       overlays: TextOverlay[];
@@ -132,7 +131,6 @@ export function useCreateStory() {
         .insert({
           couple_id: couple.data.coupleId,
           author_id: uid,
-          caption: caption.trim(),
           track_id: trackId,
           // TextOverlay는 JSON 그대로지만 인덱스 시그니처가 없어 Json 타입과 구조적으로 안 맞는다
           overlays: overlays as unknown as Json,

@@ -119,7 +119,8 @@ function EditableText({
       }}
     >
       <GestureDetector gesture={gesture}>
-        <Animated.View style={box}>
+        {/* 글자 딱 만큼이면 잡기가 어렵다 — 여백을 둬서 손가락이 닿을 자리를 만든다 */}
+        <Animated.View style={[{ padding: 14 }, box]}>
           <Animated.Text style={[overlayTextStyle(overlay, rect), text]}>
             {overlay.text}
           </Animated.Text>

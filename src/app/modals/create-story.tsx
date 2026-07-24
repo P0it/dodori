@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import * as Crypto from 'expo-crypto';
@@ -12,9 +12,11 @@ import {
   typeface,
 } from '@/theme/tokens';
 import {
+  clampOverlay,
   containedRect,
   createTextOverlay,
   OVERLAY_MAX,
+  OVERLAY_SIZE_DEFAULT,
   type TextOverlay,
 } from '@/lib/stories';
 import { TopBar } from '@/components/TopBar';
@@ -30,7 +32,6 @@ import { useTodayTrack } from '@/api/tracks';
 export default function CreateStory() {
   const router = useRouter();
   const [photo, setPhoto] = useState<PickedPhoto | null>(null);
-  const [caption, setCaption] = useState('');
   const [saving, setSaving] = useState(false);
   // 그날 앨범에 담을지는 직접 고른다 — 자동으로 붙이지 않는다
   const [attachToTrack, setAttachToTrack] = useState(false);
@@ -59,7 +60,6 @@ export default function CreateStory() {
     setSaving(true);
     try {
       await createStory.mutateAsync({
-        caption,
         photo,
         trackId: attachToTrack ? (todayTrack.data?.id ?? null) : null,
         overlays,
@@ -147,7 +147,7 @@ export default function CreateStory() {
             </Pressable>
             <Meta style={{ flex: 1 }}>
               {overlays.length
-                ? '끌어서 옮기고, 오므려서 키우고, 탭하면 고쳐요'
+                ? '끌어서 옮기고, 탭하면 내용·크기를 고쳐요'
                 : '사진을 다시 누르면 바꿔요'}
             </Meta>
           </View>
@@ -197,22 +197,6 @@ export default function CreateStory() {
           </Pressable>
         )}
 
-        <TextInput
-          value={caption}
-          onChangeText={setCaption}
-          placeholder="한 줄 남기기 (선택)"
-          placeholderTextColor={color.muted}
-          style={{
-            height: 52,
-            borderRadius: radius.field,
-            backgroundColor: color.surface2,
-            paddingHorizontal: 14,
-            fontFamily: typeface,
-            fontSize: 15,
-            color: color.white,
-          }}
-        />
-
         <Pressable
           onPress={save}
           disabled={!photo || saving}
@@ -239,10 +223,16 @@ export default function CreateStory() {
         <Meta style={{ textAlign: 'center' }}>24시간 뒤엔 링에서 내려가고 보관함에 남아요</Meta>
       </ScrollView>
 
-      {editing && (
+      {editing && photo && (
         <TextComposer
-          initialText={editing === 'new' ? '' : editing.text}
-          initialColor={editing === 'new' ? DEFAULT_STORY_TEXT_COLOR : editing.color}
+          photoUri={photo.uri}
+          photoWidth={photo.width}
+          photoHeight={photo.height}
+          initial={
+            editing === 'new'
+              ? { text: '', color: DEFAULT_STORY_TEXT_COLOR, size: OVERLAY_SIZE_DEFAULT }
+              : { text: editing.text, color: editing.color, size: editing.size }
+          }
           onCancel={() => setEditing(null)}
           onDelete={
             editing === 'new'
@@ -252,12 +242,13 @@ export default function CreateStory() {
                   setEditing(null);
                 }
           }
-          onDone={(text, textColor) => {
-            const body = text.trim();
+          onDone={({ text, color: textColor, size }) => {
             setOverlays((prev) =>
               editing === 'new'
-                ? [...prev, createTextOverlay(Crypto.randomUUID(), body, textColor)]
-                : prev.map((p) => (p.id === editing.id ? { ...p, text: body, color: textColor } : p)),
+                ? [...prev, createTextOverlay(Crypto.randomUUID(), text, textColor, size)]
+                : prev.map((p) =>
+                    p.id === editing.id ? clampOverlay({ ...p, text, color: textColor, size }) : p,
+                  ),
             );
             setEditing(null);
           }}
