@@ -1,28 +1,34 @@
 import { useMemo } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import {
-  NaverMapView,
-  NaverMapMarkerOverlay,
-  NaverMapPathOverlay,
-} from '@mj-studio/react-native-naver-map';
 import { color } from '@/theme/tokens';
 import { pinnablePlaces, boundsOf } from '@/lib/map';
 import { useTrack } from '@/api/tracks';
 import { TopBar } from '@/components/TopBar';
 import { Meta } from '@/components/Meta';
+import { TrackCourseMap, type MapPin } from '@/components/track/TrackCourseMap';
 
-/** 코스 동선 지도 — 트랙 장소를 순번 핀 + 직선으로 잇는다 (좌표 있는 장소만) */
+/** 코스 동선 지도 — 트랙 장소를 순번 핀 + 직선으로 잇는다 (좌표 있는 장소만).
+ *  지도 렌더링은 플랫폼별 컴포넌트(TrackCourseMap: 네이티브=SDK / 웹=JS API)가 맡는다. */
 export default function TrackMapScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const track = useTrack(id);
 
   // 좌표 있는 장소만, sortOrder 순. 순번/시간 라벨은 코스 목록과 같은 규칙.
-  const pinned = useMemo(() => pinnablePlaces(track.data?.places ?? []), [track.data]);
+  const pins: MapPin[] = useMemo(
+    () =>
+      pinnablePlaces(track.data?.places ?? []).map((p) => ({
+        placeId: p.placeId,
+        lat: p.lat,
+        lng: p.lng,
+        label: p.visitTime ? p.visitTime.slice(0, 5) : `${p.sortOrder + 1}`,
+      })),
+    [track.data],
+  );
   const region = useMemo(
-    () => boundsOf(pinned.map((p) => ({ lat: p.lat, lng: p.lng }))),
-    [pinned],
+    () => boundsOf(pins.map((p) => ({ lat: p.lat, lng: p.lng }))),
+    [pins],
   );
 
   if (track.isPending) {
@@ -37,28 +43,11 @@ export default function TrackMapScreen() {
     <View style={{ flex: 1, backgroundColor: color.bg }}>
       <TopBar title="코스 지도" />
       {region ? (
-        <NaverMapView style={{ flex: 1 }} initialRegion={region}>
-          {pinned.length >= 2 && (
-            <NaverMapPathOverlay
-              coords={pinned.map((p) => ({ latitude: p.lat, longitude: p.lng }))}
-              width={4}
-              color={color.accent}
-            />
-          )}
-          {pinned.map((p) => (
-            <NaverMapMarkerOverlay
-              key={p.placeId}
-              latitude={p.lat}
-              longitude={p.lng}
-              caption={{
-                text: p.visitTime ? p.visitTime.slice(0, 5) : `${p.sortOrder + 1}`,
-                color: color.bg,
-                haloColor: color.white,
-              }}
-              onTap={() => router.push(`/place/${p.placeId}`)}
-            />
-          ))}
-        </NaverMapView>
+        <TrackCourseMap
+          region={region}
+          pins={pins}
+          onPinPress={(placeId) => router.push(`/place/${placeId}`)}
+        />
       ) : (
         <Meta style={{ textAlign: 'center', marginTop: 40 }}>지도에 표시할 좌표가 있는 장소가 없어요</Meta>
       )}

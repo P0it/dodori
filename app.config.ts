@@ -31,6 +31,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     name: config.name ?? '도도리',
     slug: config.slug ?? 'dodori',
     plugins: [...(config.plugins ?? []), ...kakaoPlugin, ...naverMapPlugin] as ExpoConfig['plugins'],
-    extra: { ...config.extra, kakaoNativeAppKey: kakaoKey ?? null },
+    extra: { ...config.extra, kakaoNativeAppKey: kakaoKey ?? null, naverMapClientId: naverMapId ?? null },
   };
 };
