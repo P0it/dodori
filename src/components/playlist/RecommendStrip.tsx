@@ -1,19 +1,16 @@
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { color, typeface } from '@/theme/tokens';
 import { Meta } from '@/components/Meta';
-import { PlaceThumb } from '@/components/PlaceThumb';
 
 export type RecommendItem = {
   placeId: string;
   name: string;
   category: string | null;
-  thumbUrl?: string | null;
 };
 
 /**
  * 다가오는 데이트에 담을 만한 장소 — 가로 스트립. 담기 버튼이 코스에 바로 꽂는다.
- * 썸네일은 작게 — 네이버 지역검색이 장소 이미지를 주지 않아 대부분 생성 자켓이라,
- * 크게 깔면 정보 없는 색면만 화면을 먹는다.
+ * 썸네일은 없다 — 추천은 안 가본 곳만이라 사진이 있을 수 없고, 생성 자켓 색면만 자리를 먹는다.
  */
 export function RecommendStrip({
   items,
@@ -40,7 +37,7 @@ export function RecommendStrip({
           <View
             key={p.placeId}
             style={{
-              width: 232,
+              width: 200,
               flexDirection: 'row',
               alignItems: 'center',
               gap: 10,
@@ -49,7 +46,6 @@ export function RecommendStrip({
               backgroundColor: color.surface1,
             }}
           >
-            <PlaceThumb placeId={p.placeId} name={p.name} thumbUrl={p.thumbUrl} size={40} />
             <View style={{ flex: 1, minWidth: 0 }}>
               <Text
                 numberOfLines={1}
