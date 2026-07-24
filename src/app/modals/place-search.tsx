@@ -148,7 +148,7 @@ export default function PlaceSearch() {
             }}
           />
           <Meta style={{ fontSize: 11, marginTop: 8 }}>
-            코스 담기 · 테마 플레이리스트 저장에 함께 쓰는 검색이에요
+            코스 담기 · 리스트 저장에 함께 쓰는 검색이에요
           </Meta>
         </View>
       )}
@@ -206,7 +206,7 @@ export default function PlaceSearch() {
             <ActivityIndicator color={color.accent} style={{ marginTop: 24 }} />
           ) : picked.length === 0 ? (
             <Meta style={{ paddingVertical: 16 }}>
-              이 플레이리스트엔 아직 장소가 없어요. 검색에서 마음에 드는 곳을 찜해보세요.
+              이 리스트엔 아직 장소가 없어요. 검색에서 마음에 드는 곳을 찜해보세요.
             </Meta>
           ) : (
             picked.map((p) => {
@@ -284,7 +284,7 @@ export default function PlaceSearch() {
             {
               onSuccess: () => setJustSaved((s) => new Set(s).add(place.naver_id)),
               onError: (e) =>
-                Alert.alert('담기 실패', e instanceof Error ? e.message : '플레이리스트에 담지 못했어요.'),
+                Alert.alert('담기 실패', e instanceof Error ? e.message : '리스트에 담지 못했어요.'),
             },
           );
         }}

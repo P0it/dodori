@@ -25,7 +25,7 @@ export default function CustomPlaylist() {
   const totalVisits = p?.places.reduce((n, pl) => n + pl.visitCount, 0) ?? 0;
 
   const onDelete = () =>
-    Alert.alert('플레이리스트 삭제', '장소 목록만 삭제되고 기록은 남아요.', [
+    Alert.alert('리스트 삭제', '장소 목록만 삭제되고 기록은 남아요.', [
       { text: '취소', style: 'cancel' },
       {
         text: '삭제',
@@ -71,7 +71,7 @@ export default function CustomPlaylist() {
             {p?.name}
           </Text>
           <Meta style={{ marginTop: 6 }}>
-            플레이리스트 · 장소 {p?.places.length ?? 0}곳 · 방문 {totalVisits}회
+            리스트 · 장소 {p?.places.length ?? 0}곳 · 방문 {totalVisits}회
           </Meta>
         </View>
 
@@ -84,7 +84,7 @@ export default function CustomPlaylist() {
                 Alert.alert(pl.name, undefined, [
                   { text: '취소', style: 'cancel' },
                   {
-                    text: '플레이리스트에서 제거',
+                    text: '리스트에서 제거',
                     style: 'destructive',
                     onPress: () => removePlace.mutate(pl.placeId),
                   },

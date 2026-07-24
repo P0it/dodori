@@ -67,7 +67,7 @@ export default function NewPlaylist() {
           }}
         />
         <Meta style={{ fontSize: 11.5, lineHeight: 19, marginTop: 20, textAlign: 'center' }}>
-          테마 플레이리스트는 데이트가 아니라 <Text style={{ fontFamily: typeface, color: color.white }}>장소</Text>를 모아요.{'\n'}
+          리스트는 데이트가 아니라 <Text style={{ fontFamily: typeface, color: color.white }}>장소</Text>를 모아요.{'\n'}
           예: Cafe, 야경 좋은 곳, 다음에 갈 맛집
         </Meta>
         <Meta style={{ fontSize: 11.5, marginTop: 8, textAlign: 'center' }}>

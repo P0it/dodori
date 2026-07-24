@@ -39,7 +39,7 @@ export function PlaylistPickerSheet({
       >
         <View style={{ paddingHorizontal: 20 }}>
           <Text style={{ fontFamily: typeface, fontWeight: '800', fontSize: 18, color: color.white }}>
-            어느 플레이리스트에 담을까요?
+            어느 리스트에 담을까요?
           </Text>
           <Meta style={{ marginTop: 4, fontSize: 12.5 }} numberOfLines={1}>
             {placeName}
