@@ -87,6 +87,8 @@ function TrackBody({ t }: { t: TrackDetail }) {
   const [editing, setEditing] = useState(false);
   const [titleDraft, setTitleDraft] = useState(t.title);
   const [reordering, setReordering] = useState(false); // 드래그 중 부모 스크롤 잠금
+  // 코스·사진 탭 — 처음 열리는 쪽은 상태가 정한다. 지나간 날은 사진, 다가오는·오늘은 코스
+  const [tab, setTab] = useState<'course' | 'photos'>(released ? 'photos' : 'course');
 
   const placeById = useMemo(() => {
     const m: Record<string, TrackPlace> = {};
@@ -427,17 +429,20 @@ function TrackBody({ t }: { t: TrackDetail }) {
           </Meta>
         </View>
 
-        {/* 지나간 데이트는 남긴 사진이, 다가오는·오늘 데이트는 코스가 주인공 — 순서로 무게를 준다 */}
-        {released ? (
+        {/*
+          코스·사진을 탭으로 나눈다 — 둘 다 길면 하나가 다른 하나 밑에 묻히기 때문.
+          사진이 아직 없는 계획-only 날은 탭 없이 코스만 (빈 사진 탭을 만들지 않는다).
+        */}
+        {photoArchive ? (
           <>
-            {photoArchive}
-            {courseSection}
+            <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 20, paddingTop: 20 }}>
+              <TrackTab label="코스" count={t.places.length} active={tab === 'course'} onPress={() => setTab('course')} />
+              <TrackTab label="사진" count={t.photos.length} active={tab === 'photos'} onPress={() => setTab('photos')} />
+            </View>
+            {tab === 'course' ? courseSection : photoArchive}
           </>
         ) : (
-          <>
-            {courseSection}
-            {photoArchive}
-          </>
+          courseSection
         )}
 
         {/* 노트 (사전 메모 / 라이너 노트) */}
@@ -533,6 +538,55 @@ function TrackBody({ t }: { t: TrackDetail }) {
         )}
       </ScrollView>
     </View>
+  );
+}
+
+/** 코스·사진 세그먼트 탭 — 활성 쪽만 채워진 pill */
+function TrackTab({
+  label,
+  count,
+  active,
+  onPress,
+}: {
+  label: string;
+  count: number;
+  active: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        height: 34,
+        paddingHorizontal: 14,
+        borderRadius: 999,
+        backgroundColor: active ? color.surface2 : 'transparent',
+      }}
+    >
+      <Text
+        style={{
+          fontFamily: typeface,
+          fontWeight: '700',
+          fontSize: 14,
+          color: active ? color.white : color.muted,
+        }}
+      >
+        {label}
+      </Text>
+      <Text
+        style={{
+          fontFamily: typeface,
+          fontWeight: '600',
+          fontSize: 12.5,
+          color: active ? color.sub : color.muted,
+        }}
+      >
+        {count}
+      </Text>
+    </Pressable>
   );
 }
 
