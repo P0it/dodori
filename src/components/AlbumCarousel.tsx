@@ -21,7 +21,7 @@ export type CarouselAlbum = {
   coverThumbUrl: string | null;
 };
 
-const CARD = 148;
+const CARD = 176;
 /** 캐러셀 좌우 여백 — 이웃 카드가 이 안쪽에 머문다 */
 const GUTTER = 20;
 /** 이웃이 가운데 뒤로 파고들 최소 폭 */
@@ -73,7 +73,7 @@ export function AlbumCarousel({
         decelerationRate="fast"
         onScroll={onScroll}
         scrollEventThrottle={16}
-        contentContainerStyle={{ paddingHorizontal: side, paddingVertical: 30 }}
+        contentContainerStyle={{ paddingHorizontal: side, paddingVertical: 42 }}
       >
         {albums.map((a, i) => {
           const dist = Math.abs(i - active);
@@ -103,7 +103,7 @@ export function AlbumCarousel({
                   height: '100%',
                   borderRadius: 6,
                   backgroundColor: color.surface2,
-                  boxShadow: isActive ? '0px 10px 28px rgba(255,255,255,0.10)' : undefined,
+                  boxShadow: isActive ? '0px 10px 36px 4px rgba(255,255,255,0.24)' : undefined,
                 }}
               >
                 <View style={{ width: '100%', height: '100%', borderRadius: 6, overflow: 'hidden' }}>

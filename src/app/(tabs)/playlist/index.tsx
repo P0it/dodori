@@ -101,6 +101,25 @@ export default function PlaylistRoot() {
       <>
       <SectionHeader title="저장 리스트" />
       <View style={{ paddingHorizontal: 16, paddingTop: 10 }}>
+        {/* 만들기를 맨 위로 — 리스트를 새로 여는 게 목록을 훑는 것보다 잦은 동작 */}
+        <Pressable
+          onPress={() => router.push('/modals/new-playlist')}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8 }}
+        >
+          <View
+            style={{
+              width: 52,
+              height: 52,
+              borderRadius: 8,
+              backgroundColor: color.surface2,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Text style={{ fontFamily: typeface, color: color.white, fontSize: 20 }}>+</Text>
+          </View>
+          <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 15, color: color.sub }}>새 리스트 만들기</Text>
+        </Pressable>
         {(playlists.data ?? []).map((p) => (
           <Pressable
             key={p.id}
@@ -126,24 +145,6 @@ export default function PlaylistRoot() {
             <Text style={{ fontFamily: typeface, color: color.muted }}>›</Text>
           </Pressable>
         ))}
-        <Pressable
-          onPress={() => router.push('/modals/new-playlist')}
-          style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8 }}
-        >
-          <View
-            style={{
-              width: 52,
-              height: 52,
-              borderRadius: 8,
-              backgroundColor: color.surface2,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Text style={{ fontFamily: typeface, color: color.white, fontSize: 20 }}>+</Text>
-          </View>
-          <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 15, color: color.sub }}>새 리스트 만들기</Text>
-        </Pressable>
       </View>
       </>
       )}

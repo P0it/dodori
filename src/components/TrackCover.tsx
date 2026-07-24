@@ -53,7 +53,7 @@ export function TrackCover({ coverThumbUrl, photoThumbUrls, size = 168, style }:
           height: size,
           borderRadius: rad,
           backgroundColor: color.surface2,
-          boxShadow: '0px 10px 30px rgba(255,255,255,0.09)',
+          boxShadow: '0px 10px 34px 4px rgba(255,255,255,0.20)',
         },
         style,
       ]}
