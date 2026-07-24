@@ -38,17 +38,6 @@ export const color = {
   sunday: '#FF5C5C',
 } as const;
 
-/**
- * 외부 음원 서비스 브랜드 색 — 앱 팔레트가 아니라 각 서비스의 로고 고유색이다.
- * 리스킨 대상이 아니므로 여기 hex가 곧 정답 (theme 팔레트 교체와 무관).
- */
-export const brandColor = {
-  spotify: '#1DB954',
-  youtube: '#FF0033',
-  apple: '#FA243C',
-  melon: '#00CD3C',
-} as const;
-
 /** 칩·pill 반투명 배경 — 종류(기념일·데이트)를 뜻한다 */
 export const tintBg = {
   accent: 'rgba(30,215,96,0.15)',

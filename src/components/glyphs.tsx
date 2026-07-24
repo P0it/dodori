@@ -1,5 +1,8 @@
+import { View } from 'react-native';
+import { Image } from 'expo-image';
 import Svg, { Circle, G, Path, Rect } from 'react-native-svg';
-import { brandColor, color } from '@/theme/tokens';
+import { color } from '@/theme/tokens';
+import { MUSIC_BRAND_LOGO } from '@/lib/musicBrand';
 
 type GlyphProps = { size?: number; filled?: boolean; color?: string };
 
@@ -232,8 +235,9 @@ export function KakaoGlyph({ size = 20, color: fg = color.kakaoText }: { size?: 
 }
 
 /**
- * 음원 서비스 로고 뱃지 — 전곡 듣기 시트에서 "익숙한 로고 골라 누르기"를 위한 것.
- * 각 서비스 고유색은 brandColor 토큰(앱 팔레트 아님)을 참조한다.
+ * 음원 서비스 로고 — 전곡 듣기 시트에서 "익숙한 로고 골라 누르기"용.
+ * 스포티파이·유튜브뮤직·애플뮤직은 공식 벡터(simple-icons, CC0)를 브랜드색 실루엣으로 렌더한다.
+ * 멜론은 그 세트에 없어 공식 로고 파일(assets/music/melon.png)을 쓴다 — 지금은 임시 플레이스홀더.
  */
 export function MusicServiceIcon({
   id,
@@ -242,54 +246,21 @@ export function MusicServiceIcon({
   id: 'youtube' | 'spotify' | 'apple' | 'melon';
   size?: number;
 }) {
-  if (id === 'spotify') {
+  if (id === 'melon') {
     return (
-      <Svg width={size} height={size} viewBox="0 0 24 24">
-        <Circle cx={12} cy={12} r={12} fill={brandColor.spotify} />
-        <G stroke="#fff" strokeLinecap="round" fill="none">
-          <Path d="M6 9.8c4-1.2 8.4-.8 11.6 1.3" strokeWidth={1.7} />
-          <Path d="M6.9 13c3.2-.9 6.7-.6 9.4 1.1" strokeWidth={1.5} />
-          <Path d="M7.7 15.9c2.5-.7 5.2-.4 7.3 1" strokeWidth={1.3} />
-        </G>
-      </Svg>
+      <Image
+        source={require('../../assets/music/melon.png')}
+        style={{ width: size, height: size, borderRadius: 6 }}
+        contentFit="contain"
+      />
     );
   }
-  if (id === 'youtube') {
-    return (
-      <Svg width={size} height={size} viewBox="0 0 24 24">
-        <Circle cx={12} cy={12} r={12} fill={brandColor.youtube} />
-        <Circle cx={12} cy={12} r={6.6} fill="none" stroke="#fff" strokeWidth={1.4} />
-        <Path d="M10.4 9.1 15 12l-4.6 2.9z" fill="#fff" />
-      </Svg>
-    );
-  }
-  if (id === 'apple') {
-    return (
-      <Svg width={size} height={size} viewBox="0 0 24 24">
-        <Rect x={0} y={0} width={24} height={24} rx={6} fill={brandColor.apple} />
-        <Path
-          d="M10.6 15.3V7.9l5.2-1.1v6.7"
-          fill="none"
-          stroke="#fff"
-          strokeWidth={1.5}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <Circle cx={9.1} cy={15.4} r={1.9} fill="#fff" />
-        <Circle cx={14.3} cy={14.1} r={1.9} fill="#fff" />
-      </Svg>
-    );
-  }
-  // melon — 초록 원 + 흰 멜론 반쪽(씨앗 점)
+  const logo = MUSIC_BRAND_LOGO[id];
   return (
-    <Svg width={size} height={size} viewBox="0 0 24 24">
-      <Circle cx={12} cy={12} r={12} fill={brandColor.melon} />
-      <Path d="M6.2 15.4a5.8 5.8 0 0 1 11.6 0z" fill="#fff" />
-      <G fill={brandColor.melon}>
-        <Circle cx={9.2} cy={13.9} r={0.7} />
-        <Circle cx={12} cy={13.3} r={0.7} />
-        <Circle cx={14.8} cy={13.9} r={0.7} />
-      </G>
-    </Svg>
+    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+      <Svg width={size} height={size} viewBox="0 0 24 24">
+        <Path d={logo.path} fill={logo.hex} />
+      </Svg>
+    </View>
   );
 }
