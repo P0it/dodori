@@ -15,10 +15,12 @@ type Props = {
 export function TrackCover({ coverThumbUrl, photoThumbUrls, size = 168, style }: Props) {
   const plan = resolveCover(coverThumbUrl, photoThumbUrls);
   const rad = size > 90 ? 6 : 5;
+  // 커버가 검정에 가까워도(어두운 사진·자켓) 배경과 갈리도록 가장자리를 둔다
+  const edge = { borderWidth: 1, borderColor: color.hairline } as const;
 
   if (plan.kind === 'photo') {
     return (
-      <View style={[{ width: size, height: size, borderRadius: rad, overflow: 'hidden' }, style]}>
+      <View style={[{ width: size, height: size, borderRadius: rad, overflow: 'hidden' }, edge, style]}>
         <Image
           source={plan.path}
           style={{ width: '100%', height: '100%' }}
@@ -40,6 +42,7 @@ export function TrackCover({ coverThumbUrl, photoThumbUrls, size = 168, style }:
             flexDirection: 'row',
             flexWrap: 'wrap',
           },
+          edge,
           style,
         ]}
       >
@@ -70,6 +73,7 @@ export function TrackCover({ coverThumbUrl, photoThumbUrls, size = 168, style }:
           justifyContent: 'center',
           gap: 8,
         },
+        edge,
         style,
       ]}
     >

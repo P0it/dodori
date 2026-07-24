@@ -99,6 +99,9 @@ export function AlbumCarousel({
                   borderRadius: 6,
                   overflow: 'hidden',
                   backgroundColor: color.surface2,
+                  // 커버가 검정에 가까워도(어두운 사진·자켓) 배경과 갈리도록 가장자리를 둔다
+                  borderWidth: 1,
+                  borderColor: color.hairline,
                 }}
               >
                 {a.coverThumbUrl ? (
