@@ -13,6 +13,7 @@ import { Image } from 'expo-image';
 import { color, typeface } from '@/theme/tokens';
 import { isReleased, formatDday, weekdayKo } from '@/lib/date';
 import { pinnablePlaces } from '@/lib/map';
+import Svg, { Path } from 'react-native-svg';
 import {
   useTrack,
   useUpdateTrack,
@@ -246,16 +247,26 @@ function TrackBody({ t }: { t: TrackDetail }) {
     <View style={{ paddingHorizontal: 20, paddingTop: 22 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 17, color: color.white }}>코스</Text>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <Meta style={{ fontSize: 12.5 }}>{t.places.length}곳</Meta>
-          {hasPins && (
-            <Pressable onPress={() => router.push(`/track/${t.id}/map`)}>
-              <Text style={{ fontSize: 12.5, color: color.accent, fontFamily: typeface, fontWeight: '600' }}>
-                지도로 보기
-              </Text>
-            </Pressable>
-          )}
-        </View>
+        {hasPins && (
+          <Pressable
+            onPress={() => router.push(`/track/${t.id}/map`)}
+            hitSlop={8}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}
+          >
+            <Svg width={15} height={15} viewBox="0 0 24 24" fill="none">
+              <Path
+                d="M12 21s7-6.3 7-11a7 7 0 1 0-14 0c0 4.7 7 11 7 11Z"
+                stroke={color.accent}
+                strokeWidth={2}
+                strokeLinejoin="round"
+              />
+              <Path d="M12 12.4a2.2 2.2 0 1 0 0-4.4 2.2 2.2 0 0 0 0 4.4Z" fill={color.accent} />
+            </Svg>
+            <Text style={{ fontSize: 13, color: color.accent, fontFamily: typeface, fontWeight: '700' }}>
+              지도로 보기
+            </Text>
+          </Pressable>
+        )}
       </View>
       {/* 순서 바꾸기는 수정 모드에서만 — 조회 중 스크롤하다 코스가 끌려가지 않게 */}
       {released || !editing ? (
