@@ -1,6 +1,7 @@
 import { Modal, Pressable, Text, View } from 'react-native';
 import { color, font, radius, space, typeface } from '@/theme/tokens';
 import { Meta } from '@/components/Meta';
+import { MusicServiceIcon } from '@/components/glyphs';
 import { MUSIC_SERVICES, type MusicService, type Song } from '@/lib/song';
 
 /**
@@ -46,12 +47,16 @@ export function MusicServiceSheet({
               onPress={() => onSelect(service)}
               accessibilityRole="button"
               style={({ pressed }) => ({
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: space[3],
                 paddingVertical: space[3],
                 paddingHorizontal: space[2],
                 borderRadius: 10,
                 backgroundColor: pressed ? color.surface2 : 'transparent',
               })}
             >
+              <MusicServiceIcon id={service.id} size={28} />
               <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: font.body, color: color.white }}>
                 {service.label}
               </Text>
