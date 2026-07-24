@@ -77,9 +77,13 @@ export function TrackCourseMap({ region, pins, onPinPress }: TrackCourseMapProps
             position: pos,
             map,
             icon: {
-              content: `<div style="display:flex;align-items:center;justify-content:center;width:44px;height:24px;border-radius:12px;background:${color.accent};color:${color.onPrimary};font-weight:700;font-size:12px;font-family:${typeface},sans-serif;border:2px solid ${color.white};box-shadow:0 1px 3px rgba(0,0,0,0.4)">${p.label}</div>`,
-              size: new naver.maps.Size(44, 24),
-              anchor: new naver.maps.Point(22, 12),
+              // 물방울 핀 — 초록 머리(경계는 45° 회전으로 아래를 향하는 뾰족한 끝) + 흰 번호
+              content: `<div style="position:relative;width:34px;height:42px;">
+                <div style="position:absolute;left:3px;top:2px;width:28px;height:28px;background:${color.accent};border:2px solid ${color.white};border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 2px 5px rgba(0,0,0,0.35);"></div>
+                <div style="position:absolute;left:0;top:5px;width:34px;height:24px;display:flex;align-items:center;justify-content:center;color:${color.onPrimary};font-family:${typeface},sans-serif;font-weight:800;font-size:13px;">${p.label}</div>
+              </div>`,
+              size: new naver.maps.Size(34, 42),
+              anchor: new naver.maps.Point(17, 38),
             },
           });
           naver.maps.Event.addListener(marker, 'click', () => onPinPressRef.current(p.placeId));
