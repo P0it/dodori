@@ -3,7 +3,7 @@ import { ActivityIndicator, Alert, Pressable, Text, TextInput, View } from 'reac
 import { useRouter } from 'expo-router';
 import { color, typeface } from '@/theme/tokens';
 import { useMyProfile, useUpdateProfile } from '@/api/couple';
-import { pickAvatar } from '@/api/photos';
+import { pickAvatarImage, uploadAvatar } from '@/api/photos';
 import { TopBar } from '@/components/TopBar';
 import { Avatar } from '@/components/Avatar';
 import { Meta } from '@/components/Meta';
@@ -15,7 +15,9 @@ export default function EditProfile() {
   const update = useUpdateProfile();
   const [nickname, setNickname] = useState('');
   const [avatar, setAvatar] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
+  // 새로 고른 로컬 이미지 uri — 저장할 때만 업로드한다. null이면 사진 변경 없음.
+  const [pickedUri, setPickedUri] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   const [seeded, setSeeded] = useState(false);
 
   // 원본값으로 1회 프리필
@@ -29,30 +31,30 @@ export default function EditProfile() {
 
   const onPick = async () => {
     try {
-      setUploading(true);
-      const url = await pickAvatar();
-      if (url) setAvatar(url);
+      const uri = await pickAvatarImage();
+      if (uri) setPickedUri(uri);
     } catch (e) {
       Alert.alert('사진 변경 실패', e instanceof Error ? e.message : '사진을 바꾸지 못했어요.');
-    } finally {
-      setUploading(false);
     }
   };
 
-  const onSave = () => {
+  const onSave = async () => {
     const name = nickname.trim();
     if (!name) return;
-    update.mutate(
-      { nickname: name, avatarUrl: avatar },
-      {
-        onSuccess: () => router.back(),
-        onError: (e) =>
-          Alert.alert('저장 실패', e instanceof Error ? e.message : '프로필을 저장하지 못했어요.'),
-      },
-    );
+    try {
+      setSaving(true);
+      // 새로 고른 사진이 있을 때만 업로드 → 그 URL을 저장. 없으면 avatar_url은 건드리지 않는다.
+      const avatarUrl = pickedUri ? await uploadAvatar(pickedUri) : undefined;
+      await update.mutateAsync({ nickname: name, avatarUrl });
+      router.back();
+    } catch (e) {
+      Alert.alert('저장 실패', e instanceof Error ? e.message : '프로필을 저장하지 못했어요.');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const canSave = nickname.trim().length > 0 && !uploading && !update.isPending;
+  const canSave = nickname.trim().length > 0 && !saving;
 
   return (
     <View style={{ flex: 1, backgroundColor: color.bg }}>
@@ -62,25 +64,8 @@ export default function EditProfile() {
       ) : (
         <View style={{ flex: 1, paddingHorizontal: 20 }}>
           <View style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 24 }}>
-            <Pressable onPress={onPick} disabled={uploading} style={{ alignItems: 'center' }}>
-              <View>
-                <Avatar url={avatar} name={nickname || '나'} size={96} />
-                {uploading && (
-                  <View
-                    style={{
-                      position: 'absolute',
-                      width: 96,
-                      height: 96,
-                      borderRadius: 48,
-                      backgroundColor: '#000000aa',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <ActivityIndicator color={color.white} />
-                  </View>
-                )}
-              </View>
+            <Pressable onPress={onPick} disabled={saving} style={{ alignItems: 'center' }}>
+              <Avatar url={pickedUri ?? avatar} name={nickname || '나'} size={96} />
               <Text
                 style={{
                   fontFamily: typeface,
@@ -129,7 +114,7 @@ export default function EditProfile() {
             })}
           >
             <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 14.5, color: color.onPrimary }}>
-              {update.isPending ? '저장 중…' : '저장'}
+              {saving ? '저장 중…' : '저장'}
             </Text>
           </Pressable>
         </View>

@@ -77,10 +77,11 @@ export async function pickPhotos(limit = 20): Promise<PickedPhoto[]> {
 }
 
 /**
- * 프로필 사진 고르기 → 512 정사각 JPEG로 avatars(공개) 버킷 업로드 → 공개 URL 반환.
- * 취소하면 null. allowsEditing으로 정사각 크롭을 강제한다.
+ * 프로필 사진 고르기 → 512 정사각 JPEG 로컬 파일 uri 반환. 취소하면 null.
+ * 업로드는 저장 시점에(uploadAvatar) — 안 고르거나 저장을 안 하면 스토리지에 아무것도 안 남는다.
+ * allowsEditing으로 정사각 크롭을 강제한다.
  */
-export async function pickAvatar(): Promise<string | null> {
+export async function pickAvatarImage(): Promise<string | null> {
   const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (!perm.granted) throw new Error('사진 접근 권한이 필요해요');
   const res = await ImagePicker.launchImageLibraryAsync({
@@ -90,17 +91,20 @@ export async function pickAvatar(): Promise<string | null> {
     quality: 1,
   });
   if (res.canceled) return null;
-  const { data: userData } = await supabase.auth.getUser();
-  const uid = userData.user?.id;
-  if (!uid) throw new Error('로그인이 필요해요');
-
   const ctx = ImageManipulator.ImageManipulator.manipulate(res.assets[0].uri);
   ctx.resize({ width: 512, height: 512 });
   const rendered = await ctx.renderAsync();
   const out = await rendered.saveAsync({ format: ImageManipulator.SaveFormat.JPEG, compress: 0.8 });
+  return out.uri;
+}
 
+/** 로컬 아바타 이미지를 avatars(공개) 버킷에 업로드 → 공개 URL 반환 */
+export async function uploadAvatar(localUri: string): Promise<string> {
+  const { data: userData } = await supabase.auth.getUser();
+  const uid = userData.user?.id;
+  if (!uid) throw new Error('로그인이 필요해요');
   const path = `${uid}/${Crypto.randomUUID()}.jpg`;
-  const body = await (await fetch(out.uri)).arrayBuffer();
+  const body = await (await fetch(localUri)).arrayBuffer();
   const { error } = await supabase.storage
     .from('avatars')
     .upload(path, body, { contentType: 'image/jpeg' });
