@@ -25,14 +25,10 @@ function transformFor(kind: keyof typeof THUMB) {
   return 'height' in t ? { ...t, resize: 'cover' as const } : { ...t };
 }
 
-export function thumbUrl(storagePath: string, kind: keyof typeof THUMB): string {
-  const { data } = supabase.storage.from('photos').getPublicUrl(storagePath, {
-    transform: transformFor(kind),
-  });
-  return data.publicUrl;
-}
-
-/** 썸네일 서명 URL — photos 버킷이 비공개라 public URL은 렌더되지 않는다 */
+/**
+ * 썸네일 서명 URL — photos 버킷이 비공개라 public URL은 렌더되지 않는다.
+ * (getPublicUrl로 만든 주소는 401로 떨어져 이미지가 통째로 빈 칸이 된다 — 절대 쓰지 않는다)
+ */
 export async function signedThumbUrl(
   storagePath: string,
   kind: keyof typeof THUMB,

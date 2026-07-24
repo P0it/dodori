@@ -4,7 +4,7 @@ import { Image } from 'expo-image';
 import { FlashList } from '@shopify/flash-list';
 import { color, typeface } from '@/theme/tokens';
 import { useTrack, useUpdateTrack } from '@/api/tracks';
-import { thumbUrl, useDeletePhoto } from '@/api/photos';
+import { useDeletePhoto } from '@/api/photos';
 import { useSession } from '@/api/auth';
 import { TopBar } from '@/components/TopBar';
 import { Meta } from '@/components/Meta';
@@ -66,11 +66,7 @@ export default function Gallery() {
             onLongPress={() => onLongPress(p)}
             style={{ flex: 1, aspectRatio: 1, margin: 2, borderRadius: 3, overflow: 'hidden' }}
           >
-            <Image
-              source={thumbUrl(p.storagePath, 'grid')}
-              style={{ width: '100%', height: '100%' }}
-              contentFit="cover"
-            />
+            <Image source={p.thumbUrl} style={{ width: '100%', height: '100%' }} contentFit="cover" />
             {track.data?.coverPhotoId === p.id && (
               <View
                 style={{

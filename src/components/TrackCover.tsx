@@ -2,25 +2,25 @@ import { Text, View, type ViewStyle, type StyleProp } from 'react-native';
 import { Image } from 'expo-image';
 import { color, typeface } from '@/theme/tokens';
 import { resolveCover } from '@/lib/cover';
-import { thumbUrl } from '@/api/photos';
 
 type Props = {
-  coverPhotoPath: string | null;
-  photoPaths: string[];
+  /** 서명 썸네일 URL — 비공개 버킷이라 경로가 아니라 완성된 URL을 받는다 (api/에서 서명) */
+  coverThumbUrl: string | null;
+  photoThumbUrls: string[];
   size?: number;
   style?: StyleProp<ViewStyle>;
 };
 
 /** 트랙 커버 — §6.4 fallback: 지정 커버 → 콜라주(2+) → 1장 → 플레이스홀더 */
-export function TrackCover({ coverPhotoPath, photoPaths, size = 168, style }: Props) {
-  const plan = resolveCover(coverPhotoPath, photoPaths);
+export function TrackCover({ coverThumbUrl, photoThumbUrls, size = 168, style }: Props) {
+  const plan = resolveCover(coverThumbUrl, photoThumbUrls);
   const rad = size > 90 ? 6 : 5;
 
   if (plan.kind === 'photo') {
     return (
       <View style={[{ width: size, height: size, borderRadius: rad, overflow: 'hidden' }, style]}>
         <Image
-          source={thumbUrl(plan.path, 'grid')}
+          source={plan.path}
           style={{ width: '100%', height: '100%' }}
           contentFit="cover"
         />
@@ -47,7 +47,7 @@ export function TrackCover({ coverPhotoPath, photoPaths, size = 168, style }: Pr
           p ? (
             <Image
               key={i}
-              source={thumbUrl(p, 'grid')}
+              source={p}
               style={{ width: '50%', height: '50%' }}
               contentFit="cover"
             />

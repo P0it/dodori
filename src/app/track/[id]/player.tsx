@@ -4,7 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { color, typeface } from '@/theme/tokens';
 import { useTrack } from '@/api/tracks';
-import { originalUrl, thumbUrl } from '@/api/photos';
+import { originalUrl } from '@/api/photos';
 import { Eyebrow } from '@/components/Eyebrow';
 import { Meta } from '@/components/Meta';
 
@@ -36,7 +36,7 @@ export default function Player() {
     if (current) {
       originalUrl(current.storagePath)
         .then((u) => alive && setFullUrl(u))
-        .catch(() => alive && setFullUrl(thumbUrl(current.storagePath, 'grid')));
+        .catch(() => alive && setFullUrl(current.thumbUrl));
     }
     return () => {
       alive = false;
@@ -82,7 +82,7 @@ export default function Player() {
       {/* 사진 — 탭 좌/우 내비 */}
       <View style={{ flex: 1, marginHorizontal: 16, marginVertical: 10, borderRadius: 10, overflow: 'hidden' }}>
         <Image
-          source={fullUrl ?? thumbUrl(current.storagePath, 'grid')}
+          source={fullUrl ?? current.thumbUrl}
           style={{ width: '100%', height: '100%' }}
           contentFit="cover"
           transition={300}

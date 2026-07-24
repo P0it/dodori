@@ -21,7 +21,7 @@ import {
   type TrackDetail,
   type TrackPlace,
 } from '@/api/tracks';
-import { pickPhotos, thumbUrl, useUploadPhotos } from '@/api/photos';
+import { pickPhotos, useUploadPhotos } from '@/api/photos';
 import { useRemoveTrackPlace, useReorderTrackPlaces } from '@/api/places';
 import { DraggableCourseList } from '@/components/track/DraggableCourseList';
 import { useSession } from '@/api/auth';
@@ -92,7 +92,7 @@ function TrackBody({ t }: { t: TrackDetail }) {
     return m;
   }, [t.places]);
 
-  const photoPaths = t.photos.map((p) => p.storagePath);
+  const photoThumbUrls = t.photos.map((p) => p.thumbUrl);
   const nameOf = (userId: string) =>
     userId === uid
       ? profiles.data?.me?.nickname || '나'
@@ -133,6 +133,11 @@ function TrackBody({ t }: { t: TrackDetail }) {
     setEditingTitle(false);
     const v = titleDraft.trim();
     if (v && v !== t.title) update.mutate({ title: v });
+  };
+
+  const cancelTitle = () => {
+    setTitleDraft(t.title);
+    setEditingTitle(false);
   };
 
   // 코스 한 행 — 발매(정적)·계획(드래그) 공용. draggable이면 그립(≡) 힌트 표시
@@ -189,7 +194,7 @@ function TrackBody({ t }: { t: TrackDetail }) {
         <View style={{ alignItems: 'center', paddingHorizontal: 24, paddingTop: 6 }}>
           {/* 커버 탭 → 사진 선택 → 커버 지정 (계획·발매 양쪽) */}
           <Pressable onPress={onSetCover} disabled={setCover.isPending}>
-            <TrackCover coverPhotoPath={t.coverPhotoPath} photoPaths={photoPaths} size={168} />
+            <TrackCover coverThumbUrl={t.coverThumbUrl} photoThumbUrls={photoThumbUrls} size={168} />
             {!released && (
               <View
                 pointerEvents="none"
@@ -248,24 +253,69 @@ function TrackBody({ t }: { t: TrackDetail }) {
             )}
           </Pressable>
           {editingTitle ? (
-            <TextInput
-              value={titleDraft}
-              onChangeText={setTitleDraft}
-              onBlur={saveTitle}
-              onSubmitEditing={saveTitle}
-              autoFocus
-              style={{
-                marginTop: 16,
-                fontFamily: typeface, fontWeight: '800',
-                fontSize: 25,
-                color: color.white,
-                textAlign: 'center',
-                borderBottomWidth: 1,
-                borderBottomColor: color.surface3,
-                paddingBottom: 4,
-                minWidth: 180,
-              }}
-            />
+            /* 저장은 버튼으로만 — onBlur 저장은 안드로이드에서 바깥을 눌러도 안 터져 "저장이 없다"가 된다 */
+            <View style={{ alignItems: 'center' }}>
+              <TextInput
+                value={titleDraft}
+                onChangeText={setTitleDraft}
+                onSubmitEditing={saveTitle}
+                returnKeyType="done"
+                autoFocus
+                style={{
+                  marginTop: 16,
+                  fontFamily: typeface, fontWeight: '800',
+                  fontSize: 25,
+                  color: color.white,
+                  textAlign: 'center',
+                  borderBottomWidth: 1,
+                  borderBottomColor: color.surface3,
+                  paddingBottom: 4,
+                  minWidth: 180,
+                }}
+              />
+              <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
+                <Pressable
+                  onPress={cancelTitle}
+                  style={({ pressed }) => ({
+                    height: 34,
+                    paddingHorizontal: 16,
+                    borderRadius: 999,
+                    backgroundColor: color.surface2,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    opacity: pressed ? 0.7 : 1,
+                  })}
+                >
+                  <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 13, color: color.sub }}>
+                    취소
+                  </Text>
+                </Pressable>
+                <Pressable
+                  disabled={!titleDraft.trim()}
+                  onPress={saveTitle}
+                  style={({ pressed }) => ({
+                    height: 34,
+                    paddingHorizontal: 20,
+                    borderRadius: 999,
+                    backgroundColor: titleDraft.trim() ? color.accent : color.surface2,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    opacity: pressed ? 0.85 : 1,
+                  })}
+                >
+                  <Text
+                    style={{
+                      fontFamily: typeface,
+                      fontWeight: '700',
+                      fontSize: 13,
+                      color: titleDraft.trim() ? color.onPrimary : color.muted,
+                    }}
+                  >
+                    저장
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
           ) : (
             <Pressable onPress={() => setEditingTitle(true)} style={{ marginTop: 16 }}>
               <Text style={{ fontFamily: typeface, fontWeight: '800', fontSize: 25, letterSpacing: -0.5, color: color.white }}>
@@ -475,7 +525,7 @@ function PhotoStrip({
   total,
 }: {
   trackId: string;
-  photos: { id: string; storagePath: string }[];
+  photos: { id: string; thumbUrl: string }[];
   total: number;
 }) {
   const router = useRouter();
@@ -487,11 +537,7 @@ function PhotoStrip({
           onPress={() => router.push(`/track/${trackId}/gallery`)}
           style={{ width: '32%', aspectRatio: 1, borderRadius: 4, overflow: 'hidden' }}
         >
-          <Image
-            source={thumbUrl(p.storagePath, 'grid')}
-            style={{ width: '100%', height: '100%' }}
-            contentFit="cover"
-          />
+          <Image source={p.thumbUrl} style={{ width: '100%', height: '100%' }} contentFit="cover" />
           {i === photos.length - 1 && total > photos.length && (
             <View
               style={{

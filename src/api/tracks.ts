@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from './supabase';
 import { useMyCouple } from './couple';
-import { thumbUrl, uploadPhotos, type PickedPhoto } from './photos';
+import { signedThumbUrl, uploadPhotos, type PickedPhoto } from './photos';
 import { todayKST, type ISODate } from '@/lib/date';
 
 export interface MonthTrack {
@@ -9,11 +9,6 @@ export interface MonthTrack {
   title: string;
   date: string;
   coverThumbUrl: string | null;
-}
-
-/** storage_path → 캘린더 셀용 변환 썸네일 URL (§6.3) */
-export function calendarThumbUrl(storagePath: string): string {
-  return thumbUrl(storagePath, 'calendar');
 }
 
 /** 월의 tracks (+커버 썸네일) — 캘린더 마커·월 플레이리스트 공용 */
@@ -33,12 +28,16 @@ export function useMonthTracks(monthKey: string) {
         .lt('date', to)
         .order('date');
       if (error) throw error;
-      return data.map((t) => ({
-        id: t.id,
-        title: t.title,
-        date: t.date,
-        coverThumbUrl: t.cover?.storage_path ? calendarThumbUrl(t.cover.storage_path) : null,
-      }));
+      return Promise.all(
+        data.map(async (t) => ({
+          id: t.id,
+          title: t.title,
+          date: t.date,
+          coverThumbUrl: t.cover?.storage_path
+            ? await signedThumbUrl(t.cover.storage_path, 'calendar')
+            : null,
+        })),
+      );
     },
   });
 }
@@ -66,19 +65,21 @@ export function useAllTracks() {
         )
         .order('date', { ascending: false });
       if (error) throw error;
-      return data.map((t) => {
-        const firstPhoto = t.photos?.[0]?.storage_path ?? null;
-        const coverPath = t.cover?.storage_path ?? firstPhoto;
-        return {
-          id: t.id,
-          title: t.title,
-          date: t.date,
-          coverThumbUrl: coverPath ? thumbUrl(coverPath, 'grid') : null,
-          photoCount: t.photos?.length ?? 0,
-          noteCount: t.notes?.length ?? 0,
-          placeCount: t.track_places?.length ?? 0,
-        };
-      });
+      return Promise.all(
+        data.map(async (t) => {
+          const firstPhoto = t.photos?.[0]?.storage_path ?? null;
+          const coverPath = t.cover?.storage_path ?? firstPhoto;
+          return {
+            id: t.id,
+            title: t.title,
+            date: t.date,
+            coverThumbUrl: coverPath ? await signedThumbUrl(coverPath, 'grid') : null,
+            photoCount: t.photos?.length ?? 0,
+            noteCount: t.notes?.length ?? 0,
+            placeCount: t.track_places?.length ?? 0,
+          };
+        }),
+      );
     },
   });
 }
@@ -104,6 +105,8 @@ export function useTodayTrack() {
 export interface TrackPhoto {
   id: string;
   storagePath: string;
+  /** 그리드용 서명 썸네일 — 비공개 버킷이라 렌더에는 이 값만 쓴다 */
+  thumbUrl: string;
   uploaderId: string;
   takenAt: string | null;
   createdAt: string;
@@ -134,7 +137,7 @@ export interface TrackDetail {
   title: string;
   date: string;
   coverPhotoId: string | null;
-  coverPhotoPath: string | null;
+  coverThumbUrl: string | null;
   createdBy: string;
   photos: TrackPhoto[]; // taken_at(실패 시 created_at) 정렬 (§7.3)
   places: TrackPlace[];
@@ -169,27 +172,31 @@ export function useTrack(id: string | undefined) {
       const storyPhotos = (stories ?? []).flatMap((s) =>
         (s.photos ?? []).map((p) => ({ ...p, storyId: s.id })),
       );
-      const photos = [
-        ...(t.photos ?? []).map((p) => ({ ...p, storyId: null as string | null })),
-        ...storyPhotos,
-      ]
-        .map((p) => ({
-          id: p.id,
-          storagePath: p.storage_path,
-          uploaderId: p.uploader_id,
-          takenAt: p.taken_at,
-          createdAt: p.created_at,
-          width: p.width,
-          height: p.height,
-          storyId: p.storyId,
-        }))
-        .sort((a, b) => (a.takenAt ?? a.createdAt).localeCompare(b.takenAt ?? b.createdAt));
+      const photos = await Promise.all(
+        [...(t.photos ?? []).map((p) => ({ ...p, storyId: null as string | null })), ...storyPhotos]
+          .sort((a, b) =>
+            (a.taken_at ?? a.created_at).localeCompare(b.taken_at ?? b.created_at),
+          )
+          .map(async (p) => ({
+            id: p.id,
+            storagePath: p.storage_path,
+            thumbUrl: await signedThumbUrl(p.storage_path, 'grid'),
+            uploaderId: p.uploader_id,
+            takenAt: p.taken_at,
+            createdAt: p.created_at,
+            width: p.width,
+            height: p.height,
+            storyId: p.storyId,
+          })),
+      );
       return {
         id: t.id,
         title: t.title,
         date: t.date,
         coverPhotoId: t.cover_photo_id,
-        coverPhotoPath: t.cover?.storage_path ?? null,
+        coverThumbUrl: t.cover?.storage_path
+          ? await signedThumbUrl(t.cover.storage_path, 'grid')
+          : null,
         createdBy: t.created_by,
         photos,
         places: (t.track_places ?? [])

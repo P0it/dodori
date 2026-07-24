@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from './supabase';
 import { useMyCouple } from './couple';
 import { upsertPlace, type SearchPlace } from './places';
-import { thumbUrl } from './photos';
+import { signedThumbUrl } from './photos';
 
 export interface PlaylistSummary {
   id: string;
@@ -138,7 +138,7 @@ async function visitStats(placeIds: string[]) {
     const entry = map.get(row.place_id) ?? { count: 0, thumbs: [] };
     entry.count++;
     for (const ph of row.tracks?.photos ?? []) {
-      if (entry.thumbs.length < 4) entry.thumbs.push(thumbUrl(ph.storage_path, 'grid'));
+      if (entry.thumbs.length < 4) entry.thumbs.push(await signedThumbUrl(ph.storage_path, 'grid'));
     }
     map.set(row.place_id, entry);
   }
@@ -216,10 +216,12 @@ export function usePlaceDetail(id: string | undefined) {
         .map((tp) => tp.tracks)
         .filter((t): t is NonNullable<typeof t> => !!t)
         .sort((a, b) => b.date.localeCompare(a.date));
-      const thumbs = tracks
-        .flatMap((t) => t.photos ?? [])
-        .slice(0, 6)
-        .map((ph) => thumbUrl(ph.storage_path, 'grid'));
+      const thumbs = await Promise.all(
+        tracks
+          .flatMap((t) => t.photos ?? [])
+          .slice(0, 6)
+          .map((ph) => signedThumbUrl(ph.storage_path, 'grid')),
+      );
       return {
         id: p.id,
         name: p.name,
