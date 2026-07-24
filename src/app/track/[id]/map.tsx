@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { color } from '@/theme/tokens';
 import { pinnablePlaces, boundsOf } from '@/lib/map';
 import { useTrack } from '@/api/tracks';
@@ -14,7 +14,6 @@ import { CourseCardStrip } from '@/components/track/CourseCardStrip';
  *  하단 카드 스트립으로 어떤 핀이 어떤 장소인지 보여주고 탭하면 그 핀으로 이동한다. */
 export default function TrackMapScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const router = useRouter();
   const track = useTrack(id);
   const mapRef = useRef<TrackCourseMapHandle>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -34,6 +33,13 @@ export default function TrackMapScreen() {
   );
   const region = useMemo(() => boundsOf(pins.map((p) => ({ lat: p.lat, lng: p.lng }))), [pins]);
 
+  // 핀 탭·카드 선택 공통 — 그 장소를 선택하고 지도 카메라를 이동. (핀↔카드 동기화)
+  const select = (placeId: string) => {
+    setSelectedId(placeId);
+    const p = pins.find((x) => x.placeId === placeId);
+    if (p) mapRef.current?.focusPin(p.lat, p.lng);
+  };
+
   if (track.isPending) {
     return (
       <View style={{ flex: 1, backgroundColor: color.bg, alignItems: 'center', justifyContent: 'center' }}>
@@ -51,18 +57,11 @@ export default function TrackMapScreen() {
             ref={mapRef}
             region={region}
             pins={pins}
-            onPinPress={(placeId) => router.push(`/place/${placeId}`)}
+            onPinPress={select}
           />
-          {/* 하단 카드 스트립 — 어떤 핀이 어떤 장소인지. 탭하면 그 핀으로 카메라 이동 */}
+          {/* 하단 카드 스트립 — 핀 탭 시 그 카드로 스크롤, 카드 넘기면 그 핀으로 카메라 이동 */}
           <View style={{ position: 'absolute', left: 0, right: 0, bottom: 16 }}>
-            <CourseCardStrip
-              stops={pins}
-              selectedId={selectedId}
-              onSelect={(s) => {
-                setSelectedId(s.placeId);
-                mapRef.current?.focusPin(s.lat, s.lng);
-              }}
-            />
+            <CourseCardStrip stops={pins} selectedId={selectedId} onSelect={(s) => select(s.placeId)} />
           </View>
         </View>
       ) : (

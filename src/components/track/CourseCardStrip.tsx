@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -24,6 +24,7 @@ interface Props {
 
 /**
  * 지도 하단 코스 카드 스트립 — 번호·이름·분류. 캐러셀처럼 넘기면 가운데 카드가 포커스된다.
+ * 핀↔카드 양방향: 넘기면 지도가 따라오고, 핀을 탭하면(selectedId 변경) 그 카드로 스크롤한다.
  * 네이버 지도(라이트 테마)에 얹히므로 카드도 밝은 테마. props-only.
  */
 export function CourseCardStrip({ stops, selectedId, onSelect }: Props) {
@@ -32,23 +33,33 @@ export function CourseCardStrip({ stops, selectedId, onSelect }: Props) {
   // 첫·마지막 카드도 화면 중앙에 올 수 있게 좌우 여백을 반 카드만큼
   const sidePad = Math.max(12, (width - CARD_W) / 2);
   const lastIndexRef = useRef(-1);
+  // 프로그램 스크롤(핀 탭·카드 탭)로 움직이는 동안엔 onScroll의 선택을 억제한다 (되먹임 방지)
+  const suppressRef = useRef(false);
+  const targetRef = useRef(-1);
 
-  const focusIndex = (i: number) => {
-    const clamped = Math.max(0, Math.min(stops.length - 1, i));
-    if (clamped === lastIndexRef.current) return;
-    lastIndexRef.current = clamped;
-    const s = stops[clamped];
-    if (s) onSelect(s);
-  };
-
-  // 스크롤하며 가운데 카드가 바뀔 때마다 그 장소를 포커스 (인덱스가 바뀔 때만 호출)
-  const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    focusIndex(Math.round(e.nativeEvent.contentOffset.x / SLOT));
-  };
-
-  const onTapCard = (i: number) => {
+  // 바깥에서 선택이 바뀌면(핀 탭 등) 그 카드로 스크롤
+  useEffect(() => {
+    const i = stops.findIndex((s) => s.placeId === selectedId);
+    if (i < 0 || i === lastIndexRef.current) return;
+    lastIndexRef.current = i;
+    targetRef.current = i;
+    suppressRef.current = true;
     scrollRef.current?.scrollTo({ x: i * SLOT, animated: true });
-    focusIndex(i);
+  }, [selectedId, stops]);
+
+  const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const i = Math.max(0, Math.min(stops.length - 1, Math.round(e.nativeEvent.contentOffset.x / SLOT)));
+    if (suppressRef.current) {
+      // 프로그램 스크롤 진행 중 — 목표에 도달하면 억제 해제, 그동안 선택은 발생시키지 않음
+      lastIndexRef.current = i;
+      if (i === targetRef.current) suppressRef.current = false;
+      return;
+    }
+    if (i !== lastIndexRef.current) {
+      lastIndexRef.current = i;
+      const s = stops[i];
+      if (s) onSelect(s);
+    }
   };
 
   return (
@@ -68,7 +79,7 @@ export function CourseCardStrip({ stops, selectedId, onSelect }: Props) {
         return (
           <Pressable
             key={s.placeId}
-            onPress={() => onTapCard(i)}
+            onPress={() => onSelect(s)}
             style={{
               width: CARD_W,
               marginRight: i === stops.length - 1 ? 0 : GAP,
