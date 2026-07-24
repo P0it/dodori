@@ -253,14 +253,14 @@ function TrackBody({ t }: { t: TrackDetail }) {
             hitSlop={8}
             style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}
           >
-            <Svg width={15} height={15} viewBox="0 0 24 24" fill="none">
+            <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
               <Path
-                d="M12 21s7-6.3 7-11a7 7 0 1 0-14 0c0 4.7 7 11 7 11Z"
+                d="M1 6 L1 22 L8 18 L16 22 L23 18 L23 2 L16 6 L8 2 Z"
                 stroke={color.accent}
                 strokeWidth={2}
                 strokeLinejoin="round"
               />
-              <Path d="M12 12.4a2.2 2.2 0 1 0 0-4.4 2.2 2.2 0 0 0 0 4.4Z" fill={color.accent} />
+              <Path d="M8 2 L8 18 M16 6 L16 22" stroke={color.accent} strokeWidth={2} strokeLinecap="round" />
             </Svg>
             <Text style={{ fontSize: 13, color: color.accent, fontFamily: typeface, fontWeight: '700' }}>
               지도로 보기
