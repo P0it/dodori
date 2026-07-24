@@ -64,6 +64,7 @@ export function AlbumCarousel({
 
   return (
     <View>
+      {/* contentContainerStyle 세로 여백을 넉넉히 — 활성 카드 글로우가 스크롤뷰 경계(제목 영역)에서 잘리지 않게 */}
       <ScrollView
         ref={ref}
         horizontal
@@ -72,7 +73,7 @@ export function AlbumCarousel({
         decelerationRate="fast"
         onScroll={onScroll}
         scrollEventThrottle={16}
-        contentContainerStyle={{ paddingHorizontal: side, paddingVertical: 8 }}
+        contentContainerStyle={{ paddingHorizontal: side, paddingVertical: 30 }}
       >
         {albums.map((a, i) => {
           const dist = Math.abs(i - active);
@@ -126,7 +127,7 @@ export function AlbumCarousel({
 
       {/* 제목은 가운데 앨범 것만 — 카드가 겹쳐 있어 카드마다 달 수 없다 */}
       {current && (
-        <View style={{ alignItems: 'center', marginTop: 10, paddingHorizontal: 16 }}>
+        <View style={{ alignItems: 'center', marginTop: 2, paddingHorizontal: 16 }}>
           <Text
             numberOfLines={1}
             style={{ fontFamily: typeface, fontWeight: '700', fontSize: 15, color: color.white }}
