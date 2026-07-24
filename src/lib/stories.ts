@@ -7,6 +7,11 @@
  */
 
 import { monthKey, toKSTDate, type ISODate } from './date';
+import {
+  DEFAULT_STORY_TEXT_COLOR,
+  STORY_TEXT_COLOR_KEYS,
+  type StoryTextColorKey,
+} from '@/theme/tokens';
 
 export const STORY_TTL_MS = 24 * 60 * 60 * 1000;
 
@@ -76,4 +81,102 @@ export function groupByMonth<T extends { createdAt: string }>(stories: T[]): Sto
 export function formatMonthLabel(key: string): string {
   const [y, m] = key.split('-').map(Number);
   return `${y}년 ${m}월`;
+}
+
+// ============================================================
+// 텍스트 스티커
+// ============================================================
+
+/**
+ * 사진 위에 얹는 텍스트 한 개.
+ * 좌표·크기는 **사진 기준 비율**이다 — 편집 화면(작은 프레임)과 뷰어(전체화면)의
+ * 픽셀 크기가 달라도 같은 자리에 같은 비중으로 찍히게 하는 유일한 방법.
+ */
+export interface TextOverlay {
+  id: string;
+  text: string;
+  /** 사진 안에서의 중심 (0~1) */
+  x: number;
+  y: number;
+  /** 사진 너비 대비 글자 크기 */
+  size: number;
+  /** 도(°) */
+  rotation: number;
+  color: StoryTextColorKey;
+}
+
+export const OVERLAY_SIZE_MIN = 0.03;
+export const OVERLAY_SIZE_MAX = 0.28;
+export const OVERLAY_SIZE_DEFAULT = 0.08;
+/** 스토리 하나에 올릴 수 있는 텍스트 수 — 넘치면 사진이 안 보인다 */
+export const OVERLAY_MAX = 8;
+
+function clamp(v: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, v));
+}
+
+/** 화면 밖으로 나가거나 읽을 수 없는 크기가 되지 않게 다듬는다 */
+export function clampOverlay(o: TextOverlay): TextOverlay {
+  return {
+    ...o,
+    x: clamp(o.x, 0, 1),
+    y: clamp(o.y, 0, 1),
+    size: clamp(o.size, OVERLAY_SIZE_MIN, OVERLAY_SIZE_MAX),
+    rotation: ((o.rotation % 360) + 360) % 360,
+  };
+}
+
+/** 새 텍스트 — 사진 한가운데에서 시작한다 */
+export function createTextOverlay(id: string, text: string, color: StoryTextColorKey): TextOverlay {
+  return { id, text, x: 0.5, y: 0.5, size: OVERLAY_SIZE_DEFAULT, rotation: 0, color };
+}
+
+function isNumber(v: unknown): v is number {
+  return typeof v === 'number' && Number.isFinite(v);
+}
+
+/**
+ * DB의 jsonb → TextOverlay[]. 모양이 어긋난 항목은 조용히 버린다 —
+ * 스키마가 자유로운 컬럼이라 읽는 쪽이 유일한 방어선이다.
+ */
+export function parseOverlays(value: unknown): TextOverlay[] {
+  if (!Array.isArray(value)) return [];
+  const out: TextOverlay[] = [];
+  for (const raw of value) {
+    if (!raw || typeof raw !== 'object') continue;
+    const o = raw as Record<string, unknown>;
+    if (typeof o.id !== 'string' || typeof o.text !== 'string' || !o.text) continue;
+    if (!isNumber(o.x) || !isNumber(o.y) || !isNumber(o.size) || !isNumber(o.rotation)) continue;
+    const color = STORY_TEXT_COLOR_KEYS.includes(o.color as StoryTextColorKey)
+      ? (o.color as StoryTextColorKey)
+      : DEFAULT_STORY_TEXT_COLOR;
+    out.push(clampOverlay({ id: o.id, text: o.text, x: o.x, y: o.y, size: o.size, rotation: o.rotation, color }));
+  }
+  return out.slice(0, OVERLAY_MAX);
+}
+
+export interface Rect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/**
+ * 프레임 안에 사진을 contain으로 놓았을 때 사진이 실제로 차지하는 사각형.
+ * 텍스트는 프레임이 아니라 **사진**에 붙어야 하므로, 편집 화면과 뷰어 양쪽이 이 사각형을 기준으로 찍는다.
+ */
+export function containedRect(
+  photoW: number | null,
+  photoH: number | null,
+  frameW: number,
+  frameH: number,
+): Rect {
+  if (!photoW || !photoH || photoW <= 0 || photoH <= 0) {
+    return { x: 0, y: 0, width: frameW, height: frameH };
+  }
+  const scale = Math.min(frameW / photoW, frameH / photoH);
+  const width = photoW * scale;
+  const height = photoH * scale;
+  return { x: (frameW - width) / 2, y: (frameH - height) / 2, width, height };
 }

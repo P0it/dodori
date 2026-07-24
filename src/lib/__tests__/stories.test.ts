@@ -1,11 +1,19 @@
 import {
+  clampOverlay,
+  containedRect,
+  createTextOverlay,
   formatMonthLabel,
   groupByMonth,
   isLive,
   liveStories,
+  OVERLAY_MAX,
+  OVERLAY_SIZE_MAX,
+  OVERLAY_SIZE_MIN,
+  parseOverlays,
   ringState,
   STORY_TTL_MS,
   type StoryLike,
+  type TextOverlay,
 } from '../stories';
 
 const NOW = new Date('2026-07-24T12:00:00+09:00');
@@ -93,5 +101,65 @@ describe('groupByMonth', () => {
 describe('formatMonthLabel', () => {
   it('한글 월 표기', () => {
     expect(formatMonthLabel('2026-07')).toBe('2026년 7월');
+  });
+});
+
+describe('clampOverlay', () => {
+  const base = createTextOverlay('a', '안녕', 'white');
+
+  it('사진 밖으로 나간 좌표를 되돌린다', () => {
+    expect(clampOverlay({ ...base, x: 1.4, y: -0.2 })).toMatchObject({ x: 1, y: 0 });
+  });
+
+  it('크기를 읽을 수 있는 범위로 가둔다', () => {
+    expect(clampOverlay({ ...base, size: 9 }).size).toBe(OVERLAY_SIZE_MAX);
+    expect(clampOverlay({ ...base, size: 0 }).size).toBe(OVERLAY_SIZE_MIN);
+  });
+
+  it('회전은 0~360으로 정규화 (음수도)', () => {
+    expect(clampOverlay({ ...base, rotation: -90 }).rotation).toBe(270);
+    expect(clampOverlay({ ...base, rotation: 450 }).rotation).toBe(90);
+  });
+});
+
+describe('parseOverlays', () => {
+  const valid: TextOverlay = createTextOverlay('a', '오늘', 'pink');
+
+  it('배열이 아니면 빈 배열', () => {
+    expect(parseOverlays(null)).toEqual([]);
+    expect(parseOverlays({ text: '아님' })).toEqual([]);
+  });
+
+  it('모양이 맞는 항목만 남긴다', () => {
+    const rows = [valid, { id: 'b' }, { ...valid, id: 'c', x: 'NaN' }, null, { ...valid, id: 'd', text: '' }];
+    expect(parseOverlays(rows).map((o) => o.id)).toEqual(['a']);
+  });
+
+  it('모르는 색 키는 기본색으로 되돌린다', () => {
+    expect(parseOverlays([{ ...valid, color: 'chartreuse' }])[0].color).toBe('white');
+  });
+
+  it('저장된 값이 범위를 벗어나도 읽을 때 다듬는다', () => {
+    expect(parseOverlays([{ ...valid, size: 99 }])[0].size).toBe(OVERLAY_SIZE_MAX);
+  });
+
+  it('개수 상한을 넘기지 않는다', () => {
+    const many = Array.from({ length: OVERLAY_MAX + 5 }, (_, i) => ({ ...valid, id: `x${i}` }));
+    expect(parseOverlays(many)).toHaveLength(OVERLAY_MAX);
+  });
+});
+
+describe('containedRect', () => {
+  it('세로 사진은 위아래를 꽉 채우고 좌우가 남는다', () => {
+    // 1000x2000 사진을 300x400 프레임에 → 배율 0.2 → 200x400, x 여백 50
+    expect(containedRect(1000, 2000, 300, 400)).toEqual({ x: 50, y: 0, width: 200, height: 400 });
+  });
+
+  it('가로 사진은 좌우를 꽉 채우고 위아래가 남는다', () => {
+    expect(containedRect(2000, 1000, 400, 400)).toEqual({ x: 0, y: 100, width: 400, height: 200 });
+  });
+
+  it('사진 크기를 모르면 프레임 전체로 본다', () => {
+    expect(containedRect(null, null, 300, 400)).toEqual({ x: 0, y: 0, width: 300, height: 400 });
   });
 });

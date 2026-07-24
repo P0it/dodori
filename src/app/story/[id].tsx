@@ -8,7 +8,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { color, space, tintBg, typeface } from '@/theme/tokens';
 import { formatRelative } from '@/lib/date';
 import { REACTIONS } from '@/lib/posts';
-import { isLive, liveStories } from '@/lib/stories';
+import { containedRect, isLive, liveStories } from '@/lib/stories';
 import { useSession } from '@/api/auth';
 import { useCoupleProfiles } from '@/api/couple';
 import {
@@ -22,6 +22,7 @@ import { Avatar } from '@/components/Avatar';
 import { Meta } from '@/components/Meta';
 import { HeartGlyph } from '@/components/glyphs';
 import { StoryProgress } from '@/components/story/StoryProgress';
+import { StoryTextLayer } from '@/components/story/StoryTextLayer';
 
 /** 한 칸이 머무는 시간 */
 const STEP_MS = 5000;
@@ -55,6 +56,7 @@ export default function StoryViewer() {
 
   const [index, setIndex] = useState(0);
   const [progress, setProgress] = useState(0);
+  const [frame, setFrame] = useState({ width: 0, height: 0 });
   // 목록이 늦게 도착해도 진입 스토리에서 시작하도록, 처음 한 번만 위치를 맞춘다
   const aligned = useRef(false);
   useEffect(() => {
@@ -131,14 +133,29 @@ export default function StoryViewer() {
   return (
     <GestureDetector gesture={swipeDown}>
       <View style={{ flex: 1, backgroundColor: '#000' }}>
-        {current.photo && (
-          <Image
-            source={current.photo.thumbUrl}
-            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-            contentFit="contain"
-            transition={120}
+        <View
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+          onLayout={(e) => setFrame(e.nativeEvent.layout)}
+        >
+          {current.photo && (
+            <Image
+              source={current.photo.thumbUrl}
+              style={{ width: '100%', height: '100%' }}
+              contentFit="contain"
+              transition={120}
+            />
+          )}
+          {/* 텍스트 스티커 — 사진에 구워 넣지 않고 올릴 때 잡은 자리 그대로 얹는다 */}
+          <StoryTextLayer
+            overlays={current.overlays}
+            rect={containedRect(
+              current.photo?.width ?? null,
+              current.photo?.height ?? null,
+              frame.width,
+              frame.height,
+            )}
           />
-        )}
+        </View>
 
         {/* 좌우 탭 이동 — 사진 위 전면을 반씩 나눠 덮는다 */}
         <Pressable style={{ position: 'absolute', top: 90, bottom: 120, left: 0, width: '32%' }} onPress={() => go(-1)} />

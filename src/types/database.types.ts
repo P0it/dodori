@@ -585,6 +585,7 @@ export type Database = {
           couple_id: string
           created_at: string
           id: string
+          overlays: Json
           seen_at: string | null
           track_id: string | null
         }
@@ -594,6 +595,7 @@ export type Database = {
           couple_id: string
           created_at?: string
           id?: string
+          overlays?: Json
           seen_at?: string | null
           track_id?: string | null
         }
@@ -603,6 +605,7 @@ export type Database = {
           couple_id?: string
           created_at?: string
           id?: string
+          overlays?: Json
           seen_at?: string | null
           track_id?: string | null
         }

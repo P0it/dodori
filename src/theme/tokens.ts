@@ -83,6 +83,26 @@ export function toEventColor(value: string | null | undefined): EventColorKey {
 export const storyRing = ['#F7C948', '#F58529', '#E4443C', '#DD2A7B', '#9B3EAF'] as const;
 
 /**
+ * 스토리 텍스트 스티커 색 — DB(stories.overlays[].color)에는 이 **키**가 들어간다 (hex 저장 금지).
+ * 사진 위에 얹히므로 흰색·검정이 기본이고, 나머지는 링·데이트·브랜드 색을 그대로 빌려 쓴다.
+ */
+export const storyTextColor = {
+  white: color.white,
+  black: color.bg,
+  yellow: storyRing[0],
+  orange: storyRing[1],
+  red: storyRing[2],
+  pink: storyRing[3],
+  purple: storyRing[4],
+  aqua: color.date,
+  green: color.accent,
+} as const;
+
+export type StoryTextColorKey = keyof typeof storyTextColor;
+export const STORY_TEXT_COLOR_KEYS = Object.keys(storyTextColor) as StoryTextColorKey[];
+export const DEFAULT_STORY_TEXT_COLOR: StoryTextColorKey = 'white';
+
+/**
  * 생성 커버(자켓) 팔레트 — 사진 없는 앨범에 트랙 id로 결정적 배정 (§6.4 placeholder 대체).
  * 각 항목은 대각 그라디언트 [밝은 쪽, 어두운 쪽]. 같은 앨범은 항상 같은 자켓.
  */

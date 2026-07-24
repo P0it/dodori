@@ -2,6 +2,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from './supabase';
 import { useMyCouple } from './couple';
 import { signedThumbUrl, uploadPhotos, type PickedPhoto } from './photos';
+import { parseOverlays, type TextOverlay } from '@/lib/stories';
+import type { Json } from '@/types/database.types';
 
 export interface StoryPhoto {
   id: string;
@@ -26,11 +28,13 @@ export interface Story {
   trackTitle: string | null;
   /** 스토리 = 사진 1장. 업로드가 중간에 실패한 경우에만 null */
   photo: StoryPhoto | null;
+  /** 사진 위에 얹은 텍스트 스티커 (사진은 원본 그대로 둔다) */
+  overlays: TextOverlay[];
   /** 이모지별로 누른 사람들 (하트 하나뿐이지만 posts와 같은 모양으로 둔다) */
   reactions: { emoji: string; userIds: string[] }[];
 }
 
-const SELECT = `id, author_id, caption, created_at, seen_at, track_id,
+const SELECT = `id, author_id, caption, created_at, seen_at, track_id, overlays,
    tracks(title),
    photos!photos_story_id_fkey(id, storage_path, width, height, created_at),
    story_reactions(emoji, user_id)`;
@@ -42,6 +46,7 @@ type StoryRow = {
   created_at: string;
   seen_at: string | null;
   track_id: string | null;
+  overlays: unknown;
   tracks: { title: string } | null;
   photos: {
     id: string;
@@ -67,6 +72,7 @@ async function toStory(row: StoryRow): Promise<Story> {
     seenAt: row.seen_at,
     trackId: row.track_id,
     trackTitle: row.tracks?.title ?? null,
+    overlays: parseOverlays(row.overlays),
     photo: p
       ? {
           id: p.id,
@@ -111,10 +117,12 @@ export function useCreateStory() {
       caption,
       photo,
       trackId,
+      overlays,
     }: {
       caption: string;
       photo: PickedPhoto;
       trackId: string | null;
+      overlays: TextOverlay[];
     }) => {
       const { data: userData } = await supabase.auth.getUser();
       const uid = userData.user?.id;
@@ -126,6 +134,8 @@ export function useCreateStory() {
           author_id: uid,
           caption: caption.trim(),
           track_id: trackId,
+          // TextOverlay는 JSON 그대로지만 인덱스 시그니처가 없어 Json 타입과 구조적으로 안 맞는다
+          overlays: overlays as unknown as Json,
         })
         .select('id')
         .single();
