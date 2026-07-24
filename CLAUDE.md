@@ -1,4 +1,4 @@
-# 도도리(dodori) — 커플 공용 공간
+# 도돌이(dodori) — 커플 공용 공간
 
 둘이 매일 여는 하나의 앱. **홈**의 주제로 말을 섞고, **캘린더**에서 일정을 함께 잡고,
 **플레이리스트**에 가고 싶은 곳을 쟁여두고, **피드**에서 남긴 것을 돌아본다 (= 4탭).
@@ -6,8 +6,8 @@
 **"싱글(기념일)" 개념은 폐기** — 기념일은 캘린더의 일이다.
 
 구 서비스명 Duet에서 리브랜딩(2026-07). 로고·인앱 마크는 여는 도돌이표 𝄆 — #121212 배경 + 브랜드 그린 단색.
-표기 규칙: 앱 이름(런처·app.json `name`)만 "도도리", 인앱 워드마크·서비스명 표기는 소문자 **dodori**.
-"도돌이"는 옛 한글 표기 — 마크의 유래인 음악 기호 "도돌이표"를 가리킬 때만 쓰고, 브랜드명으로는 쓰지 않는다.
+표기 규칙(2026-07-24 확정): 한글 표기는 **"도돌이"**(런처 앱 이름·app.json `name`), 로마자·인앱 워드마크·웹 타이틀은
+소문자 **dodori**(`web.name`). "도도리"는 폐기 — 마크의 유래인 음악 기호 "도돌이표"와 결이 맞는 쪽으로 돌아왔다.
 
 ## 사양의 출처 (순서대로)
 
@@ -88,6 +88,18 @@
 - `npx supabase start` / `db reset` — 로컬 스택 (Docker 필요)
 - `npx supabase gen types typescript --local > src/types/database.types.ts` — 스키마 변경 후 타입 재생성
 - 카카오 로그인은 Expo Go 불가 — dev client: `npx expo run:android|ios` (KAKAO_NATIVE_APP_KEY 필요, `.env`)
+
+## iOS 베타 (TestFlight) — 빌드는 맥미니 M4에서 로컬로
+
+Windows 작업 트리에서는 iOS 빌드가 불가능하다. 맥미니에 같은 저장소를 clone해서 빌드한다
+(`ios/`·`android/`는 gitignore — CNG라 prebuild가 매번 생성).
+
+- 일상 개발(맥): `npx expo run:ios --device` — dev client가 폰에 깔리고 이후 수정은 새로고침으로 반영
+- 릴리스 빌드(맥): `npx eas-cli build -p ios --profile production --local` → `npx eas-cli submit -p ios`
+  `--local`은 클라우드 대기열 없이 내 맥에서 돌리되 서명·환경변수는 EAS 설정을 그대로 쓴다
+- 맥의 `.env`는 **원격 Supabase 값**이어야 한다 — Windows 쪽 `.env`는 로컬 스택(127.0.0.1)이라 그대로 쓰면
+  폰에서 아무것도 안 보인다. `KAKAO_NATIVE_APP_KEY`는 EAS 빌드용으로도 `eas env:create`에 등록해 둘 것
+- 전제: Apple Developer Program(연 $99), 카카오 콘솔에 iOS 플랫폼·번들 ID `com.hyunwoo.dodori` 등록
 
 ## 구조 메모
 

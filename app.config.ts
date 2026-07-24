@@ -28,7 +28,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     : (console.warn('[app.config] NAVER_MAP_CLIENT_ID 미설정 — 네이버 지도 플러그인 제외'), []);
   return {
     ...config,
-    name: config.name ?? '도도리',
+    name: config.name ?? '도돌이',
     slug: config.slug ?? 'dodori',
     plugins: [...(config.plugins ?? []), ...kakaoPlugin, ...naverMapPlugin] as ExpoConfig['plugins'],
     extra: { ...config.extra, kakaoNativeAppKey: kakaoKey ?? null, naverMapClientId: naverMapId ?? null },

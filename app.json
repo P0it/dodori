@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "도도리",
+    "name": "도돌이",
     "slug": "dodori",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -9,7 +9,10 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/expo.icon",
-      "bundleIdentifier": "com.hyunwoo.dodori"
+      "bundleIdentifier": "com.hyunwoo.dodori",
+      "config": {
+        "usesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -22,6 +25,7 @@
       "package": "com.hyunwoo.dodori"
     },
     "web": {
+      "name": "dodori",
       "output": "single",
       "favicon": "./assets/images/favicon.png"
     },
