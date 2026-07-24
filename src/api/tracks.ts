@@ -121,6 +121,8 @@ export interface TrackPlace {
   category: string | null;
   address: string | null;
   link: string | null;
+  lat: number | null;
+  lng: number | null;
   visitTime: string | null;
   sortOrder: number;
   addedBy: string;
@@ -155,7 +157,7 @@ export function useTrack(id: string | undefined) {
           `id, title, date, cover_photo_id, created_by,
            cover:photos!tracks_cover_photo_fk(storage_path),
            photos!photos_track_id_fkey(id, storage_path, uploader_id, taken_at, created_at, width, height),
-           track_places(place_id, visit_time, sort_order, added_by, done, places(name, category, address, link)),
+           track_places(place_id, visit_time, sort_order, added_by, done, places(name, category, address, link, lat, lng)),
            notes(id, author_id, body, created_at)`,
         )
         .eq('id', id!)
@@ -206,6 +208,8 @@ export function useTrack(id: string | undefined) {
             category: tp.places?.category ?? null,
             address: tp.places?.address ?? null,
             link: tp.places?.link ?? null,
+            lat: tp.places?.lat ?? null,
+            lng: tp.places?.lng ?? null,
             visitTime: tp.visit_time,
             sortOrder: tp.sort_order,
             addedBy: tp.added_by,

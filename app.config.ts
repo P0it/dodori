@@ -1,9 +1,9 @@
 import type { ConfigContext, ExpoConfig } from 'expo/config';
 
 /**
- * 동적 설정 — app.json을 베이스로 카카오 SDK 플러그인을 주입한다.
- * KAKAO_NATIVE_APP_KEY는 .env(로컬) / EAS secrets(빌드)에서 온다. (PRD §10)
- * 카카오 네이티브 모듈은 Expo Go에서 동작하지 않음 → dev client 빌드 필요:
+ * 동적 설정 — app.json을 베이스로 카카오·네이버지도 SDK 플러그인을 주입한다.
+ * KAKAO_NATIVE_APP_KEY / NAVER_MAP_CLIENT_ID는 .env(로컬) / EAS secrets(빌드)에서 온다. (PRD §10)
+ * 네이티브 모듈은 Expo Go에서 동작하지 않음 → dev client 빌드 필요:
  *   npx expo run:ios | npx expo run:android | eas build --profile development
  */
 export default ({ config }: ConfigContext): ExpoConfig => {
@@ -21,11 +21,16 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         ] as const,
       ]
     : (console.warn('[app.config] KAKAO_NATIVE_APP_KEY 미설정 — 카카오 플러그인 제외'), []);
+  // 네이버 지도(NCP) 클라이언트 ID — 앱 번들에 박히는 값이라 시크릿 아님(카카오 네이티브 키와 동일 성격)
+  const naverMapId = process.env.NAVER_MAP_CLIENT_ID;
+  const naverMapPlugin = naverMapId
+    ? [['@mj-studio/react-native-naver-map', { client_id: naverMapId }] as const]
+    : (console.warn('[app.config] NAVER_MAP_CLIENT_ID 미설정 — 네이버 지도 플러그인 제외'), []);
   return {
     ...config,
     name: config.name ?? '도도리',
     slug: config.slug ?? 'dodori',
-    plugins: [...(config.plugins ?? []), ...kakaoPlugin] as ExpoConfig['plugins'],
+    plugins: [...(config.plugins ?? []), ...kakaoPlugin, ...naverMapPlugin] as ExpoConfig['plugins'],
     extra: { ...config.extra, kakaoNativeAppKey: kakaoKey ?? null },
   };
 };
