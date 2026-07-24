@@ -75,11 +75,12 @@ export function toEventColor(value: string | null | undefined): EventColorKey {
 }
 
 /**
- * 스토리 링 — 24시간 내 새 스토리가 있을 때만. 어두운 분홍→보라 스윕.
+ * 스토리 링 — 24시간 내 새 스토리가 있을 때만.
  * accent(그린)를 쓰면 화면의 다른 강조와 섞여 "새 게 있다"가 안 읽힌다.
- * 밝은 무지개는 #121212 배경에서 혼자 튀어 오르므로 채도를 낮춰 배경에 앉혔다. 링에서만 쓴다.
+ * 노랑→주황→빨강→분홍→보라로 도는 난색 스윕. #121212 배경에서 튀지 않게 한 톤씩 낮춰 잡았다.
+ * 링에서만 쓴다.
  */
-export const storyRing = ['#E0457B', '#C23390', '#8E33AE', '#5B3BC4'] as const;
+export const storyRing = ['#F7C948', '#F58529', '#E4443C', '#DD2A7B', '#9B3EAF'] as const;
 
 /**
  * 생성 커버(자켓) 팔레트 — 사진 없는 앨범에 트랙 id로 결정적 배정 (§6.4 placeholder 대체).

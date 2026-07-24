@@ -16,6 +16,8 @@ export default function CreateStory() {
   const [photo, setPhoto] = useState<PickedPhoto | null>(null);
   const [caption, setCaption] = useState('');
   const [saving, setSaving] = useState(false);
+  // 그날 앨범에 담을지는 직접 고른다 — 자동으로 붙이지 않는다
+  const [attachToTrack, setAttachToTrack] = useState(false);
 
   const createStory = useCreateStory();
   const todayTrack = useTodayTrack();
@@ -36,7 +38,7 @@ export default function CreateStory() {
       await createStory.mutateAsync({
         caption,
         photo,
-        trackId: todayTrack.data?.id ?? null,
+        trackId: attachToTrack ? (todayTrack.data?.id ?? null) : null,
       });
       router.dismiss();
     } catch (e) {
@@ -81,21 +83,47 @@ export default function CreateStory() {
         {photo && <Meta>사진을 다시 누르면 바꿔요</Meta>}
 
         {todayTrack.data && (
-          <View
-            style={{
+          <Pressable
+            onPress={() => setAttachToTrack((v) => !v)}
+            style={({ pressed }) => ({
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 9,
               alignSelf: 'flex-start',
-              paddingHorizontal: 10,
-              paddingVertical: 6,
+              paddingHorizontal: 11,
+              paddingVertical: 8,
               borderRadius: radius.pill,
-              backgroundColor: tintBg.date,
-            }}
+              backgroundColor: attachToTrack ? tintBg.date : color.surface1,
+              opacity: pressed ? 0.85 : 1,
+            })}
           >
-            <Text
-              style={{ fontFamily: typeface, fontWeight: '700', fontSize: 12, color: color.date }}
+            <View
+              style={{
+                width: 16,
+                height: 16,
+                borderRadius: 4,
+                borderWidth: 1.6,
+                borderColor: attachToTrack ? color.date : color.muted,
+                backgroundColor: attachToTrack ? color.date : 'transparent',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
             >
-              {todayTrack.data.title}에 함께 담겨요
+              {attachToTrack && (
+                <Text style={{ fontFamily: typeface, fontSize: 10.5, color: color.bg }}>✓</Text>
+              )}
+            </View>
+            <Text
+              style={{
+                fontFamily: typeface,
+                fontWeight: '700',
+                fontSize: 12.5,
+                color: attachToTrack ? color.date : color.sub,
+              }}
+            >
+              {todayTrack.data.title}에도 담기
             </Text>
-          </View>
+          </Pressable>
         )}
 
         <TextInput
