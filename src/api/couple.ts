@@ -89,6 +89,45 @@ export function useCoupleProfiles() {
   });
 }
 
+/** 내 프로필 원본 — 수정 화면 프리필용(givenName 미적용, 닉네임 원본 그대로) */
+export function useMyProfile() {
+  const session = useSession();
+  const uid = session.data?.user.id;
+  return useQuery({
+    enabled: !!uid,
+    queryKey: ['profile', 'mine', uid],
+    queryFn: async (): Promise<{ nickname: string; avatar_url: string | null }> => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('nickname, avatar_url')
+        .eq('id', uid!)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+/** 내 프로필 수정 — 닉네임·아바타. 성공 시 모든 아바타·이름 소비처 갱신 */
+export function useUpdateProfile() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { nickname: string; avatarUrl?: string | null }) => {
+      const { data: userData } = await supabase.auth.getUser();
+      const uid = userData.user?.id;
+      if (!uid) throw new Error('로그인이 필요해요');
+      const patch: { nickname: string; avatar_url?: string | null } = { nickname: input.nickname };
+      if (input.avatarUrl !== undefined) patch.avatar_url = input.avatarUrl;
+      const { error } = await supabase.from('profiles').update(patch).eq('id', uid);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['couple'] });
+      qc.invalidateQueries({ queryKey: ['profile'] });
+    },
+  });
+}
+
 /** 초대 발급 — create_couple RPC (커플 생성 + 본인 등록 원자 처리) */
 export function useCreateInvite() {
   const qc = useQueryClient();

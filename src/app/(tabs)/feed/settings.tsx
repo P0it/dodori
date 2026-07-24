@@ -8,6 +8,7 @@ import { TopBar } from '@/components/TopBar';
 import { Meta } from '@/components/Meta';
 import { Divider } from '@/components/Divider';
 import { DodoriMark } from '@/components/DodoriMark';
+import { Avatar } from '@/components/Avatar';
 import { StarGlyph } from '@/components/glyphs';
 
 /** 스튜디오 관리 — 기념일·연결·로그아웃 (계정 화면에서 분리) */
@@ -35,6 +36,13 @@ export default function StudioSettings() {
     <View style={{ flex: 1, backgroundColor: color.bg }}>
       <TopBar title="관리" />
       <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24 }}>
+        <LinkRow
+          icon={<Avatar url={profiles.data?.me?.avatar_url ?? null} name={profiles.data?.me?.nickname || '나'} size={34} />}
+          label={profiles.data?.me?.nickname || '내 프로필'}
+          sub="프로필 사진·닉네임"
+          onPress={() => router.push('/feed/profile')}
+        />
+        <Divider />
         <LinkRow
           icon={<StarGlyph size={17} />}
           label="기념일 관리"

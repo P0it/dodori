@@ -76,6 +76,38 @@ export async function pickPhotos(limit = 20): Promise<PickedPhoto[]> {
   }));
 }
 
+/**
+ * 프로필 사진 고르기 → 512 정사각 JPEG로 avatars(공개) 버킷 업로드 → 공개 URL 반환.
+ * 취소하면 null. allowsEditing으로 정사각 크롭을 강제한다.
+ */
+export async function pickAvatar(): Promise<string | null> {
+  const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  if (!perm.granted) throw new Error('사진 접근 권한이 필요해요');
+  const res = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ['images'],
+    allowsEditing: true,
+    aspect: [1, 1],
+    quality: 1,
+  });
+  if (res.canceled) return null;
+  const { data: userData } = await supabase.auth.getUser();
+  const uid = userData.user?.id;
+  if (!uid) throw new Error('로그인이 필요해요');
+
+  const ctx = ImageManipulator.ImageManipulator.manipulate(res.assets[0].uri);
+  ctx.resize({ width: 512, height: 512 });
+  const rendered = await ctx.renderAsync();
+  const out = await rendered.saveAsync({ format: ImageManipulator.SaveFormat.JPEG, compress: 0.8 });
+
+  const path = `${uid}/${Crypto.randomUUID()}.jpg`;
+  const body = await (await fetch(out.uri)).arrayBuffer();
+  const { error } = await supabase.storage
+    .from('avatars')
+    .upload(path, body, { contentType: 'image/jpeg' });
+  if (error) throw error;
+  return supabase.storage.from('avatars').getPublicUrl(path).data.publicUrl;
+}
+
 /** EXIF DateTimeOriginal('2026:07:04 15:22:10', KST 로컬 촬영시각) → ISO */
 export function parseExifDate(exif: Record<string, unknown> | null | undefined): string | null {
   const raw =
