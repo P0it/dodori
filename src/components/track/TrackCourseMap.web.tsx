@@ -77,13 +77,13 @@ export function TrackCourseMap({ region, pins, onPinPress }: TrackCourseMapProps
             position: pos,
             map,
             icon: {
-              // 물방울 핀 — 초록 머리(경계는 45° 회전으로 아래를 향하는 뾰족한 끝) + 흰 번호
-              content: `<div style="position:relative;width:34px;height:42px;">
-                <div style="position:absolute;left:3px;top:2px;width:28px;height:28px;background:${color.accent};border:2px solid ${color.white};border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 2px 5px rgba(0,0,0,0.35);"></div>
-                <div style="position:absolute;left:0;top:5px;width:34px;height:24px;display:flex;align-items:center;justify-content:center;color:${color.onPrimary};font-family:${typeface},sans-serif;font-weight:800;font-size:13px;">${p.label}</div>
+              // 핀 — 원형 초록 머리(흰 번호 중앙) + 아래 삼각형 꼭지가 좌표를 가리킴
+              content: `<div style="position:relative;width:32px;height:40px;">
+                <div style="position:absolute;left:9px;top:23px;width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-top:14px solid ${color.accent};"></div>
+                <div style="box-sizing:border-box;position:absolute;left:2px;top:0;width:28px;height:28px;border-radius:50%;background:${color.accent};border:2px solid ${color.white};box-shadow:0 2px 5px rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;color:${color.white};font-family:${typeface},sans-serif;font-weight:800;font-size:13px;">${p.label}</div>
               </div>`,
-              size: new naver.maps.Size(34, 42),
-              anchor: new naver.maps.Point(17, 38),
+              size: new naver.maps.Size(32, 40),
+              anchor: new naver.maps.Point(16, 38),
             },
           });
           naver.maps.Event.addListener(marker, 'click', () => onPinPressRef.current(p.placeId));

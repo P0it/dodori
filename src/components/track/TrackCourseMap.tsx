@@ -39,42 +39,46 @@ export function TrackCourseMap({ region, pins, onPinPress }: TrackCourseMapProps
           longitude={p.lng}
           // 앵커를 뾰족한 끝(하단 중앙)에 둬 위치를 정확히 가리킨다
           anchor={{ x: 0.5, y: 1 }}
-          width={34}
-          height={42}
+          width={32}
+          height={40}
           onTap={() => onPinPress(p.placeId)}
         >
-          {/* 물방울 핀 — 초록 머리(한 모서리만 각지게 + 45° 회전으로 아래를 향함) + 흰 번호.
+          {/* 핀 — 원형 초록 머리(흰 번호 중앙) + 아래 삼각형 꼭지가 좌표를 가리킴.
               iOS 신아키텍처 대응: 최상위 자식에 key·collapsable=false (SDK 문서 권고) */}
-          <View key={p.label} collapsable={false} style={{ width: 34, height: 42 }}>
+          <View key={p.label} collapsable={false} style={{ width: 32, height: 40 }}>
+            {/* 삼각형 꼭지 (아래로) */}
             <View
               style={{
                 position: 'absolute',
-                left: 3,
-                top: 2,
+                left: 9,
+                top: 23,
+                width: 0,
+                height: 0,
+                borderLeftWidth: 7,
+                borderRightWidth: 7,
+                borderTopWidth: 14,
+                borderLeftColor: 'transparent',
+                borderRightColor: 'transparent',
+                borderTopColor: color.accent,
+              }}
+            />
+            {/* 원형 머리 + 번호 */}
+            <View
+              style={{
+                position: 'absolute',
+                left: 2,
+                top: 0,
                 width: 28,
                 height: 28,
+                borderRadius: 14,
                 backgroundColor: color.accent,
                 borderWidth: 2,
                 borderColor: color.white,
-                borderTopLeftRadius: 15,
-                borderTopRightRadius: 15,
-                borderBottomRightRadius: 15,
-                borderBottomLeftRadius: 0,
-                transform: [{ rotate: '-45deg' }],
-              }}
-            />
-            <View
-              style={{
-                position: 'absolute',
-                left: 0,
-                top: 5,
-                width: 34,
-                height: 24,
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
             >
-              <Text style={{ color: color.onPrimary, fontFamily: typeface, fontWeight: '800', fontSize: 13 }}>
+              <Text style={{ color: color.white, fontFamily: typeface, fontWeight: '800', fontSize: 13 }}>
                 {p.label}
               </Text>
             </View>
