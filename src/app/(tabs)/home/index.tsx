@@ -73,7 +73,7 @@ export default function Today() {
       <Pressable
         onPress={() => router.push(`/topic/${topic.data!.id}`)}
         style={({ pressed }) => ({
-          marginTop: 28,
+          marginTop: 20,
           borderRadius: 14,
           paddingHorizontal: 16,
           paddingVertical: 16,

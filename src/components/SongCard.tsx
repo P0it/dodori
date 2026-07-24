@@ -18,7 +18,7 @@ export function SongCard({ song }: { song: Song }) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const { width, height } = useWindowDimensions();
   // 세로가 짧은 기기에서도 주제 카드가 접히지 않게 화면 높이로도 한 번 더 제한
-  const posterSize = Math.min(width - space[4] * 4, height * 0.32); // 화면 gutter + 카드 padding
+  const posterSize = Math.min(width - space[4] * 4, height * 0.24); // 화면 gutter + 카드 padding
 
   function toggle() {
     if (status.playing) {
@@ -51,13 +51,13 @@ export function SongCard({ song }: { song: Song }) {
           alignSelf: 'center',
           borderRadius: 12,
           backgroundColor: color.surface2,
-          marginTop: space[3],
+          marginTop: space[2],
         }}
         contentFit="cover"
         transition={200}
       />
 
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[4], marginTop: space[4] }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[4], marginTop: space[3] }}>
         <View style={{ flex: 1 }}>
           <Text
             numberOfLines={2}
@@ -107,7 +107,7 @@ export function SongCard({ song }: { song: Song }) {
       <Pressable
         onPress={() => setPickerOpen(true)}
         hitSlop={6}
-        style={({ pressed }) => ({ marginTop: space[3], opacity: pressed ? 0.6 : 1 })}
+        style={({ pressed }) => ({ marginTop: space[2], opacity: pressed ? 0.6 : 1 })}
       >
         <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: font.meta, color: color.sub }}>
           전곡 듣기 ›
