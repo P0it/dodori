@@ -13,6 +13,7 @@ import { Meta } from '@/components/Meta';
 import { Eyebrow } from '@/components/Eyebrow';
 import { AlbumCarousel } from '@/components/AlbumCarousel';
 import { RecommendStrip } from '@/components/playlist/RecommendStrip';
+import { PlaylistTile } from '@/components/playlist/PlaylistTile';
 
 /** 플레이리스트 탭 루트 (목업 07) */
 export default function PlaylistRoot() {
@@ -104,19 +105,19 @@ export default function PlaylistRoot() {
         {/* 만들기를 맨 위로 — 리스트를 새로 여는 게 목록을 훑는 것보다 잦은 동작 */}
         <Pressable
           onPress={() => router.push('/modals/new-playlist')}
-          style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8 }}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 6 }}
         >
           <View
             style={{
-              width: 52,
-              height: 52,
+              width: 44,
+              height: 44,
               borderRadius: 8,
               backgroundColor: color.surface2,
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <Text style={{ fontFamily: typeface, color: color.white, fontSize: 20 }}>+</Text>
+            <Text style={{ fontFamily: typeface, color: color.white, fontSize: 18 }}>+</Text>
           </View>
           <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 15, color: color.sub }}>새 리스트 만들기</Text>
         </Pressable>
@@ -124,20 +125,9 @@ export default function PlaylistRoot() {
           <Pressable
             key={p.id}
             onPress={() => router.push(`/(tabs)/playlist/custom/${p.id}`)}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8 }}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 6 }}
           >
-            <View
-              style={{
-                width: 52,
-                height: 52,
-                borderRadius: 8,
-                backgroundColor: color.surface2,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Text style={{ color: color.sub, fontFamily: typeface, fontWeight: '700' }}>{p.name.slice(0, 1)}</Text>
-            </View>
+            <PlaylistTile colorKey={p.color} icon={p.icon} name={p.name} size={44} />
             <View style={{ flex: 1 }}>
               <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 15, color: color.white }}>{p.name}</Text>
               <Meta style={{ marginTop: 2, fontSize: 12.5 }}>장소 {p.placeCount}곳</Meta>

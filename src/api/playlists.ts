@@ -9,6 +9,9 @@ export interface PlaylistSummary {
   name: string;
   kind: 'custom' | 'saved';
   placeCount: number;
+  /** 타일 표현 — 색 팔레트 키(eventColor)·이모지 아이콘 (만들 때 고름) */
+  color: string | null;
+  icon: string | null;
 }
 
 export function usePlaylists() {
@@ -19,7 +22,7 @@ export function usePlaylists() {
     queryFn: async (): Promise<PlaylistSummary[]> => {
       const { data, error } = await supabase
         .from('playlists')
-        .select('id, name, kind, playlist_places(place_id)')
+        .select('id, name, kind, color, icon, playlist_places(place_id)')
         .order('created_at');
       if (error) throw error;
       return data
@@ -28,6 +31,8 @@ export function usePlaylists() {
           name: p.name,
           kind: (p.kind === 'saved' ? 'saved' : 'custom') as 'custom' | 'saved',
           placeCount: p.playlist_places?.length ?? 0,
+          color: p.color,
+          icon: p.icon,
         }))
         // 찜은 항상 맨 위
         .sort((a, b) => (a.kind === b.kind ? 0 : a.kind === 'saved' ? -1 : 1));
@@ -45,13 +50,19 @@ export function useCreatePlaylist() {
   const qc = useQueryClient();
   const couple = useMyCouple();
   return useMutation({
-    mutationFn: async (name: string) => {
+    mutationFn: async (input: { name: string; color: string | null; icon: string | null }) => {
       const { data: userData } = await supabase.auth.getUser();
       const uid = userData.user?.id;
       if (!uid || !couple.data) throw new Error('로그인·연결이 필요해요');
       const { data, error } = await supabase
         .from('playlists')
-        .insert({ couple_id: couple.data.coupleId, name: name.trim(), created_by: uid })
+        .insert({
+          couple_id: couple.data.coupleId,
+          name: input.name.trim(),
+          color: input.color,
+          icon: input.icon,
+          created_by: uid,
+        })
         .select('id')
         .single();
       if (error) throw error;
@@ -90,6 +101,8 @@ export interface PlaylistDetail {
   name: string;
   /** 찜은 삭제·이름변경 불가 — 화면이 이 값으로 삭제 UI를 감춘다 */
   kind: 'custom' | 'saved';
+  color: string | null;
+  icon: string | null;
   places: PlaylistPlaceItem[];
 }
 
@@ -102,7 +115,7 @@ export function usePlaylistDetail(id: string | undefined) {
     queryFn: async (): Promise<PlaylistDetail> => {
       const { data: pl, error } = await supabase
         .from('playlists')
-        .select('id, name, kind, playlist_places(place_id, places(id, name, category, address, link))')
+        .select('id, name, kind, color, icon, playlist_places(place_id, places(id, name, category, address, link))')
         .eq('id', id!)
         .single();
       if (error) throw error;
@@ -112,6 +125,8 @@ export function usePlaylistDetail(id: string | undefined) {
         id: pl.id,
         name: pl.name,
         kind: (pl.kind === 'saved' ? 'saved' : 'custom') as 'custom' | 'saved',
+        color: pl.color,
+        icon: pl.icon,
         places: (pl.playlist_places ?? []).map((pp) => ({
           placeId: pp.place_id,
           name: pp.places?.name ?? '',

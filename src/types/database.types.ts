@@ -366,28 +366,34 @@ export type Database = {
       }
       playlists: {
         Row: {
+          color: string | null
           couple_id: string
           cover_photo_id: string | null
           created_at: string
           created_by: string
+          icon: string | null
           id: string
           kind: string
           name: string
         }
         Insert: {
+          color?: string | null
           couple_id: string
           cover_photo_id?: string | null
           created_at?: string
           created_by: string
+          icon?: string | null
           id?: string
           kind?: string
           name: string
         }
         Update: {
+          color?: string | null
           couple_id?: string
           cover_photo_id?: string | null
           created_at?: string
           created_by?: string
+          icon?: string | null
           id?: string
           kind?: string
           name?: string

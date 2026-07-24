@@ -9,6 +9,7 @@ import {
 } from '@/api/playlists';
 import { TopBar } from '@/components/TopBar';
 import { Meta } from '@/components/Meta';
+import { PlaylistTile } from '@/components/playlist/PlaylistTile';
 
 /** 테마(커스텀) 플레이리스트 상세 (목업 P1) — 데이트가 아니라 장소를 모은다 */
 export default function CustomPlaylist() {
@@ -21,7 +22,6 @@ export default function CustomPlaylist() {
   const p = detail.data;
   // 찜은 커플당 하나뿐이고 다시 만들 수 없다 — 삭제 진입점 자체를 감춘다(DB 트리거가 최종 방어)
   const isSaved = p?.kind === 'saved';
-  const thumbs = p?.places.flatMap((pl) => pl.photoThumbs).slice(0, 4) ?? [];
   const totalVisits = p?.places.reduce((n, pl) => n + pl.visitCount, 0) ?? 0;
 
   const onDelete = () =>
@@ -48,25 +48,7 @@ export default function CustomPlaylist() {
       />
       <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
         <View style={{ alignItems: 'center', paddingTop: 4 }}>
-          <View
-            style={{
-              width: 176,
-              height: 176,
-              borderRadius: 6,
-              overflow: 'hidden',
-              flexDirection: 'row',
-              flexWrap: 'wrap',
-              backgroundColor: color.surface2,
-            }}
-          >
-            {[0, 1, 2, 3].map((i) =>
-              thumbs[i] ? (
-                <Image key={i} source={thumbs[i]} style={{ width: '50%', height: '50%' }} contentFit="cover" />
-              ) : (
-                <View key={i} style={{ width: '50%', height: '50%', backgroundColor: color.surface2 }} />
-              ),
-            )}
-          </View>
+          <PlaylistTile colorKey={p?.color ?? null} icon={p?.icon ?? null} name={p?.name ?? '?'} size={140} radius={16} />
           <Text style={{ fontFamily: typeface, fontWeight: '800', fontSize: 24, color: color.white, marginTop: 16 }}>
             {p?.name}
           </Text>
