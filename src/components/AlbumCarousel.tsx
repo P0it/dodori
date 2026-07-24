@@ -92,19 +92,17 @@ export function AlbumCarousel({
                 transform: [{ scale: isActive ? 1 : Math.max(0.76, 0.86 - (dist - 1) * 0.05) }],
               }}
             >
-              {/* 그림자 레이어 — 자켓이 배경 위로 떠 보이게. clip은 안쪽 뷰가 맡는다(그림자는 안 잘림) */}
+              {/*
+                검정 배경 위에선 검은 그림자가 안 보인다 — 어두운 테마의 "부양"은 연한 빛으로 준다.
+                가운데(활성) 카드만 소프트 글로우로 띄운다. clip은 안쪽 뷰가 맡아 글로우가 안 잘린다.
+              */}
               <View
                 style={{
                   width: '100%',
                   height: '100%',
                   borderRadius: 6,
                   backgroundColor: color.surface2,
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 6 },
-                  shadowOpacity: 0.5,
-                  shadowRadius: 12,
-                  // Android — 카드마다 같은 값이라 겹침 순서는 zIndex가 그대로 결정한다
-                  elevation: 8,
+                  boxShadow: isActive ? '0px 10px 28px rgba(255,255,255,0.10)' : undefined,
                 }}
               >
                 <View style={{ width: '100%', height: '100%', borderRadius: 6, overflow: 'hidden' }}>

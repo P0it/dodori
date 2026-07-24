@@ -43,7 +43,8 @@ export function TrackCover({ coverThumbUrl, photoThumbUrls, size = 168, style }:
     );
   }
 
-  // 그림자 레이어(clip 없음) + 안쪽 clip 레이어 — 검정 배경 위로 떠 보이게. 그림자는 안 잘린다.
+  // 글로우 레이어(clip 없음) + 안쪽 clip 레이어.
+  // 검정 배경 위에선 검은 그림자가 안 보인다 — 부양감은 연한 빛(글로우)으로 준다.
   return (
     <View
       style={[
@@ -52,11 +53,7 @@ export function TrackCover({ coverThumbUrl, photoThumbUrls, size = 168, style }:
           height: size,
           borderRadius: rad,
           backgroundColor: color.surface2,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 6 },
-          shadowOpacity: 0.5,
-          shadowRadius: 12,
-          elevation: 8,
+          boxShadow: '0px 10px 30px rgba(255,255,255,0.09)',
         },
         style,
       ]}
