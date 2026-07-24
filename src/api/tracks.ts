@@ -23,20 +23,31 @@ export function useMonthTracks(monthKey: string) {
       const to = `${m === 12 ? y + 1 : y}-${String((m % 12) + 1).padStart(2, '0')}-01`;
       const { data, error } = await supabase
         .from('tracks')
-        .select('id, title, date, cover:photos!tracks_cover_photo_fk(storage_path)')
+        .select(
+          `id, title, date,
+           cover:photos!tracks_cover_photo_fk(storage_path),
+           photos!photos_track_id_fkey(storage_path, created_at),
+           stories(photos!photos_story_id_fkey(storage_path, created_at))`,
+        )
         .gte('date', from)
         .lt('date', to)
         .order('date');
       if (error) throw error;
       return Promise.all(
-        data.map(async (t) => ({
-          id: t.id,
-          title: t.title,
-          date: t.date,
-          coverThumbUrl: t.cover?.storage_path
-            ? await signedThumbUrl(t.cover.storage_path, 'calendar')
-            : null,
-        })),
+        data.map(async (t) => {
+          // 지정 커버가 없으면 가장 이른 사진으로 — 그날 담긴 스토리 사진도 후보에 넣는다
+          const fallback = [
+            ...(t.photos ?? []),
+            ...(t.stories ?? []).flatMap((s) => s.photos ?? []),
+          ].sort((a, b) => a.created_at.localeCompare(b.created_at))[0];
+          const coverPath = t.cover?.storage_path ?? fallback?.storage_path ?? null;
+          return {
+            id: t.id,
+            title: t.title,
+            date: t.date,
+            coverThumbUrl: coverPath ? await signedThumbUrl(coverPath, 'calendar') : null,
+          };
+        }),
       );
     },
   });

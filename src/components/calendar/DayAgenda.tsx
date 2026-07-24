@@ -1,4 +1,5 @@
 import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { color, eventColor, toEventColor, typeface } from '@/theme/tokens';
 import { formatDday, todayKST } from '@/lib/date';
@@ -102,7 +103,16 @@ export function DayAgenda({ date, events, tracks, annivs, name, avatarUrl }: Pro
               onPress={() => router.push(`/track/${t.id}`)}
               style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 11 }}
             >
-              <View style={{ width: 44, height: 44, borderRadius: 8, backgroundColor: color.surface2 }} />
+              {t.coverThumbUrl ? (
+                <Image
+                  source={t.coverThumbUrl}
+                  style={{ width: 44, height: 44, borderRadius: 8, backgroundColor: color.surface2 }}
+                  contentFit="cover"
+                  transition={160}
+                />
+              ) : (
+                <View style={{ width: 44, height: 44, borderRadius: 8, backgroundColor: color.surface2 }} />
+              )}
               <View style={{ flex: 1 }}>
                 <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 15, color: color.white }}>
                   {t.title}

@@ -11,7 +11,7 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { color, typeface } from '@/theme/tokens';
-import { isReleased, formatDday } from '@/lib/date';
+import { isReleased, formatDday, weekdayKo } from '@/lib/date';
 import { pinnablePlaces } from '@/lib/map';
 import {
   useTrack,
@@ -336,21 +336,16 @@ function TrackBody({ t }: { t: TrackDetail }) {
           {/* 커버 탭 → 사진 선택 → 커버 지정. 수정 모드에서만 눌린다 */}
           <Pressable onPress={onSetCover} disabled={!editing || setCover.isPending}>
             <TrackCover coverThumbUrl={t.coverThumbUrl} photoThumbUrls={photoThumbUrls} size={168} />
+            {/* 경계는 커버 자체의 hairline이 잡는다 — 여기선 D-Day 배지만 얹는다 */}
             {!released && (
               <View
                 pointerEvents="none"
                 style={{
                   position: 'absolute',
-                  top: 0,
                   left: 0,
                   right: 0,
                   bottom: 0,
-                  borderRadius: 6,
-                  borderWidth: 2,
-                  borderStyle: 'dashed',
-                  borderColor: color.accent,
                   alignItems: 'center',
-                  justifyContent: 'flex-end',
                   paddingBottom: 12,
                 }}
               >
@@ -423,7 +418,7 @@ function TrackBody({ t }: { t: TrackDetail }) {
             </Text>
           )}
           <Meta style={{ marginTop: 6 }}>
-            {t.date.replaceAll('-', '.')}
+            {t.date.replaceAll('-', '.')} ({weekdayKo(t.date)})
             {released ? '' : ` · ${formatDday(t.date)}`}
           </Meta>
         </View>
@@ -435,8 +430,8 @@ function TrackBody({ t }: { t: TrackDetail }) {
         {photoArchive ? (
           <>
             <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 20, paddingTop: 20 }}>
-              <TrackTab label="코스" count={t.places.length} active={tab === 'course'} onPress={() => setTab('course')} />
-              <TrackTab label="사진" count={t.photos.length} active={tab === 'photos'} onPress={() => setTab('photos')} />
+              <TrackTab label="코스" active={tab === 'course'} onPress={() => setTab('course')} />
+              <TrackTab label="사진" active={tab === 'photos'} onPress={() => setTab('photos')} />
             </View>
             {tab === 'course' ? courseSection : photoArchive}
           </>
@@ -543,12 +538,10 @@ function TrackBody({ t }: { t: TrackDetail }) {
 /** 코스·사진 세그먼트 탭 — 활성 쪽만 채워진 pill */
 function TrackTab({
   label,
-  count,
   active,
   onPress,
 }: {
   label: string;
-  count: number;
   active: boolean;
   onPress: () => void;
 }) {
@@ -556,12 +549,11 @@ function TrackTab({
     <Pressable
       onPress={onPress}
       style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
         height: 34,
-        paddingHorizontal: 14,
+        paddingHorizontal: 16,
         borderRadius: 999,
+        alignItems: 'center',
+        justifyContent: 'center',
         backgroundColor: active ? color.surface2 : 'transparent',
       }}
     >
@@ -574,16 +566,6 @@ function TrackTab({
         }}
       >
         {label}
-      </Text>
-      <Text
-        style={{
-          fontFamily: typeface,
-          fontWeight: '600',
-          fontSize: 12.5,
-          color: active ? color.sub : color.muted,
-        }}
-      >
-        {count}
       </Text>
     </Pressable>
   );
