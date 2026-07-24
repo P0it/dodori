@@ -74,7 +74,13 @@
         }
       ],
       "expo-audio",
-      "@sentry/react-native",
+      [
+        "@sentry/react-native",
+        {
+          "organization": "hyunwoo-mi",
+          "project": "dodori"
+        }
+      ],
       [
         "expo-build-properties",
         {

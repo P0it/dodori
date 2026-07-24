@@ -7,6 +7,7 @@ import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import * as SystemUI from 'expo-system-ui';
 import Constants from 'expo-constants';
+import * as Sentry from '@sentry/react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { QueryClient } from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
@@ -19,6 +20,13 @@ import { usePushRegistration } from '@/api/notifications';
 
 // 네이티브 스플래시는 BrandSplash가 마운트된 뒤 직접 내린다 (워드마크 등장까지 이어붙이기)
 SplashScreen.preventAutoHideAsync();
+
+// 크래시·에러 리포팅. DSN은 공개값이라 클라이언트에 박혀도 된다.
+// DSN이 없는 환경(DSN 미설정 로컬)에서는 초기화를 건너뛴다 — Sentry 없이도 앱은 떠야 한다.
+const sentryDsn = process.env.EXPO_PUBLIC_SENTRY_DSN;
+if (sentryDsn) {
+  Sentry.init({ dsn: sentryDsn });
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -40,7 +48,7 @@ function AuthBridge() {
   return null;
 }
 
-export default function RootLayout() {
+function RootLayout() {
   const insets = useSafeAreaInsets();
   const [splashDone, setSplashDone] = useState(false);
   const onSplashDone = useCallback(() => setSplashDone(true), []);
@@ -81,3 +89,6 @@ export default function RootLayout() {
     </GestureHandlerRootView>
   );
 }
+
+// Sentry.wrap — 렌더 트리에서 터진 에러를 잡아 보고한다
+export default Sentry.wrap(RootLayout);
