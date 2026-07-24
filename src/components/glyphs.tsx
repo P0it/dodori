@@ -110,6 +110,21 @@ export function PlusGlyph({ size = 24, color: fg = color.white }: GlyphProps) {
   );
 }
 
+/** 담김 표시 (✓) — 굵고 둥근 체크 */
+export function CheckGlyph({ size = 16, color: fg = color.bg }: GlyphProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M5 12.5 10 17.5 19.5 7"
+        stroke={fg}
+        strokeWidth={2.6}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
 /** 관리 메뉴 (≡) */
 export function MenuGlyph({ size = 22, color: fg = color.white }: GlyphProps) {
   return (

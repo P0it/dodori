@@ -12,6 +12,7 @@ import { PlaceThumb } from '@/components/PlaceThumb';
 import { FilterChip } from '@/components/FilterChip';
 import { SavedHeart } from '@/components/SavedHeart';
 import { PlaylistPickerSheet } from '@/components/playlist/PlaylistPickerSheet';
+import { CheckGlyph, PlusGlyph } from '@/components/glyphs';
 
 /**
  * 장소 검색 — 단일 공용 (§7.4).
@@ -37,7 +38,11 @@ export default function PlaceSearch() {
   const search = usePlaceSearch(query);
   const addToTrack = useAddTrackPlace(trackId ?? '');
   const addToPlaylist = useAddPlaylistPlace(playlistId ?? '');
-  const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
+  // 이번에 담은 곳 — 검색어를 바꿔도 사라지지 않게 담은 항목을 순서대로 들고 있는다.
+  // (검색 결과는 쿼리마다 갈아엎어져 방금 담은 곳이 화면에서 사라지므로)
+  type AddedPlace = { id: string; name: string; meta: string; thumbUrl?: string };
+  const [addedList, setAddedList] = useState<AddedPlace[]>([]);
+  const addedIds = useMemo(() => new Set(addedList.map((a) => a.id)), [addedList]);
   // 이미 이 날짜 코스에 담긴 찜한 곳 — + 버튼을 눌러도 조용히 실패하지 않도록 미리 added 처리
   const existingPlaceIds = useMemo(
     () => new Set((track.data?.places ?? []).map((p) => p.placeId)),
@@ -55,7 +60,13 @@ export default function PlaceSearch() {
   const nextSortOrder = maxOrder + 1;
 
   const add = (p: Parameters<typeof addToPlaylist.mutate>[0]) => {
-    const done = { onSuccess: () => setAddedIds((s) => new Set(s).add(p.naver_id)) };
+    const done = {
+      onSuccess: () =>
+        setAddedList((list) => [
+          ...list,
+          { id: p.naver_id, name: p.name, meta: [p.category, p.address].filter(Boolean).join(' · ') },
+        ]),
+    };
     if (trackId) addToTrack.mutate({ place: p, sortOrder: nextSortOrder }, done);
     else if (playlistId) addToPlaylist.mutate(p, done);
   };
@@ -104,6 +115,37 @@ export default function PlaceSearch() {
       )}
       {tab === 'search' && (
         <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 32 }}>
+          {addedList.length > 0 && (
+            <>
+              <Eyebrow style={{ marginVertical: 8 }}>담은 곳 {addedList.length}</Eyebrow>
+              {addedList.map((a) => (
+                <View
+                  key={a.id}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 11 }}
+                >
+                  {a.thumbUrl ? <PlaceThumb placeId={a.id} name={a.name} thumbUrl={a.thumbUrl} size={44} /> : null}
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 15, color: color.white }}>
+                      {a.name}
+                    </Text>
+                    {a.meta ? <Meta style={{ marginTop: 2, fontSize: 12 }}>{a.meta}</Meta> : null}
+                  </View>
+                  <View
+                    style={{
+                      width: 34,
+                      height: 34,
+                      borderRadius: 17,
+                      backgroundColor: color.accent,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <CheckGlyph size={16} color={color.bg} />
+                  </View>
+                </View>
+              ))}
+            </>
+          )}
           {query.trim().length < 2 ? null : search.isPending ? (
             <ActivityIndicator color={color.accent} style={{ marginTop: 24 }} />
           ) : search.isError ? (
@@ -142,9 +184,7 @@ export default function PlaceSearch() {
                         justifyContent: 'center',
                       }}
                     >
-                      <Text style={{ color: added ? color.bg : color.white, fontFamily: typeface, fontWeight: '700' }}>
-                        {added ? '✓' : '+'}
-                      </Text>
+                      {added ? <CheckGlyph size={16} color={color.bg} /> : <PlusGlyph size={18} color={color.white} />}
                     </Pressable>
                   </View>
                 );
@@ -187,7 +227,16 @@ export default function PlaceSearch() {
                           sortOrder: nextSortOrder,
                         },
                         {
-                          onSuccess: () => setAddedIds((s) => new Set(s).add(p.placeId)),
+                          onSuccess: () =>
+                            setAddedList((list) => [
+                              ...list,
+                              {
+                                id: p.placeId,
+                                name: p.name,
+                                meta: [p.playlistName, p.category].filter(Boolean).join(' · '),
+                                thumbUrl: p.photoThumbs[0],
+                              },
+                            ]),
                           onError: (e) =>
                             Alert.alert('추가 실패', e instanceof Error ? e.message : '코스에 담지 못했어요.'),
                         },
