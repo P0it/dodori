@@ -38,11 +38,16 @@ export default function PlaceSearch() {
   const search = usePlaceSearch(query);
   const addToTrack = useAddTrackPlace(trackId ?? '');
   const addToPlaylist = useAddPlaylistPlace(playlistId ?? '');
-  // 이번에 담은 곳 — 검색어를 바꿔도 사라지지 않게 담은 항목을 순서대로 들고 있는다.
-  // (검색 결과는 쿼리마다 갈아엎어져 방금 담은 곳이 화면에서 사라지므로)
-  type AddedPlace = { id: string; name: string; meta: string; thumbUrl?: string };
-  const [addedList, setAddedList] = useState<AddedPlace[]>([]);
-  const addedIds = useMemo(() => new Set(addedList.map((a) => a.id)), [addedList]);
+  // 담을 곳 — '완료'를 눌러야 실제로 저장된다(장바구니식). +는 로컬 선택만이고, 뒤로 가면 취소된다.
+  // 검색어를 바꿔도 유지되며, 완료 시 재생할 뮤테이션 정보를 항목마다 함께 들고 있는다.
+  type Staged = {
+    id: string; // naver_id(검색) 또는 placeId(찜) — 담김 표시·중복·토글 키
+    name: string;
+    payload: { kind: 'search'; place: SearchPlace } | { kind: 'saved'; placeId: string };
+  };
+  const [staged, setStaged] = useState<Staged[]>([]);
+  const [committing, setCommitting] = useState(false);
+  const stagedIds = useMemo(() => new Set(staged.map((s) => s.id)), [staged]);
   // 이미 이 날짜 코스에 담긴 찜한 곳 — + 버튼을 눌러도 조용히 실패하지 않도록 미리 added 처리
   const existingPlaceIds = useMemo(
     () => new Set((track.data?.places ?? []).map((p) => p.placeId)),
@@ -59,16 +64,50 @@ export default function PlaceSearch() {
   const maxOrder = Math.max(-1, ...(track.data?.places ?? []).map((p) => p.sortOrder));
   const nextSortOrder = maxOrder + 1;
 
-  const add = (p: Parameters<typeof addToPlaylist.mutate>[0]) => {
-    const done = {
-      onSuccess: () =>
-        setAddedList((list) => [
-          ...list,
-          { id: p.naver_id, name: p.name, meta: [p.category, p.address].filter(Boolean).join(' · ') },
-        ]),
-    };
-    if (trackId) addToTrack.mutate({ place: p, sortOrder: nextSortOrder }, done);
-    else if (playlistId) addToPlaylist.mutate(p, done);
+  // 한 번 더 누르면 담기 취소 — 아직 저장 전이라 토글이 안전하다
+  const toggleSearch = (p: SearchPlace) => {
+    setStaged((list) =>
+      list.some((s) => s.id === p.naver_id)
+        ? list.filter((s) => s.id !== p.naver_id)
+        : [...list, { id: p.naver_id, name: p.name, payload: { kind: 'search', place: p } }],
+    );
+  };
+  const toggleSaved = (p: (typeof picked)[number]) => {
+    setStaged((list) =>
+      list.some((s) => s.id === p.placeId)
+        ? list.filter((s) => s.id !== p.placeId)
+        : [...list, { id: p.placeId, name: p.name, payload: { kind: 'saved', placeId: p.placeId } }],
+    );
+  };
+
+  // '완료' — 담은 항목을 순서대로 실제 저장한다. 코스 순서는 base + 0,1,2… 로 배정.
+  const commit = async () => {
+    if (staged.length === 0) {
+      router.back();
+      return;
+    }
+    setCommitting(true);
+    let order = nextSortOrder;
+    const failed: Staged[] = [];
+    for (const s of staged) {
+      try {
+        if (s.payload.kind === 'search') {
+          if (trackId) await addToTrack.mutateAsync({ place: s.payload.place, sortOrder: order++ });
+          else if (playlistId) await addToPlaylist.mutateAsync(s.payload.place);
+        } else {
+          await addSaved.mutateAsync({ placeId: s.payload.placeId, sortOrder: order++ });
+        }
+      } catch {
+        failed.push(s);
+      }
+    }
+    setCommitting(false);
+    if (failed.length) {
+      Alert.alert('일부 담기 실패', `${failed.map((f) => f.name).join(', ')}을(를) 담지 못했어요.`);
+      setStaged(failed); // 성공분은 이미 저장됨 — 실패한 것만 남겨 다시 시도
+    } else {
+      router.back();
+    }
   };
 
   return (
@@ -123,7 +162,7 @@ export default function PlaceSearch() {
             <>
               <Eyebrow style={{ marginVertical: 8 }}>검색 결과</Eyebrow>
               {(search.data ?? []).map((p) => {
-                const added = addedIds.has(p.naver_id);
+                const added = stagedIds.has(p.naver_id);
                 return (
                   <View
                     key={p.naver_id}
@@ -139,9 +178,8 @@ export default function PlaceSearch() {
                     </View>
                     <SavedHeart saved={justSaved.has(p.naver_id)} onPress={() => setPickerPlace(p)} />
                     <Pressable
-                      // 담는 중엔 잠근다 — 연타하면 리페치 전 maxOrder로 같은 순서가 두 번 나간다
-                      disabled={added || (!trackId && !playlistId) || addToTrack.isPending}
-                      onPress={() => add(p)}
+                      disabled={!trackId && !playlistId}
+                      onPress={() => toggleSearch(p)}
                       style={{
                         width: 34,
                         height: 34,
@@ -172,7 +210,7 @@ export default function PlaceSearch() {
             </Meta>
           ) : (
             picked.map((p) => {
-              const added = existingPlaceIds.has(p.placeId) || addedIds.has(p.placeId);
+              const added = existingPlaceIds.has(p.placeId) || stagedIds.has(p.placeId);
               return (
                 <View
                   key={`${p.playlistId}:${p.placeId}`}
@@ -188,29 +226,8 @@ export default function PlaceSearch() {
                     </Meta>
                   </View>
                   <Pressable
-                    disabled={added || !trackId || addSaved.isPending}
-                    onPress={() =>
-                      addSaved.mutate(
-                        {
-                          placeId: p.placeId,
-                          sortOrder: nextSortOrder,
-                        },
-                        {
-                          onSuccess: () =>
-                            setAddedList((list) => [
-                              ...list,
-                              {
-                                id: p.placeId,
-                                name: p.name,
-                                meta: [p.playlistName, p.category].filter(Boolean).join(' · '),
-                                thumbUrl: p.photoThumbs[0],
-                              },
-                            ]),
-                          onError: (e) =>
-                            Alert.alert('추가 실패', e instanceof Error ? e.message : '코스에 담지 못했어요.'),
-                        },
-                      )
-                    }
+                    disabled={existingPlaceIds.has(p.placeId) || !trackId}
+                    onPress={() => toggleSaved(p)}
                     style={{
                       width: 34,
                       height: 34,
@@ -222,9 +239,7 @@ export default function PlaceSearch() {
                       justifyContent: 'center',
                     }}
                   >
-                    <Text style={{ color: added ? color.bg : color.white, fontFamily: typeface, fontWeight: '700' }}>
-                      {added ? '✓' : '+'}
-                    </Text>
+                    {added ? <CheckGlyph size={16} color={color.bg} /> : <PlusGlyph size={18} color={color.white} />}
                   </Pressable>
                 </View>
               );
@@ -233,23 +248,26 @@ export default function PlaceSearch() {
         </ScrollView>
       )}
       <View style={{ padding: 16, paddingBottom: 26 }}>
-        {addedList.length > 0 && (
+        {staged.length > 0 && (
           <Meta numberOfLines={1} style={{ fontSize: 12, marginBottom: 10 }}>
-            담은 곳 {addedList.length} · {addedList.map((a) => a.name).join(', ')}
+            담을 곳 {staged.length} · {staged.map((s) => s.name).join(', ')}
           </Meta>
         )}
         <Pressable
-          onPress={() => router.back()}
+          disabled={committing}
+          onPress={commit}
           style={({ pressed }) => ({
             height: 48,
             borderRadius: 999,
             backgroundColor: color.accent,
             alignItems: 'center',
             justifyContent: 'center',
-            opacity: pressed ? 0.85 : 1,
+            opacity: pressed || committing ? 0.85 : 1,
           })}
         >
-          <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 14.5, color: color.onPrimary }}>완료</Text>
+          <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 14.5, color: color.onPrimary }}>
+            {committing ? '담는 중…' : staged.length > 0 ? `${staged.length}곳 담기` : '완료'}
+          </Text>
         </Pressable>
       </View>
 
