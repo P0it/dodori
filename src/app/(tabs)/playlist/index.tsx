@@ -99,7 +99,7 @@ export default function PlaylistRoot() {
       {/* 테마 플레이리스트 — 첫 실행이고 만든 플리도 없으면 숨김 */}
       {!(noTracks && (playlists.data ?? []).length === 0) && (
       <>
-      <SectionHeader title="플레이리스트" />
+      <SectionHeader title="저장 리스트" />
       <View style={{ paddingHorizontal: 16, paddingTop: 10 }}>
         {(playlists.data ?? []).map((p) => (
           <Pressable
@@ -142,7 +142,7 @@ export default function PlaylistRoot() {
           >
             <Text style={{ fontFamily: typeface, color: color.white, fontSize: 20 }}>+</Text>
           </View>
-          <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 15, color: color.sub }}>새 플레이리스트 만들기</Text>
+          <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 15, color: color.sub }}>새 리스트 만들기</Text>
         </Pressable>
       </View>
       </>
