@@ -12,6 +12,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { color, typeface } from '@/theme/tokens';
 import { isReleased, formatDday } from '@/lib/date';
+import { pinnablePlaces } from '@/lib/map';
 import {
   useTrack,
   useUpdateTrack,
@@ -92,6 +93,9 @@ function TrackBody({ t }: { t: TrackDetail }) {
     for (const p of t.places) m[p.placeId] = p;
     return m;
   }, [t.places]);
+
+  // 좌표 있는 장소가 하나라도 있어야 지도로 볼 수 있다
+  const hasPins = useMemo(() => pinnablePlaces(t.places).length >= 1, [t.places]);
 
   const photoThumbUrls = t.photos.map((p) => p.thumbUrl);
   const nameOf = (userId: string) =>
@@ -176,6 +180,124 @@ function TrackBody({ t }: { t: TrackDetail }) {
       {editing && !released && (
         <Pressable hitSlop={8} onPress={() => removePlace.mutate(p.placeId)}>
           <Text style={{ fontFamily: typeface, color: color.muted, fontSize: 16 }}>×</Text>
+        </Pressable>
+      )}
+    </View>
+  );
+
+  // 아카이브: 사진 (목업 12·13) — 발매 전이라도 그날 스토리가 담기면 여기 채워진다
+  const photoArchive = (released || t.photos.length > 0) && (
+    <View style={{ paddingHorizontal: 20, paddingTop: 22 }}>
+      <View
+        style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}
+      >
+        <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 17, color: color.white }}>
+          사진 <Text style={{ color: color.sub, fontFamily: typeface, fontWeight: '500' }}>{t.photos.length}</Text>
+        </Text>
+        {t.photos.length > 0 && (
+          <Pressable onPress={() => router.push(`/track/${t.id}/gallery`)}>
+            <Text style={{ fontSize: 12.5, color: color.accent, fontFamily: typeface, fontWeight: '600' }}>
+              전체 보기
+            </Text>
+          </Pressable>
+        )}
+      </View>
+      {t.photos.length === 0 ? (
+        <View style={{ alignItems: 'center', paddingVertical: 20, gap: 12 }}>
+          <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 16, color: color.white }}>
+            오늘의 데이트가 발매됐어요
+          </Text>
+          <Meta style={{ textAlign: 'center', lineHeight: 20 }}>
+            아직 사진이 없어요. 첫 사진을 올리면{'\n'}베스트 컷이 이 트랙의 커버가 돼요.
+          </Meta>
+        </View>
+      ) : (
+        <PhotoStrip trackId={t.id} photos={t.photos.slice(0, 6)} total={t.photos.length} />
+      )}
+      {/* 수동 사진 추가는 발매 후에만 — 발매 전 앨범은 계획(코스·메모)이 주인공이다 */}
+      {released && (
+        <Pressable
+          onPress={onAddPhotos}
+          disabled={upload.isPending}
+          style={({ pressed }) => ({
+            marginTop: 12,
+            height: 46,
+            borderRadius: 10,
+            borderWidth: 1,
+            borderStyle: 'dashed',
+            borderColor: 'rgba(255,255,255,0.2)',
+            alignItems: 'center',
+            justifyContent: 'center',
+            opacity: pressed ? 0.7 : 1,
+          })}
+        >
+          {upload.isPending ? (
+            <ActivityIndicator color={color.accent} />
+          ) : (
+            <Text style={{ color: color.accent, fontFamily: typeface, fontWeight: '600', fontSize: 13.5 }}>+ 사진 올리기</Text>
+          )}
+        </Pressable>
+      )}
+    </View>
+  );
+
+  const courseSection = (
+    <View style={{ paddingHorizontal: 20, paddingTop: 22 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 17, color: color.white }}>코스</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <Meta style={{ fontSize: 12.5 }}>{t.places.length}곳</Meta>
+          {hasPins && (
+            <Pressable onPress={() => router.push(`/track/${t.id}/map`)}>
+              <Text style={{ fontSize: 12.5, color: color.accent, fontFamily: typeface, fontWeight: '600' }}>
+                지도로 보기
+              </Text>
+            </Pressable>
+          )}
+        </View>
+      </View>
+      {/* 순서 바꾸기는 수정 모드에서만 — 조회 중 스크롤하다 코스가 끌려가지 않게 */}
+      {released || !editing ? (
+        <View style={{ marginTop: 4 }}>
+          {t.places.map((p) => (
+            <View key={p.placeId}>{courseRow(p, { draggable: false })}</View>
+          ))}
+        </View>
+      ) : (
+        <View style={{ marginTop: 4 }}>
+          <DraggableCourseList
+            ids={t.places.map((p) => p.placeId)}
+            rowHeight={COURSE_ROW_H}
+            onDragActiveChange={setReordering}
+            onReorder={(orderedIds) => reorder.mutate(orderedIds)}
+            renderItem={(id, dragging) => {
+              const p = placeById[id];
+              return p ? courseRow(p, { dragging, draggable: true }) : null;
+            }}
+          />
+        </View>
+      )}
+      {!released && (
+        <Pressable
+          onPress={() =>
+            router.push({
+              pathname: '/modals/place-search',
+              params: { trackId: t.id },
+            })
+          }
+          style={({ pressed }) => ({
+            marginTop: 8,
+            height: 44,
+            borderRadius: 10,
+            borderWidth: 1,
+            borderStyle: 'dashed',
+            borderColor: 'rgba(255,255,255,0.2)',
+            alignItems: 'center',
+            justifyContent: 'center',
+            opacity: pressed ? 0.7 : 1,
+          })}
+        >
+          <Text style={{ color: color.accent, fontFamily: typeface, fontWeight: '600', fontSize: 13.5 }}>+ 장소 담기</Text>
         </Pressable>
       )}
     </View>
@@ -305,113 +427,18 @@ function TrackBody({ t }: { t: TrackDetail }) {
           </Meta>
         </View>
 
-        {/* 아카이브: 사진 (목업 12·13) — 발매 전이라도 그날 스토리가 담기면 여기 채워진다 */}
-        {(released || t.photos.length > 0) && (
-          <View style={{ paddingHorizontal: 20, paddingTop: 22 }}>
-            <View
-              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}
-            >
-              <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 17, color: color.white }}>
-                사진 <Text style={{ color: color.sub, fontFamily: typeface, fontWeight: '500' }}>{t.photos.length}</Text>
-              </Text>
-              {t.photos.length > 0 && (
-                <Pressable onPress={() => router.push(`/track/${t.id}/gallery`)}>
-                  <Text style={{ fontSize: 12.5, color: color.accent, fontFamily: typeface, fontWeight: '600' }}>
-                    전체 보기
-                  </Text>
-                </Pressable>
-              )}
-            </View>
-            {t.photos.length === 0 ? (
-              <View style={{ alignItems: 'center', paddingVertical: 20, gap: 12 }}>
-                <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 16, color: color.white }}>
-                  오늘의 데이트가 발매됐어요
-                </Text>
-                <Meta style={{ textAlign: 'center', lineHeight: 20 }}>
-                  아직 사진이 없어요. 첫 사진을 올리면{'\n'}베스트 컷이 이 트랙의 커버가 돼요.
-                </Meta>
-              </View>
-            ) : (
-              <PhotoStrip trackId={t.id} photos={t.photos.slice(0, 6)} total={t.photos.length} />
-            )}
-            {/* 수동 사진 추가는 발매 후에만 — 발매 전 앨범은 계획(코스·메모)이 주인공이다 */}
-            {released && (
-            <Pressable
-              onPress={onAddPhotos}
-              disabled={upload.isPending}
-              style={({ pressed }) => ({
-                marginTop: 12,
-                height: 46,
-                borderRadius: 10,
-                borderWidth: 1,
-                borderStyle: 'dashed',
-                borderColor: 'rgba(255,255,255,0.2)',
-                alignItems: 'center',
-                justifyContent: 'center',
-                opacity: pressed ? 0.7 : 1,
-              })}
-            >
-              {upload.isPending ? (
-                <ActivityIndicator color={color.accent} />
-              ) : (
-                <Text style={{ color: color.accent, fontFamily: typeface, fontWeight: '600', fontSize: 13.5 }}>+ 사진 올리기</Text>
-              )}
-            </Pressable>
-            )}
-          </View>
+        {/* 지나간 데이트는 남긴 사진이, 다가오는·오늘 데이트는 코스가 주인공 — 순서로 무게를 준다 */}
+        {released ? (
+          <>
+            {photoArchive}
+            {courseSection}
+          </>
+        ) : (
+          <>
+            {courseSection}
+            {photoArchive}
+          </>
         )}
-
-        {/* 코스 */}
-        <View style={{ paddingHorizontal: 20, paddingTop: 22 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 17, color: color.white }}>코스</Text>
-            <Meta style={{ fontSize: 12.5 }}>{t.places.length}곳</Meta>
-          </View>
-          {/* 순서 바꾸기는 수정 모드에서만 — 조회 중 스크롤하다 코스가 끌려가지 않게 */}
-          {released || !editing ? (
-            <View style={{ marginTop: 4 }}>
-              {t.places.map((p) => (
-                <View key={p.placeId}>{courseRow(p, { draggable: false })}</View>
-              ))}
-            </View>
-          ) : (
-            <View style={{ marginTop: 4 }}>
-              <DraggableCourseList
-                ids={t.places.map((p) => p.placeId)}
-                rowHeight={COURSE_ROW_H}
-                onDragActiveChange={setReordering}
-                onReorder={(orderedIds) => reorder.mutate(orderedIds)}
-                renderItem={(id, dragging) => {
-                  const p = placeById[id];
-                  return p ? courseRow(p, { dragging, draggable: true }) : null;
-                }}
-              />
-            </View>
-          )}
-          {!released && (
-            <Pressable
-              onPress={() =>
-                router.push({
-                  pathname: '/modals/place-search',
-                  params: { trackId: t.id },
-                })
-              }
-              style={({ pressed }) => ({
-                marginTop: 8,
-                height: 44,
-                borderRadius: 10,
-                borderWidth: 1,
-                borderStyle: 'dashed',
-                borderColor: 'rgba(255,255,255,0.2)',
-                alignItems: 'center',
-                justifyContent: 'center',
-                opacity: pressed ? 0.7 : 1,
-              })}
-            >
-              <Text style={{ color: color.accent, fontFamily: typeface, fontWeight: '600', fontSize: 13.5 }}>+ 장소 담기</Text>
-            </Pressable>
-          )}
-        </View>
 
         {/* 노트 (사전 메모 / 라이너 노트) */}
         <View style={{ paddingHorizontal: 20, paddingTop: 22 }}>
