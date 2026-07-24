@@ -53,6 +53,11 @@ export function TrackCourseMap({ region, pins, onPinPress }: TrackCourseMapProps
       setError('NAVER_MAP_CLIENT_ID가 설정되지 않았어요');
       return;
     }
+    // 인증 실패(잘못된 클라이언트 ID·Web 서비스 URL) 시 네이버 기본 팝업 대신 앱 안에서 원인 표시.
+    // Web 서비스 URL은 포트·경로 없이 호스트만 등록해야 한다 (예: http://localhost).
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (window as any).navermap_authFailure = () =>
+      setError('네이버 지도 인증 실패 — NCP 콘솔의 Web 서비스 URL을 "http://localhost"(포트·슬래시 제외)로 등록했는지, 클라이언트 ID가 맞는지 확인하세요');
     loadNaverMaps(clientId)
       .then(() => {
         if (cancelled || !containerRef.current) return;
