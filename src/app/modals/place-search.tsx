@@ -115,37 +115,6 @@ export default function PlaceSearch() {
       )}
       {tab === 'search' && (
         <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 32 }}>
-          {addedList.length > 0 && (
-            <>
-              <Eyebrow style={{ marginVertical: 8 }}>담은 곳 {addedList.length}</Eyebrow>
-              {addedList.map((a) => (
-                <View
-                  key={a.id}
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 11 }}
-                >
-                  {a.thumbUrl ? <PlaceThumb placeId={a.id} name={a.name} thumbUrl={a.thumbUrl} size={44} /> : null}
-                  <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 15, color: color.white }}>
-                      {a.name}
-                    </Text>
-                    {a.meta ? <Meta style={{ marginTop: 2, fontSize: 12 }}>{a.meta}</Meta> : null}
-                  </View>
-                  <View
-                    style={{
-                      width: 34,
-                      height: 34,
-                      borderRadius: 17,
-                      backgroundColor: color.accent,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <CheckGlyph size={16} color={color.bg} />
-                  </View>
-                </View>
-              ))}
-            </>
-          )}
           {query.trim().length < 2 ? null : search.isPending ? (
             <ActivityIndicator color={color.accent} style={{ marginTop: 24 }} />
           ) : search.isError ? (
@@ -264,6 +233,11 @@ export default function PlaceSearch() {
         </ScrollView>
       )}
       <View style={{ padding: 16, paddingBottom: 26 }}>
+        {addedList.length > 0 && (
+          <Meta numberOfLines={1} style={{ fontSize: 12, marginBottom: 10 }}>
+            담은 곳 {addedList.length} · {addedList.map((a) => a.name).join(', ')}
+          </Meta>
+        )}
         <Pressable
           onPress={() => router.back()}
           style={({ pressed }) => ({
