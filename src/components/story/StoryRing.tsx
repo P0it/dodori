@@ -1,5 +1,6 @@
 import { Pressable, Text, View } from 'react-native';
-import { color, typeface } from '@/theme/tokens';
+import { LinearGradient } from 'expo-linear-gradient';
+import { color, storyRing, typeface } from '@/theme/tokens';
 import { Avatar } from '@/components/Avatar';
 import { PlusGlyph } from '@/components/glyphs';
 import type { RingState } from '@/lib/stories';
@@ -17,12 +18,16 @@ type Props = {
 const RING_WIDTH = 2.5;
 
 /**
- * 홈 상단 스토리 링 — 새 스토리 accent / 다 봤으면 hairline / 없으면 흐림.
+ * 홈 상단 스토리 링 — 새 스토리 무지개 / 다 봤으면 hairline / 없으면 흐림.
  * 링은 24시간 내 스토리가 없어도 자리를 비우지 않는다 (홈 레이아웃이 흔들리지 않게).
  */
 export function StoryRing({ name, avatarUrl, state, size = 62, onPress, onPressAdd }: Props) {
-  const ringColor =
-    state === 'new' ? color.accent : state === 'seen' ? color.hairline : color.surface2;
+  const avatarSize = size - RING_WIDTH * 2 - 5;
+  const avatar = (
+    <View style={{ opacity: state === 'none' && !onPressAdd ? 0.45 : 1 }}>
+      <Avatar url={avatarUrl} name={name} size={avatarSize} />
+    </View>
+  );
 
   return (
     <Pressable
@@ -34,15 +39,47 @@ export function StoryRing({ name, avatarUrl, state, size = 62, onPress, onPressA
           width: size,
           height: size,
           borderRadius: size / 2,
-          borderWidth: RING_WIDTH,
-          borderColor: ringColor,
           alignItems: 'center',
           justifyContent: 'center',
+          // 무지개 링은 그라디언트 자체가 테두리 — 단색일 때만 border로 그린다
+          ...(state === 'new'
+            ? null
+            : {
+                borderWidth: RING_WIDTH,
+                borderColor: state === 'seen' ? color.hairline : color.surface2,
+              }),
         }}
       >
-        <View style={{ opacity: state === 'none' && !onPressAdd ? 0.45 : 1 }}>
-          <Avatar url={avatarUrl} name={name} size={size - RING_WIDTH * 2 - 5} />
-        </View>
+        {state === 'new' ? (
+          <LinearGradient
+            colors={[...storyRing]}
+            start={{ x: 0, y: 1 }}
+            end={{ x: 1, y: 0 }}
+            style={{
+              width: size,
+              height: size,
+              borderRadius: size / 2,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            {/* 링과 아바타 사이 배경색 간격 — 없으면 그라디언트가 사진에 눌어붙는다 */}
+            <View
+              style={{
+                width: avatarSize + 5,
+                height: avatarSize + 5,
+                borderRadius: (avatarSize + 5) / 2,
+                backgroundColor: color.bg,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              {avatar}
+            </View>
+          </LinearGradient>
+        ) : (
+          avatar
+        )}
 
         {onPressAdd && (
           <Pressable
