@@ -77,13 +77,15 @@ export function TrackCourseMap({ region, pins, onPinPress }: TrackCourseMapProps
             position: pos,
             map,
             icon: {
-              // 핀 — 원형 초록 머리(흰 번호 중앙) + 아래 삼각형 꼭지가 좌표를 가리킴
-              content: `<div style="position:relative;width:32px;height:40px;">
-                <div style="position:absolute;left:9px;top:23px;width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-top:14px solid ${color.accent};"></div>
-                <div style="box-sizing:border-box;position:absolute;left:2px;top:0;width:28px;height:28px;border-radius:50%;background:${color.accent};border:2px solid ${color.white};box-shadow:0 2px 5px rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;color:${color.white};font-family:${typeface},sans-serif;font-weight:800;font-size:13px;">${p.label}</div>
+              // 핀 전체를 하나의 SVG 도형으로 — 흰 테두리가 머리~꼭지까지 이어진다. 번호는 흰색 중앙.
+              content: `<div style="position:relative;width:28px;height:40px;filter:drop-shadow(0 2px 3px rgba(0,0,0,0.35));">
+                <svg width="28" height="40" viewBox="-2 -2 28 40" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 0 C5.373 0 0 5.373 0 12 C0 21 12 36 12 36 S24 21 24 12 C24 5.373 18.627 0 12 0 Z" fill="${color.accent}" stroke="${color.white}" stroke-width="1.5"/>
+                  <text x="12" y="12.5" text-anchor="middle" dominant-baseline="central" fill="${color.white}" font-family="${typeface},sans-serif" font-weight="800" font-size="12">${p.label}</text>
+                </svg>
               </div>`,
-              size: new naver.maps.Size(32, 40),
-              anchor: new naver.maps.Point(16, 38),
+              size: new naver.maps.Size(28, 40),
+              anchor: new naver.maps.Point(14, 38),
             },
           });
           naver.maps.Event.addListener(marker, 'click', () => onPinPressRef.current(p.placeId));

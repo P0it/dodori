@@ -1,4 +1,5 @@
 import { Text, View } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 import {
   NaverMapView,
   NaverMapMarkerOverlay,
@@ -39,46 +40,26 @@ export function TrackCourseMap({ region, pins, onPinPress }: TrackCourseMapProps
           longitude={p.lng}
           // 앵커를 뾰족한 끝(하단 중앙)에 둬 위치를 정확히 가리킨다
           anchor={{ x: 0.5, y: 1 }}
-          width={32}
+          width={28}
           height={40}
           onTap={() => onPinPress(p.placeId)}
         >
-          {/* 핀 — 원형 초록 머리(흰 번호 중앙) + 아래 삼각형 꼭지가 좌표를 가리킴.
+          {/* 핀 전체를 하나의 SVG 도형으로 — 흰 테두리가 머리~꼭지까지 이어진다. 번호는 흰색 중앙.
               iOS 신아키텍처 대응: 최상위 자식에 key·collapsable=false (SDK 문서 권고) */}
-          <View key={p.label} collapsable={false} style={{ width: 32, height: 40 }}>
-            {/* 삼각형 꼭지 (아래로) */}
+          <View key={p.label} collapsable={false} style={{ width: 28, height: 40 }}>
+            <Svg width={28} height={40} viewBox="-2 -2 28 40">
+              <Path
+                d="M12 0 C5.373 0 0 5.373 0 12 C0 21 12 36 12 36 S24 21 24 12 C24 5.373 18.627 0 12 0 Z"
+                fill={color.accent}
+                stroke={color.white}
+                strokeWidth={1.5}
+              />
+            </Svg>
+            {/* 번호는 RN Text로 머리 위 중앙에 겹친다 */}
             <View
-              style={{
-                position: 'absolute',
-                left: 9,
-                top: 23,
-                width: 0,
-                height: 0,
-                borderLeftWidth: 7,
-                borderRightWidth: 7,
-                borderTopWidth: 14,
-                borderLeftColor: 'transparent',
-                borderRightColor: 'transparent',
-                borderTopColor: color.accent,
-              }}
-            />
-            {/* 원형 머리 + 번호 */}
-            <View
-              style={{
-                position: 'absolute',
-                left: 2,
-                top: 0,
-                width: 28,
-                height: 28,
-                borderRadius: 14,
-                backgroundColor: color.accent,
-                borderWidth: 2,
-                borderColor: color.white,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
+              style={{ position: 'absolute', left: 0, top: 0, width: 28, height: 28, alignItems: 'center', justifyContent: 'center' }}
             >
-              <Text style={{ color: color.white, fontFamily: typeface, fontWeight: '800', fontSize: 13 }}>
+              <Text style={{ color: color.white, fontFamily: typeface, fontWeight: '800', fontSize: 12 }}>
                 {p.label}
               </Text>
             </View>
