@@ -6,12 +6,14 @@ import { color, typeface } from '@/theme/tokens';
 type Props = {
   title?: string;
   onBack?: boolean;
+  /** 주면 back 화살표 대신 놓인다 (수정 모드의 "취소" 등) */
+  left?: React.ReactNode;
   right?: React.ReactNode;
   tint?: string;
 };
 
 /** 상단 바 — back / 중앙 타이틀 / 우측 액션 (목업 TopBar) */
-export function TopBar({ title, onBack = true, right, tint = color.white }: Props) {
+export function TopBar({ title, onBack = true, left, right, tint = color.white }: Props) {
   const router = useRouter();
   return (
     <View
@@ -23,7 +25,9 @@ export function TopBar({ title, onBack = true, right, tint = color.white }: Prop
         paddingHorizontal: 16,
       }}
     >
-      {onBack ? (
+      {left ? (
+        left
+      ) : onBack ? (
         <Pressable hitSlop={8} onPress={() => router.back()}>
           <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
             <Path
@@ -51,7 +55,8 @@ export function TopBar({ title, onBack = true, right, tint = color.white }: Prop
       >
         {title}
       </Text>
-      <View style={{ width: 22, alignItems: 'flex-end' }}>{right}</View>
+      {/* minWidth — "저장" 같은 글자 액션이 들어와도 잘리지 않게 */}
+      <View style={{ minWidth: 22, alignItems: 'flex-end' }}>{right}</View>
     </View>
   );
 }

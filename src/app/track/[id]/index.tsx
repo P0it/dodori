@@ -82,7 +82,8 @@ function TrackBody({ t }: { t: TrackDetail }) {
   const setCover = useSetTrackCover(t.id);
 
   const [noteDraft, setNoteDraft] = useState('');
-  const [editingTitle, setEditingTitle] = useState(false);
+  // 조회가 기본, "수정"을 눌러야 편집 어포던스(커버 ✎·제목 입력·코스 ×·삭제)가 열린다
+  const [editing, setEditing] = useState(false);
   const [titleDraft, setTitleDraft] = useState(t.title);
   const [reordering, setReordering] = useState(false); // 드래그 중 부모 스크롤 잠금
 
@@ -129,15 +130,16 @@ function TrackBody({ t }: { t: TrackDetail }) {
     ]);
   };
 
-  const saveTitle = () => {
-    setEditingTitle(false);
-    const v = titleDraft.trim();
-    if (v && v !== t.title) update.mutate({ title: v });
+  const startEdit = () => {
+    setTitleDraft(t.title);
+    setEditing(true);
   };
 
-  const cancelTitle = () => {
-    setTitleDraft(t.title);
-    setEditingTitle(false);
+  /** 저장 = 제목 커밋 + 모드 종료. 커버·코스는 고른 즉시 반영되므로 여기서 다시 보내지 않는다 */
+  const save = () => {
+    const v = titleDraft.trim();
+    if (v && v !== t.title) update.mutate({ title: v });
+    setEditing(false);
   };
 
   // 코스 한 행 — 발매(정적)·계획(드래그) 공용. draggable이면 그립(≡) 힌트 표시
@@ -171,7 +173,7 @@ function TrackBody({ t }: { t: TrackDetail }) {
       {opts.draggable && (
         <Text style={{ fontFamily: typeface, color: color.muted, fontSize: 17, paddingHorizontal: 2 }}>≡</Text>
       )}
-      {!released && (
+      {editing && !released && (
         <Pressable hitSlop={8} onPress={() => removePlace.mutate(p.placeId)}>
           <Text style={{ fontFamily: typeface, color: color.muted, fontSize: 16 }}>×</Text>
         </Pressable>
@@ -182,18 +184,34 @@ function TrackBody({ t }: { t: TrackDetail }) {
   return (
     <View style={{ flex: 1, backgroundColor: color.bg }}>
       <TopBar
-        title={released ? t.title : '계획 중인 데이트'}
+        title={editing ? '앨범 수정' : released ? t.title : '계획 중인 데이트'}
+        left={
+          editing ? (
+            <Pressable hitSlop={8} onPress={() => setEditing(false)}>
+              <Text style={{ fontFamily: typeface, fontSize: 14, color: color.sub }}>취소</Text>
+            </Pressable>
+          ) : undefined
+        }
         right={
-          <Pressable hitSlop={8} onPress={onDelete}>
-            <Text style={{ fontFamily: typeface, color: color.sub, fontSize: 18 }}>⋯</Text>
+          <Pressable hitSlop={8} onPress={editing ? save : startEdit}>
+            <Text
+              style={{
+                fontFamily: typeface,
+                fontWeight: '700',
+                fontSize: 14,
+                color: editing ? color.accent : color.sub,
+              }}
+            >
+              {editing ? '저장' : '수정'}
+            </Text>
           </Pressable>
         }
       />
       <ScrollView contentContainerStyle={{ paddingBottom: 40 }} scrollEnabled={!reordering}>
         {/* 헤더: 커버 + 제목 + 메타 */}
         <View style={{ alignItems: 'center', paddingHorizontal: 24, paddingTop: 6 }}>
-          {/* 커버 탭 → 사진 선택 → 커버 지정 (계획·발매 양쪽) */}
-          <Pressable onPress={onSetCover} disabled={setCover.isPending}>
+          {/* 커버 탭 → 사진 선택 → 커버 지정. 수정 모드에서만 눌린다 */}
+          <Pressable onPress={onSetCover} disabled={!editing || setCover.isPending}>
             <TrackCover coverThumbUrl={t.coverThumbUrl} photoThumbUrls={photoThumbUrls} size={168} />
             {!released && (
               <View
@@ -216,23 +234,25 @@ function TrackBody({ t }: { t: TrackDetail }) {
                 <Dday>{formatDday(t.date)}</Dday>
               </View>
             )}
-            {/* 탭 가능 힌트 배지 */}
-            <View
-              pointerEvents="none"
-              style={{
-                position: 'absolute',
-                right: 6,
-                bottom: 6,
-                width: 26,
-                height: 26,
-                borderRadius: 13,
-                backgroundColor: 'rgba(0,0,0,0.55)',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Text style={{ fontFamily: typeface, fontSize: 13, color: color.white }}>✎</Text>
-            </View>
+            {/* 탭 가능 힌트 배지 — 수정 모드에서만 */}
+            {editing && (
+              <View
+                pointerEvents="none"
+                style={{
+                  position: 'absolute',
+                  right: 6,
+                  bottom: 6,
+                  width: 26,
+                  height: 26,
+                  borderRadius: 13,
+                  backgroundColor: 'rgba(0,0,0,0.55)',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Text style={{ fontFamily: typeface, fontSize: 13, color: color.white }}>✎</Text>
+              </View>
+            )}
             {setCover.isPending && (
               <View
                 pointerEvents="none"
@@ -252,76 +272,32 @@ function TrackBody({ t }: { t: TrackDetail }) {
               </View>
             )}
           </Pressable>
-          {editingTitle ? (
-            /* 저장은 버튼으로만 — onBlur 저장은 안드로이드에서 바깥을 눌러도 안 터져 "저장이 없다"가 된다 */
-            <View style={{ alignItems: 'center' }}>
-              <TextInput
-                value={titleDraft}
-                onChangeText={setTitleDraft}
-                onSubmitEditing={saveTitle}
-                returnKeyType="done"
-                autoFocus
-                style={{
-                  marginTop: 16,
-                  fontFamily: typeface, fontWeight: '800',
-                  fontSize: 25,
-                  color: color.white,
-                  textAlign: 'center',
-                  borderBottomWidth: 1,
-                  borderBottomColor: color.surface3,
-                  paddingBottom: 4,
-                  minWidth: 180,
-                }}
-              />
-              <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
-                <Pressable
-                  onPress={cancelTitle}
-                  style={({ pressed }) => ({
-                    height: 34,
-                    paddingHorizontal: 16,
-                    borderRadius: 999,
-                    backgroundColor: color.surface2,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    opacity: pressed ? 0.7 : 1,
-                  })}
-                >
-                  <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 13, color: color.sub }}>
-                    취소
-                  </Text>
-                </Pressable>
-                <Pressable
-                  disabled={!titleDraft.trim()}
-                  onPress={saveTitle}
-                  style={({ pressed }) => ({
-                    height: 34,
-                    paddingHorizontal: 20,
-                    borderRadius: 999,
-                    backgroundColor: titleDraft.trim() ? color.accent : color.surface2,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    opacity: pressed ? 0.85 : 1,
-                  })}
-                >
-                  <Text
-                    style={{
-                      fontFamily: typeface,
-                      fontWeight: '700',
-                      fontSize: 13,
-                      color: titleDraft.trim() ? color.onPrimary : color.muted,
-                    }}
-                  >
-                    저장
-                  </Text>
-                </Pressable>
-              </View>
-            </View>
+          {editing ? (
+            <TextInput
+              value={titleDraft}
+              onChangeText={setTitleDraft}
+              onSubmitEditing={save}
+              returnKeyType="done"
+              placeholder="앨범 제목"
+              placeholderTextColor={color.muted}
+              style={{
+                marginTop: 16,
+                fontFamily: typeface, fontWeight: '800',
+                fontSize: 25,
+                color: color.white,
+                textAlign: 'center',
+                borderBottomWidth: 1,
+                borderBottomColor: color.surface3,
+                paddingBottom: 4,
+                minWidth: 180,
+              }}
+            />
           ) : (
-            <Pressable onPress={() => setEditingTitle(true)} style={{ marginTop: 16 }}>
-              <Text style={{ fontFamily: typeface, fontWeight: '800', fontSize: 25, letterSpacing: -0.5, color: color.white }}>
-                {t.title} <Text style={{ fontFamily: typeface, fontSize: 14, color: color.muted }}>✎</Text>
-              </Text>
-            </Pressable>
+            <Text
+              style={{ marginTop: 16, fontFamily: typeface, fontWeight: '800', fontSize: 25, letterSpacing: -0.5, color: color.white }}
+            >
+              {t.title}
+            </Text>
           )}
           <Meta style={{ marginTop: 6 }}>
             {t.date.replaceAll('-', '.')}
@@ -388,7 +364,8 @@ function TrackBody({ t }: { t: TrackDetail }) {
             <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 17, color: color.white }}>코스</Text>
             <Meta style={{ fontSize: 12.5 }}>{t.places.length}곳</Meta>
           </View>
-          {released ? (
+          {/* 순서 바꾸기는 수정 모드에서만 — 조회 중 스크롤하다 코스가 끌려가지 않게 */}
+          {released || !editing ? (
             <View style={{ marginTop: 4 }}>
               {t.places.map((p) => (
                 <View key={p.placeId}>{courseRow(p, { draggable: false })}</View>
@@ -502,6 +479,17 @@ function TrackBody({ t }: { t: TrackDetail }) {
             </Pressable>
           </View>
         </View>
+
+        {/* 삭제는 수정 모드 안에서만 — 조회 중엔 지울 방법이 노출되지 않는다 */}
+        {editing && (
+          <View style={{ paddingHorizontal: 20, paddingTop: 28, alignItems: 'center' }}>
+            <Pressable hitSlop={8} onPress={onDelete}>
+              <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 13.5, color: color.danger }}>
+                이 데이트 삭제
+              </Text>
+            </Pressable>
+          </View>
+        )}
 
         {/* 메타 푸터 */}
         {released && (
