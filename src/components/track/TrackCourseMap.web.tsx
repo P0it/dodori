@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
-import Constants from 'expo-constants';
 import { color, typeface } from '@/theme/tokens';
 import { Meta } from '@/components/Meta';
 import type { MapRegion } from '@/lib/map';
@@ -42,7 +41,8 @@ export function TrackCourseMap({ region, pins, onPinPress }: TrackCourseMapProps
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const containerRef = useRef<any>(null);
   const [error, setError] = useState<string | null>(null);
-  const clientId = Constants.expoConfig?.extra?.naverMapClientId as string | null | undefined;
+  // EXPO_PUBLIC_ 변수는 Metro가 빌드 시 문자열로 인라인한다 — Constants 경로의 객체화 문제를 피한다
+  const clientId = process.env.EXPO_PUBLIC_NAVER_MAP_CLIENT_ID;
   // onPinPress는 매 렌더 새 함수라 effect 의존성에서 빼고 ref로 최신값을 읽는다 (지도 재생성 방지)
   const onPinPressRef = useRef(onPinPress);
   onPinPressRef.current = onPinPress;
