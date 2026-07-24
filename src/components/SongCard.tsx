@@ -18,7 +18,7 @@ export function SongCard({ song }: { song: Song }) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const { width, height } = useWindowDimensions();
   // 세로가 짧은 기기에서도 주제 카드가 접히지 않게 화면 높이로도 한 번 더 제한
-  const posterSize = Math.min(width - space[4] * 4, height * 0.24); // 화면 gutter + 카드 padding
+  const posterSize = Math.min(width - space[4] * 4, height * 0.2); // 화면 gutter + 카드 padding
 
   function toggle() {
     if (status.playing) {
@@ -40,7 +40,21 @@ export function SongCard({ song }: { song: Song }) {
         borderColor: color.surface2,
       }}
     >
-      <Eyebrow>오늘의 추천곡</Eyebrow>
+      {/* 전곡 듣기를 라벨 옆으로 — 카드 아래 한 줄을 덜어 주제 카드 자리를 만든다 */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Eyebrow>오늘의 추천곡</Eyebrow>
+        <Pressable
+          onPress={() => setPickerOpen(true)}
+          hitSlop={8}
+          style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+        >
+          <Text
+            style={{ fontFamily: typeface, fontWeight: '700', fontSize: font.meta, color: color.sub }}
+          >
+            전곡 듣기 ›
+          </Text>
+        </Pressable>
+      </View>
 
       {/* 포스터가 주인공이되 주제 카드까지 한 화면에 들어오는 크기 (스포티파이 Now Playing) */}
       <Image
@@ -103,16 +117,6 @@ export function SongCard({ song }: { song: Song }) {
           {status.playing ? <PauseGlyph /> : <PlayGlyph />}
         </Pressable>
       </View>
-
-      <Pressable
-        onPress={() => setPickerOpen(true)}
-        hitSlop={6}
-        style={({ pressed }) => ({ marginTop: space[2], opacity: pressed ? 0.6 : 1 })}
-      >
-        <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: font.meta, color: color.sub }}>
-          전곡 듣기 ›
-        </Text>
-      </Pressable>
 
       <MusicServiceSheet
         visible={pickerOpen}
