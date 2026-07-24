@@ -92,29 +92,34 @@ export function AlbumCarousel({
                 transform: [{ scale: isActive ? 1 : Math.max(0.76, 0.86 - (dist - 1) * 0.05) }],
               }}
             >
+              {/* 그림자 레이어 — 자켓이 배경 위로 떠 보이게. clip은 안쪽 뷰가 맡는다(그림자는 안 잘림) */}
               <View
                 style={{
                   width: '100%',
                   height: '100%',
                   borderRadius: 6,
-                  overflow: 'hidden',
                   backgroundColor: color.surface2,
-                  // 커버가 검정에 가까워도(어두운 사진·자켓) 배경과 갈리도록 가장자리를 둔다
-                  borderWidth: 1,
-                  borderColor: color.hairline,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 6 },
+                  shadowOpacity: 0.5,
+                  shadowRadius: 12,
+                  // Android — 카드마다 같은 값이라 겹침 순서는 zIndex가 그대로 결정한다
+                  elevation: 8,
                 }}
               >
-                {a.coverThumbUrl ? (
-                  <Image source={a.coverThumbUrl} style={{ width: '100%', height: '100%' }} contentFit="cover" />
-                ) : (
-                  <AlbumJacket seed={a.id} date={a.date} title={a.title} size={CARD} />
-                )}
-                {/* 제목·날짜가 위쪽을 쓰므로 D-day는 아래로 */}
-                {upcoming && isActive && (
-                  <View style={{ position: 'absolute', left: 8, bottom: 8 }}>
-                    <Dday tone="accent">{formatDday(a.date)}</Dday>
-                  </View>
-                )}
+                <View style={{ width: '100%', height: '100%', borderRadius: 6, overflow: 'hidden' }}>
+                  {a.coverThumbUrl ? (
+                    <Image source={a.coverThumbUrl} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+                  ) : (
+                    <AlbumJacket seed={a.id} date={a.date} title={a.title} size={CARD} />
+                  )}
+                  {/* 제목·날짜가 위쪽을 쓰므로 D-day는 아래로 */}
+                  {upcoming && isActive && (
+                    <View style={{ position: 'absolute', left: 8, bottom: 8 }}>
+                      <Dday tone="accent">{formatDday(a.date)}</Dday>
+                    </View>
+                  )}
+                </View>
               </View>
             </Pressable>
           );
