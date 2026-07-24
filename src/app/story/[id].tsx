@@ -1,5 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Pressable, Text, View } from 'react-native';
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -12,7 +21,9 @@ import { containedRect, isLive, liveStories } from '@/lib/stories';
 import { useSession } from '@/api/auth';
 import { useCoupleProfiles } from '@/api/couple';
 import {
+  useAddStoryComment,
   useDeleteStory,
+  useDeleteStoryComment,
   useMarkSeen,
   useStories,
   useToggleStoryReaction,
@@ -23,6 +34,7 @@ import { Meta } from '@/components/Meta';
 import { HeartGlyph } from '@/components/glyphs';
 import { StoryProgress } from '@/components/story/StoryProgress';
 import { StoryTextLayer } from '@/components/story/StoryTextLayer';
+import { StoryCommentBubble } from '@/components/story/StoryCommentBubble';
 
 /** 한 칸이 머무는 시간 */
 const STEP_MS = 5000;
@@ -42,6 +54,8 @@ export default function StoryViewer() {
   const markSeen = useMarkSeen();
   const toggleReaction = useToggleStoryReaction();
   const deleteStory = useDeleteStory();
+  const addComment = useAddStoryComment();
+  const deleteComment = useDeleteStoryComment();
 
   const uid = session.data?.user.id ?? '';
   const all = stories.data ?? [];
@@ -57,6 +71,9 @@ export default function StoryViewer() {
   const [index, setIndex] = useState(0);
   const [progress, setProgress] = useState(0);
   const [frame, setFrame] = useState({ width: 0, height: 0 });
+  const [reply, setReply] = useState('');
+  // 답장을 쓰는 동안 다음 스토리로 넘어가 버리면 쓰던 말이 엉뚱한 사진에 붙는다
+  const [paused, setPaused] = useState(false);
   // 목록이 늦게 도착해도 진입 스토리에서 시작하도록, 처음 한 번만 위치를 맞춘다
   const aligned = useRef(false);
   useEffect(() => {
@@ -68,9 +85,9 @@ export default function StoryViewer() {
 
   const current = list[index];
 
-  // 자동 진행 — 마지막 칸이 끝나면 닫는다
+  // 자동 진행 — 마지막 칸이 끝나면 닫는다. 답장을 쓰는 동안엔 멈춘다
   useEffect(() => {
-    if (!current) return;
+    if (!current || paused) return;
     setProgress(0);
     const started = Date.now();
     const timer = setInterval(() => {
@@ -84,7 +101,7 @@ export default function StoryViewer() {
       }
     }, TICK_MS);
     return () => clearInterval(timer);
-  }, [current?.id, index, list.length, router]);
+  }, [current?.id, index, list.length, paused, router]);
 
   // 상대 스토리를 열면 본 시각 기록 (이미 있으면 서버에서 걸러진다)
   useEffect(() => {
@@ -129,6 +146,25 @@ export default function StoryViewer() {
     if (next >= list.length) router.back();
     else setIndex(next);
   };
+
+  const profileOf = (author: string) =>
+    author === uid ? profiles.data?.me : profiles.data?.partner;
+  const nameOf = (author: string) =>
+    profileOf(author)?.nickname || (author === uid ? '나' : '상대');
+  const avatarOf = (author: string) => profileOf(author)?.avatar_url ?? null;
+
+  const send = () => {
+    const body = reply.trim();
+    if (!body) return;
+    addComment.mutate({ storyId: current.id, body });
+    setReply('');
+  };
+
+  const onDeleteComment = (commentId: string) =>
+    Alert.alert('답장 삭제', undefined, [
+      { text: '취소', style: 'cancel' },
+      { text: '삭제', style: 'destructive', onPress: () => deleteComment.mutate(commentId) },
+    ]);
 
   return (
     <GestureDetector gesture={swipeDown}>
@@ -191,25 +227,17 @@ export default function StoryViewer() {
           </View>
         </View>
 
-        {/* 하단 — 앨범 배지 + 캡션 + 하트 */}
+        {/* 하단 — 앨범 배지 + 캡션 + 답장 말풍선 + 입력 */}
         <LinearGradient
-          colors={['transparent', 'rgba(0,0,0,0.7)']}
-          style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 180 }}
+          colors={['transparent', 'rgba(0,0,0,0.75)']}
+          style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 260 }}
           pointerEvents="none"
         />
-        <View
-          style={{
-            position: 'absolute',
-            left: 0,
-            right: 0,
-            bottom: 0,
-            padding: space[4],
-            flexDirection: 'row',
-            alignItems: 'flex-end',
-            gap: space[3],
-          }}
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={{ position: 'absolute', left: 0, right: 0, bottom: 0 }}
         >
-          <View style={{ flex: 1, gap: 8 }}>
+          <View style={{ paddingHorizontal: space[4], paddingBottom: space[3], gap: 8 }}>
             {current.trackTitle && (
               <Pressable
                 onPress={() => current.trackId && router.push(`/track/${current.trackId}`)}
@@ -231,17 +259,77 @@ export default function StoryViewer() {
                 {current.caption}
               </Text>
             )}
+
+            {/* 답장 — 사라지지 않고 스토리 아래에 쌓인다 */}
+            {current.comments.length > 0 && (
+              <ScrollView style={{ maxHeight: 170 }} contentContainerStyle={{ gap: 6, paddingTop: 4 }}>
+                {current.comments.map((c) => (
+                  <StoryCommentBubble
+                    key={c.id}
+                    name={nameOf(c.authorId)}
+                    avatarUrl={avatarOf(c.authorId)}
+                    body={c.body}
+                    mine={c.authorId === uid}
+                    onLongPress={
+                      c.authorId === uid ? () => onDeleteComment(c.id) : undefined
+                    }
+                  />
+                ))}
+              </ScrollView>
+            )}
           </View>
 
-          <Pressable
-            hitSlop={10}
-            onPress={() =>
-              toggleReaction.mutate({ storyId: current.id, emoji: heart, on: !hearted })
-            }
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: space[3],
+              paddingHorizontal: space[4],
+              paddingBottom: space[4],
+            }}
           >
-            <HeartGlyph size={27} filled={hearted} color={hearted ? color.danger : color.white} />
-          </Pressable>
-        </View>
+            <TextInput
+              value={reply}
+              onChangeText={setReply}
+              onFocus={() => setPaused(true)}
+              onBlur={() => setPaused(false)}
+              onSubmitEditing={send}
+              returnKeyType="send"
+              placeholder="답장 남기기"
+              placeholderTextColor="rgba(255,255,255,0.55)"
+              style={{
+                flex: 1,
+                height: 44,
+                borderRadius: 999,
+                paddingHorizontal: 16,
+                borderWidth: 1,
+                borderColor: 'rgba(255,255,255,0.35)',
+                backgroundColor: 'rgba(0,0,0,0.35)',
+                fontFamily: typeface,
+                fontSize: 14,
+                color: color.white,
+              }}
+            />
+            {reply.trim() ? (
+              <Pressable hitSlop={10} onPress={send}>
+                <Text
+                  style={{ fontFamily: typeface, fontWeight: '800', fontSize: 14.5, color: color.white }}
+                >
+                  보내기
+                </Text>
+              </Pressable>
+            ) : (
+              <Pressable
+                hitSlop={10}
+                onPress={() =>
+                  toggleReaction.mutate({ storyId: current.id, emoji: heart, on: !hearted })
+                }
+              >
+                <HeartGlyph size={27} filled={hearted} color={hearted ? color.danger : color.white} />
+              </Pressable>
+            )}
+          </View>
+        </KeyboardAvoidingView>
       </View>
     </GestureDetector>
   );

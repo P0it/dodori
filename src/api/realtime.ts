@@ -51,6 +51,9 @@ export function useCoupleRealtime() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'story_reactions' }, () =>
         qc.invalidateQueries({ queryKey: ['stories'] }),
       )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'story_comments' }, () =>
+        qc.invalidateQueries({ queryKey: ['stories'] }),
+      )
       // post_reactions·post_comments는 couple_id 컬럼이 없어 필터 없이 구독 (photos·notes와 동일)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'post_reactions' }, () =>
         qc.invalidateQueries({ queryKey: ['posts'] }),

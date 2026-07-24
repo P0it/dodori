@@ -16,6 +16,13 @@ export interface StoryPhoto {
   height: number | null;
 }
 
+export interface StoryComment {
+  id: string;
+  authorId: string;
+  body: string;
+  createdAt: string;
+}
+
 export interface Story {
   id: string;
   authorId: string;
@@ -33,12 +40,15 @@ export interface Story {
   overlays: TextOverlay[];
   /** 이모지별로 누른 사람들 (하트 하나뿐이지만 posts와 같은 모양으로 둔다) */
   reactions: { emoji: string; userIds: string[] }[];
+  /** 스토리 아래 말풍선으로 남는 답장 (오래된 것부터) */
+  comments: StoryComment[];
 }
 
 const SELECT = `id, author_id, caption, created_at, seen_at, track_id, overlays,
    tracks(title),
    photos!photos_story_id_fkey(id, storage_path, width, height, created_at),
-   story_reactions(emoji, user_id)`;
+   story_reactions(emoji, user_id),
+   story_comments(id, author_id, body, created_at)`;
 
 type StoryRow = {
   id: string;
@@ -57,6 +67,7 @@ type StoryRow = {
     created_at: string;
   }[];
   story_reactions: { emoji: string; user_id: string }[];
+  story_comments: { id: string; author_id: string; body: string; created_at: string }[];
 };
 
 async function toStory(row: StoryRow): Promise<Story> {
@@ -85,6 +96,14 @@ async function toStory(row: StoryRow): Promise<Story> {
         }
       : null,
     reactions: [...byEmoji.entries()].map(([emoji, userIds]) => ({ emoji, userIds })),
+    comments: (row.story_comments ?? [])
+      .map((c) => ({
+        id: c.id,
+        authorId: c.author_id,
+        body: c.body,
+        createdAt: c.created_at,
+      }))
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
   };
 }
 
@@ -175,6 +194,34 @@ export function useMarkSeen() {
         .update({ seen_at: new Date().toISOString() })
         .eq('id', storyId)
         .is('seen_at', null);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['stories'] }),
+  });
+}
+
+/** 스토리 답장 — DM이 없으니 스토리 아래에 말풍선으로 남는다 */
+export function useAddStoryComment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ storyId, body }: { storyId: string; body: string }) => {
+      const { data: userData } = await supabase.auth.getUser();
+      const uid = userData.user?.id;
+      if (!uid) throw new Error('로그인이 필요해요');
+      const { error } = await supabase
+        .from('story_comments')
+        .insert({ story_id: storyId, author_id: uid, body: body.trim() });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['stories'] }),
+  });
+}
+
+export function useDeleteStoryComment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (commentId: string) => {
+      const { error } = await supabase.from('story_comments').delete().eq('id', commentId);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['stories'] }),
