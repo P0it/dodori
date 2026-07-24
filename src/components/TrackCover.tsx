@@ -15,52 +15,35 @@ type Props = {
 export function TrackCover({ coverThumbUrl, photoThumbUrls, size = 168, style }: Props) {
   const plan = resolveCover(coverThumbUrl, photoThumbUrls);
   const rad = size > 90 ? 6 : 5;
-  // 커버가 검정에 가까워도(어두운 사진·자켓) 배경과 갈리도록 가장자리를 둔다
-  const edge = { borderWidth: 1, borderColor: color.hairline } as const;
 
+  let inner;
   if (plan.kind === 'photo') {
-    return (
-      <View style={[{ width: size, height: size, borderRadius: rad, overflow: 'hidden' }, edge, style]}>
-        <Image
-          source={plan.path}
-          style={{ width: '100%', height: '100%' }}
-          contentFit="cover"
-        />
-      </View>
+    inner = (
+      <Image source={plan.path} style={{ width: '100%', height: '100%' }} contentFit="cover" />
     );
-  }
-  if (plan.kind === 'collage') {
+  } else if (plan.kind === 'collage') {
     const cells = [plan.paths[0], plan.paths[1], plan.paths[2], plan.paths[3]];
-    return (
-      <View
-        style={[
-          {
-            width: size,
-            height: size,
-            borderRadius: rad,
-            overflow: 'hidden',
-            flexDirection: 'row',
-            flexWrap: 'wrap',
-          },
-          edge,
-          style,
-        ]}
-      >
+    inner = (
+      <View style={{ width: '100%', height: '100%', flexDirection: 'row', flexWrap: 'wrap' }}>
         {cells.map((p, i) =>
           p ? (
-            <Image
-              key={i}
-              source={p}
-              style={{ width: '50%', height: '50%' }}
-              contentFit="cover"
-            />
+            <Image key={i} source={p} style={{ width: '50%', height: '50%' }} contentFit="cover" />
           ) : (
             <View key={i} style={{ width: '50%', height: '50%', backgroundColor: color.surface2 }} />
           ),
         )}
       </View>
     );
+  } else {
+    inner = (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+        <Text style={{ fontFamily: typeface, fontSize: size * 0.16, color: color.muted }}>♪</Text>
+        <Text style={{ fontFamily: typeface, fontSize: 12, color: color.muted }}>커버 없음</Text>
+      </View>
+    );
   }
+
+  // 그림자 레이어(clip 없음) + 안쪽 clip 레이어 — 검정 배경 위로 떠 보이게. 그림자는 안 잘린다.
   return (
     <View
       style={[
@@ -69,16 +52,18 @@ export function TrackCover({ coverThumbUrl, photoThumbUrls, size = 168, style }:
           height: size,
           borderRadius: rad,
           backgroundColor: color.surface2,
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 8,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 6 },
+          shadowOpacity: 0.5,
+          shadowRadius: 12,
+          elevation: 8,
         },
-        edge,
         style,
       ]}
     >
-      <Text style={{ fontFamily: typeface, fontSize: size * 0.16, color: color.muted }}>♪</Text>
-      <Text style={{ fontFamily: typeface, fontSize: 12, color: color.muted }}>커버 없음</Text>
+      <View style={{ width: '100%', height: '100%', borderRadius: rad, overflow: 'hidden' }}>
+        {inner}
+      </View>
     </View>
   );
 }
