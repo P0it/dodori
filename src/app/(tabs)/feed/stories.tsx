@@ -57,7 +57,6 @@ export default function StoryArchive() {
                     <StoryCard
                       thumbUrl={s.photo?.gridThumbUrl ?? null}
                       caption={s.caption}
-                      trackTitle={s.trackTitle}
                       onPress={() => router.push(`/story/${s.id}`)}
                     />
                   </View>

@@ -305,8 +305,8 @@ function TrackBody({ t }: { t: TrackDetail }) {
           </Meta>
         </View>
 
-        {/* 아카이브: 사진 (목업 12·13) */}
-        {released && (
+        {/* 아카이브: 사진 (목업 12·13) — 발매 전이라도 그날 스토리가 담기면 여기 채워진다 */}
+        {(released || t.photos.length > 0) && (
           <View style={{ paddingHorizontal: 20, paddingTop: 22 }}>
             <View
               style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}
@@ -334,6 +334,8 @@ function TrackBody({ t }: { t: TrackDetail }) {
             ) : (
               <PhotoStrip trackId={t.id} photos={t.photos.slice(0, 6)} total={t.photos.length} />
             )}
+            {/* 수동 사진 추가는 발매 후에만 — 발매 전 앨범은 계획(코스·메모)이 주인공이다 */}
+            {released && (
             <Pressable
               onPress={onAddPhotos}
               disabled={upload.isPending}
@@ -355,6 +357,7 @@ function TrackBody({ t }: { t: TrackDetail }) {
                 <Text style={{ color: color.accent, fontFamily: typeface, fontWeight: '600', fontSize: 13.5 }}>+ 사진 올리기</Text>
               )}
             </Pressable>
+            )}
           </View>
         )}
 

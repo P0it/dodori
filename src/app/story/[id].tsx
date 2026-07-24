@@ -14,7 +14,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { runOnJS } from 'react-native-reanimated';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { color, space, tintBg, typeface } from '@/theme/tokens';
+import { color, space, typeface } from '@/theme/tokens';
 import { formatRelative } from '@/lib/date';
 import { REACTIONS } from '@/lib/posts';
 import { containedRect, isLive, liveStories } from '@/lib/stories';
@@ -238,22 +238,6 @@ export default function StoryViewer() {
           style={{ position: 'absolute', left: 0, right: 0, bottom: 0 }}
         >
           <View style={{ paddingHorizontal: space[4], paddingBottom: space[3], gap: 8 }}>
-            {current.trackTitle && (
-              <Pressable
-                onPress={() => current.trackId && router.push(`/track/${current.trackId}`)}
-                style={{
-                  alignSelf: 'flex-start',
-                  paddingHorizontal: 9,
-                  paddingVertical: 4,
-                  borderRadius: 999,
-                  backgroundColor: tintBg.date,
-                }}
-              >
-                <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 11, color: color.date }}>
-                  {current.trackTitle}
-                </Text>
-              </Pressable>
-            )}
             {!!current.caption && (
               <Text style={{ fontFamily: typeface, fontSize: 15, lineHeight: 21, color: color.white }}>
                 {current.caption}
