@@ -7,9 +7,8 @@ import { signOut } from '@/api/auth';
 import { TopBar } from '@/components/TopBar';
 import { Meta } from '@/components/Meta';
 import { Divider } from '@/components/Divider';
-import { DodoriMark } from '@/components/DodoriMark';
 import { Avatar } from '@/components/Avatar';
-import { StarGlyph } from '@/components/glyphs';
+import { StarGlyph, StoryGlyph, LinkGlyph, LogoutGlyph, ChevronGlyph } from '@/components/glyphs';
 
 /** 스튜디오 관리 — 기념일·연결·로그아웃 (계정 화면에서 분리) */
 export default function StudioSettings() {
@@ -44,6 +43,13 @@ export default function StudioSettings() {
         />
         <Divider />
         <LinkRow
+          icon={<StoryGlyph size={18} />}
+          label="스토리 보관함"
+          sub="지난 스토리 다시 보기"
+          onPress={() => router.push('/feed/stories')}
+        />
+        <Divider />
+        <LinkRow
           icon={<StarGlyph size={17} />}
           label="기념일 관리"
           sub={`자동 ${(annivs.data?.length ?? 0) - customCount} · 커스텀 ${customCount}`}
@@ -51,7 +57,7 @@ export default function StudioSettings() {
         />
         <Divider />
         <LinkRow
-          icon={<DodoriMark size={16} />}
+          icon={<LinkGlyph size={18} />}
           label="연결"
           sub={
             profiles.data?.partner
@@ -61,7 +67,7 @@ export default function StudioSettings() {
         />
         <Divider />
         <LinkRow
-          icon={<Text style={{ fontFamily: typeface, color: color.danger, fontSize: 15 }}>↩</Text>}
+          icon={<LogoutGlyph size={18} />}
           label="로그아웃"
           danger
           onPress={onSignOut}
@@ -114,7 +120,7 @@ function LinkRow({
         </Text>
         {sub && <Meta style={{ marginTop: 2, fontSize: 12 }}>{sub}</Meta>}
       </View>
-      {onPress && <Text style={{ fontFamily: typeface, color: color.muted }}>›</Text>}
+      {onPress && <ChevronGlyph size={18} />}
     </Pressable>
   );
 }

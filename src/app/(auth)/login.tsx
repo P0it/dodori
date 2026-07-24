@@ -23,16 +23,11 @@ export default function Login() {
     <View style={{ flex: 1, backgroundColor: color.bg, paddingHorizontal: 28 }}>
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 20 }}>
         <DodoriMark size={54} />
-        <View style={{ alignItems: 'center' }}>
-          <Text
-            style={{ fontFamily: typeface, fontWeight: '800', fontSize: 40, letterSpacing: -0.5, color: color.white }}
-          >
-            dodori
-          </Text>
-          <Text style={{ fontFamily: typeface, fontWeight: '500', fontSize: 15, color: color.sub, marginTop: 8 }}>
-            하루마다 쌓아가는 우리의 마디
-          </Text>
-        </View>
+        <Text
+          style={{ fontFamily: typeface, fontWeight: '800', fontSize: 40, letterSpacing: -0.5, color: color.white }}
+        >
+          dodori
+        </Text>
       </View>
       <View style={{ gap: 12, paddingBottom: 48 }}>
         <KakaoButton onPress={onKakao} />

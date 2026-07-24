@@ -42,7 +42,7 @@ export default function PostFeed() {
   const avatarUrl = (author: string): string | null => profileOf(author)?.avatar_url ?? null;
 
   const onDelete = (post: Post) =>
-    Alert.alert('추억 삭제', '되돌릴 수 없어요.', [
+    Alert.alert('피드 삭제', '되돌릴 수 없어요.', [
       { text: '취소', style: 'cancel' },
       {
         text: '삭제',
@@ -53,7 +53,7 @@ export default function PostFeed() {
 
   return (
     <View style={{ flex: 1, backgroundColor: color.bg }}>
-      <TopBar title="추억" />
+      <TopBar title="피드" />
       <FlashList
         data={data}
         keyExtractor={(p) => p.id}

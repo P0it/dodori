@@ -44,7 +44,7 @@ export default function CreatePost() {
 
   return (
     <View style={{ flex: 1, backgroundColor: color.bg }}>
-      <TopBar title="새 추억" />
+      <TopBar title="새 피드" />
       <ScrollView contentContainerStyle={{ padding: space[4], gap: space[4] }}>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space[2] }}>
           {photos.map((p) => (

@@ -178,6 +178,57 @@ export function StoryGlyph({ size = 22, color: fg = color.white }: GlyphProps) {
   );
 }
 
+/** 연결 (체인 링크) — 커플 연결 상태 표시 */
+export function LinkGlyph({ size = 20, color: fg = color.white }: GlyphProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M10 13.5a3.5 3.5 0 0 0 5 0l2.5-2.5a3.5 3.5 0 1 0-5-5L11 7.5"
+        stroke={fg}
+        strokeWidth={1.7}
+        strokeLinecap="round"
+      />
+      <Path
+        d="M14 10.5a3.5 3.5 0 0 0-5 0L6.5 13a3.5 3.5 0 1 0 5 5l1.5-1.5"
+        stroke={fg}
+        strokeWidth={1.7}
+        strokeLinecap="round"
+      />
+    </Svg>
+  );
+}
+
+/** 로그아웃 (문 밖으로 나가는 화살표) */
+export function LogoutGlyph({ size = 20, color: fg = color.danger }: GlyphProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h3"
+        stroke={fg}
+        strokeWidth={1.7}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M12 12h9M17 8l4 4-4 4"
+        stroke={fg}
+        strokeWidth={1.7}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+/** 오른쪽 꺾쇠 (›) — 목록 행 이동 표시 */
+export function ChevronGlyph({ size = 18, color: fg = color.muted }: GlyphProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d="M9 6l6 6-6 6" stroke={fg} strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
 /** 좋아요 (♥) — 눌렀으면 채움 */
 export function HeartGlyph({ size = 24, filled, color: fg = color.white }: GlyphProps) {
   return (

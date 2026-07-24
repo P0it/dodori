@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Pressable, RefreshControl, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { FlashList } from '@shopify/flash-list';
@@ -9,40 +10,120 @@ import { usePosts } from '@/api/posts';
 import { Meta } from '@/components/Meta';
 import { Eyebrow } from '@/components/Eyebrow';
 import { DodoriMark } from '@/components/DodoriMark';
-import { PlusGlyph, MenuGlyph, StoryGlyph } from '@/components/glyphs';
+import { PlusGlyph, MenuGlyph, HeartGlyph } from '@/components/glyphs';
 import { PostGridCell } from '@/components/feed/PostGridCell';
 
 /** 스튜디오 = 우리 계정 (목업 25 + 게시물 그리드) — 셀 탭 → 세로 스크롤 피드 */
 export default function Studio() {
   const router = useRouter();
   const posts = usePosts();
+  const [fabOpen, setFabOpen] = useState(false);
 
   return (
-    <FlashList
-      data={posts.data ?? []}
-      numColumns={3}
-      keyExtractor={(p) => p.id}
-      style={{ backgroundColor: color.bg }}
-      contentContainerStyle={{ paddingHorizontal: 14, paddingBottom: 24 }}
-      refreshControl={
-        <RefreshControl
-          refreshing={posts.isRefetching}
-          onRefresh={posts.refetch}
-          tintColor={color.sub}
-          colors={[color.accent]}
-        />
-      }
-      ListHeaderComponent={<AccountHeader />}
-      ListEmptyComponent={<EmptyPosts onPress={() => router.push('/modals/create-post')} />}
-      renderItem={({ item: p }) => (
-        <PostGridCell
-          thumbUrl={p.gridThumbUrl}
-          caption={p.caption}
-          multiple={p.photos.length > 1}
-          onPress={() => router.push(`/feed/post/${p.id}`)}
-        />
+    <View style={{ flex: 1, backgroundColor: color.bg }}>
+      <FlashList
+        data={posts.data ?? []}
+        numColumns={3}
+        keyExtractor={(p) => p.id}
+        style={{ backgroundColor: color.bg }}
+        contentContainerStyle={{ paddingHorizontal: 14, paddingBottom: 24 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={posts.isRefetching}
+            onRefresh={posts.refetch}
+            tintColor={color.sub}
+            colors={[color.accent]}
+          />
+        }
+        ListHeaderComponent={<AccountHeader />}
+        ListEmptyComponent={<EmptyPosts onPress={() => router.push('/modals/create-post')} />}
+        renderItem={({ item: p }) => (
+          <PostGridCell
+            thumbUrl={p.gridThumbUrl}
+            caption={p.caption}
+            multiple={p.photos.length > 1}
+            onPress={() => router.push(`/feed/post/${p.id}`)}
+          />
+        )}
+      />
+
+      {/* 올리기 — (+)를 누르면 피드·스토리 두 갈래로 펼쳐진다 (캘린더 FAB과 같은 패턴) */}
+      {fabOpen && (
+        <>
+          <Pressable
+            onPress={() => setFabOpen(false)}
+            style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)' }}
+          />
+          <View style={{ position: 'absolute', right: 16, bottom: 84, alignItems: 'flex-end', gap: 10 }}>
+            <FabAction
+              label="피드"
+              onPress={() => {
+                setFabOpen(false);
+                router.push('/modals/create-post');
+              }}
+            />
+            <FabAction
+              label="스토리"
+              onPress={() => {
+                setFabOpen(false);
+                router.push('/modals/create-story');
+              }}
+            />
+          </View>
+        </>
       )}
-    />
+      <Pressable
+        onPress={() => setFabOpen((v) => !v)}
+        style={({ pressed }) => ({
+          position: 'absolute',
+          right: 16,
+          bottom: 16,
+          width: 56,
+          height: 56,
+          borderRadius: 28,
+          backgroundColor: color.accent,
+          alignItems: 'center',
+          justifyContent: 'center',
+          shadowColor: '#000',
+          shadowOpacity: 0.35,
+          shadowRadius: 8,
+          shadowOffset: { width: 0, height: 4 },
+          elevation: 6,
+          opacity: pressed ? 0.85 : 1,
+        })}
+      >
+        <View style={{ transform: [{ rotate: fabOpen ? '45deg' : '0deg' }] }}>
+          <PlusGlyph size={26} color={color.onPrimary} />
+        </View>
+      </Pressable>
+    </View>
+  );
+}
+
+/** FAB에서 펼쳐지는 선택지 — 캘린더 FabAction과 같은 알약 버튼 */
+function FabAction({ label, onPress }: { label: string; onPress: () => void }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => ({
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: 40,
+        paddingHorizontal: 18,
+        borderRadius: 20,
+        backgroundColor: color.surface2,
+        shadowColor: '#000',
+        shadowOpacity: 0.35,
+        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 4 },
+        elevation: 6,
+        opacity: pressed ? 0.85 : 1,
+      })}
+    >
+      <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 13.5, color: color.white }}>
+        {label}
+      </Text>
+    </Pressable>
   );
 }
 
@@ -52,7 +133,7 @@ function EmptyPosts({ onPress }: { onPress: () => void }) {
       <Text
         style={{ fontFamily: typeface, fontWeight: '700', fontSize: 16, color: color.white }}
       >
-        아직 추억이 없어요
+        아직 피드가 없어요
       </Text>
       <Meta style={{ marginTop: 7, textAlign: 'center' }}>
         특별한 날이 아니어도 좋아요. 오늘 한 컷을 남겨보세요.
@@ -73,7 +154,7 @@ function EmptyPosts({ onPress }: { onPress: () => void }) {
         <Text
           style={{ fontFamily: typeface, fontWeight: '700', fontSize: 14.5, color: color.onPrimary }}
         >
-          첫 추억 올리기
+          첫 피드 올리기
         </Text>
       </Pressable>
     </View>
@@ -88,13 +169,12 @@ function AccountHeader() {
   const posts = usePosts();
 
   const count = posts.data?.length ?? 0;
-  const names = [profiles.data?.me?.nickname, profiles.data?.partner?.nickname]
-    .filter(Boolean)
-    .join(' & ');
+  const me = profiles.data?.me?.nickname || undefined;
+  const partner = profiles.data?.partner?.nickname || undefined;
 
   return (
     <View style={{ paddingHorizontal: 6 }}>
-      {/* 상단 액션 — 새 게시물 / 관리 */}
+      {/* 상단 액션 — 스토리 보기 / 만들기 / 관리 */}
       <View
         style={{
           flexDirection: 'row',
@@ -105,12 +185,6 @@ function AccountHeader() {
           paddingHorizontal: 6,
         }}
       >
-        <Pressable hitSlop={10} onPress={() => router.push('/feed/stories')}>
-          <StoryGlyph size={22} />
-        </Pressable>
-        <Pressable hitSlop={10} onPress={() => router.push('/modals/create-post')}>
-          <PlusGlyph size={24} />
-        </Pressable>
         <Pressable hitSlop={10} onPress={() => router.push('/feed/settings')}>
           <MenuGlyph size={21} />
         </Pressable>
@@ -135,18 +209,22 @@ function AccountHeader() {
         ) : (
           <DodoriMark size={68} />
         )}
-        <Text
-          style={{
-            fontFamily: typeface,
-            fontWeight: '800',
-            fontSize: 22,
-            color: color.white,
-            marginTop: 14,
-            letterSpacing: -0.3,
-          }}
-        >
-          {names || 'dodori'}
-        </Text>
+        {me && partner ? (
+          // 하트를 축으로 중앙 정렬 — 좌우를 같은 폭(flex:1)으로 나눠 이름 길이가 달라도 하트가 안 밀린다
+          <View style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'stretch', marginTop: 14 }}>
+            <View style={{ flex: 1, alignItems: 'flex-end' }}>
+              <NameText>{me}</NameText>
+            </View>
+            <View style={{ paddingHorizontal: 9 }}>
+              <HeartGlyph size={16} filled color={color.danger} />
+            </View>
+            <View style={{ flex: 1, alignItems: 'flex-start' }}>
+              <NameText>{partner}</NameText>
+            </View>
+          </View>
+        ) : (
+          <NameText style={{ marginTop: 14 }}>{me || partner || 'dodori'}</NameText>
+        )}
         {couple.data?.startedAt && (
           <>
             <Meta style={{ marginTop: 5 }}>since {couple.data.startedAt.replaceAll('-', '.')}</Meta>
@@ -156,7 +234,7 @@ function AccountHeader() {
                   fontFamily: typeface,
                   fontWeight: '700',
                   fontSize: 20,
-                  color: color.sub,
+                  color: color.accent,
                   letterSpacing: -0.3,
                 }}
               >
@@ -173,10 +251,30 @@ function AccountHeader() {
       {/* 그리드 섹션 라벨 — 게시물이 있을 때만 */}
       {count > 0 && (
         <View style={{ paddingHorizontal: 8, paddingTop: 24, paddingBottom: 10 }}>
-          <Eyebrow>추억 {count}</Eyebrow>
+          <Eyebrow>피드 {count}</Eyebrow>
         </View>
       )}
     </View>
+  );
+}
+
+/** 프로필 이름 텍스트 — 나 ♥ 상대 사이에 끼거나 단독으로 쓴다 */
+function NameText({ children, style }: { children: React.ReactNode; style?: object }) {
+  return (
+    <Text
+      style={[
+        {
+          fontFamily: typeface,
+          fontWeight: '800',
+          fontSize: 22,
+          color: color.white,
+          letterSpacing: -0.3,
+        },
+        style,
+      ]}
+    >
+      {children}
+    </Text>
   );
 }
 
