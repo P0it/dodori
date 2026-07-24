@@ -34,6 +34,7 @@ import { Eyebrow } from '@/components/Eyebrow';
 import { Divider } from '@/components/Divider';
 import { Dday } from '@/components/Dday';
 import { TrackCover } from '@/components/TrackCover';
+import { Avatar } from '@/components/Avatar';
 
 /** 코스 한 행의 고정 높이 — 드래그 재정렬(절대배치)이 기준으로 삼는다 */
 const COURSE_ROW_H = 62;
@@ -105,6 +106,8 @@ function TrackBody({ t }: { t: TrackDetail }) {
     userId === uid
       ? profiles.data?.me?.nickname || '나'
       : profiles.data?.partner?.nickname || '상대';
+  const avatarOf = (userId: string) =>
+    userId === uid ? profiles.data?.me?.avatar_url ?? null : profiles.data?.partner?.avatar_url ?? null;
 
   const onAddPhotos = async () => {
     try {
@@ -453,10 +456,11 @@ function TrackBody({ t }: { t: TrackDetail }) {
         {/* 노트 (사전 메모 / 라이너 노트) */}
         <View style={{ paddingHorizontal: 20, paddingTop: 22 }}>
           <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 17, color: color.white }}>
-            {released ? '라이너 노트' : '사전 메모'}
+            {released ? '라이너 노트' : '메모'}
           </Text>
           {t.notes.map((n) => (
             <View key={n.id} style={{ flexDirection: 'row', gap: 10, paddingVertical: 10 }}>
+              <Avatar url={avatarOf(n.authorId)} name={nameOf(n.authorId)} size={28} />
               <View style={{ flex: 1 }}>
                 <Text
                   style={{
@@ -514,7 +518,7 @@ function TrackBody({ t }: { t: TrackDetail }) {
                   color: noteDraft.trim() ? color.onPrimary : color.muted,
                 }}
               >
-                남기기
+                확인
               </Text>
             </Pressable>
           </View>
