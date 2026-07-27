@@ -50,8 +50,8 @@ export function BrandSplash({ onDone }: Props) {
           style={{
             fontFamily: typeface,
             fontWeight: '800',
-            fontSize: 40,
-            letterSpacing: -0.5,
+            fontSize: 36,
+            letterSpacing: -1,
             color: color.white,
             opacity: word,
             transform: [
@@ -59,7 +59,7 @@ export function BrandSplash({ onDone }: Props) {
             ],
           }}
         >
-          dodori
+          도돌이
         </Animated.Text>
       </View>
     </Animated.View>
