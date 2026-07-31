@@ -110,14 +110,17 @@ Windows 작업 트리에서는 iOS 빌드가 불가능하다. 맥미니에 같�
 - 캘린더 월간 그리드는 라이브러리 없이 자체 구현 (`components/calendar/MonthGrid.tsx`) + 그 아래 인라인 아젠다
 - 공휴일: `lib/holidays.ts`가 규칙으로 계산(양력 고정 + KASI 음양력 변환 + 대체공휴일, ~2050).
   계산 불가능한 임시공휴일·선거일만 `holidays_extra` 테이블 + `sync-holidays` cron이 채운다
-- Edge Functions: `claim-invite` / `search-places` / `daily-release` / `generate-anniversaries` / `sync-holidays`
+- **오늘의 게임**: 홈 카드 → `/game`. 종목 7개는 요일 고정(`lib/games.ts`, epochDay+3 → 월=0),
+  3판 상한·최고점·"내가 마쳐야 상대 공개"는 전부 서버(`submit_game_round` RPC + `has_played` RLS)가 강제
+- Edge Functions: `claim-invite` / `search-places` / `daily-release` / `generate-anniversaries` / `sync-holidays` / `notify-game`
 - `couple_members.user_id`는 unique(유저당 커플 1개), RLS 공통 술어는 `public.my_couple_id()`
 
 ## 마일스톤 현황
 
 - [x] M0 스캐폴드 / M1 인증·연결 / M2 캘린더 / M3 Track / M4 플레이리스트·Place / M5 Realtime·푸시·cron
 - [x] 방향 전환(2026-07): 오늘의 주제 + 커플 피드 + 4탭
-- [ ] 플레이리스트 재정의 이행 — 장소=트랙 / 하루=앨범, 싱글 제거 (스펙 확정, 코드 미반영)
+- [x] 플레이리스트 재정의 이행 — 장소=트랙 / 하루=앨범, 싱글 제거
+- [x] 커플 아케이드 — 홈의 '오늘의 게임' (하루 한 종목·3판 최고점·내가 마쳐야 상대 공개)
 - [ ] 베타 배포(EAS/TestFlight) → M6 스토어 준비
 
 ## 배포 후 1회 수동 설정
