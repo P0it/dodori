@@ -7,11 +7,14 @@ import { useSession } from '@/api/auth';
 import { useTodayTopic, useTopicVotes, useTopicComments } from '@/api/topics';
 import { useTodaySong } from '@/api/songs';
 import { useStories } from '@/api/stories';
+import { useTodayGameScores, useWeekOutcomes } from '@/api/games';
 import { liveStories, ringState } from '@/lib/stories';
+import { pickTodayGame, tally } from '@/lib/games';
 import { Meta } from '@/components/Meta';
 import { Eyebrow } from '@/components/Eyebrow';
 import { SongCard } from '@/components/SongCard';
 import { StoryRing } from '@/components/story/StoryRing';
+import { GameCard } from '@/components/game/GameCard';
 
 const WEEKDAY = ['일', '월', '화', '수', '목', '금', '토'];
 
@@ -23,6 +26,8 @@ export default function Today() {
   const votes = useTopicVotes(topic.data?.id);
   const comments = useTopicComments(topic.data?.id);
   const song = useTodaySong();
+  const gameScores = useTodayGameScores();
+  const week = useWeekOutcomes();
 
   const partnerName = profiles.data?.partner?.nickname || '상대';
 
@@ -41,6 +46,12 @@ export default function Today() {
   const mine = votes.data?.mine ?? null;
   const partner = votes.data?.partner ?? null;
   const talkCount = (comments.data ?? []).filter((c) => c.parentId === null).length;
+
+  const game = pickTodayGame(today);
+  const myGame = gameScores.data?.mine ?? null;
+  const partnerGame = gameScores.data?.partner ?? null;
+  const weekTally = tally(week.data ?? []);
+  const hasRecord = weekTally.win + weekTally.draw + weekTally.lose > 0;
 
   return (
     <ScrollView
@@ -124,6 +135,25 @@ export default function Today() {
           {mine !== null && <Meta style={{ fontSize: 12.5 }}>대화 {talkCount}</Meta>}
         </View>
       </Pressable>
+
+      {/* 오늘의 게임 — 내가 한 판이라도 마쳐야 상대 점수가 열린다 (서버 RLS가 강제) */}
+      <GameCard
+        gameName={game.name}
+        myBest={myGame ? game.format(myGame.bestScore) : null}
+        partnerState={
+          !myGame
+            ? '내가 해야 열려요'
+            : partnerGame
+              ? `${partnerName} ${game.format(partnerGame.bestScore)}`
+              : `${partnerName}님 대기`
+        }
+        record={
+          hasRecord
+            ? `이번 주 ${weekTally.win}승 ${weekTally.draw}무 ${weekTally.lose}패`
+            : '이번 주 첫 승부'
+        }
+        onPress={() => router.push('/game')}
+      />
     </ScrollView>
   );
 }
