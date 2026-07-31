@@ -135,30 +135,13 @@ function ResultCard({
     o === 'win' ? '이기고 있어요' : o === 'lose' ? '지고 있어요' : o === 'draw' ? '동점!' : null;
 
   return (
-    <View
-      style={{
-        marginTop: space[6],
-        borderRadius: 14,
-        padding: space[5],
-        backgroundColor: color.surface1,
-      }}
-    >
-      {/* 회차 머리글 — 세 줄이 같은 열에 서야 1·2·3차를 나란히 비교할 수 있다 */}
-      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        <View style={{ width: 64 }} />
-        {[1, 2, 3].map((n) => (
-          <Meta key={n} style={{ flex: 1, textAlign: 'center', fontSize: 11 }}>
-            {n}차
-          </Meta>
-        ))}
-      </View>
-
-      <RoundRow label="나" game={game} score={mine} placeholder="아직 안 했어요" />
-      <RoundRow
+    <View style={{ marginTop: space[6], gap: space[3] }}>
+      <PlayerCard label="나" game={game} score={mine} placeholder="아직 한 판도 안 했어요" />
+      <PlayerCard
         label={partnerName}
         game={game}
         score={partner}
-        placeholder={mine ? '아직 안 했어요' : '먼저 한 판 해야 열려요'}
+        placeholder={mine ? `${partnerName}님을 기다리는 중` : '내가 먼저 한 판 해야 열려요'}
       />
 
       {verdict && (
@@ -166,32 +149,43 @@ function ResultCard({
           style={{
             fontFamily: typeface,
             fontWeight: '800',
-            fontSize: 18,
+            fontSize: 20,
             color: color.accent,
-            marginTop: space[4],
+            textAlign: 'center',
+            marginTop: space[2],
           }}
         >
           {verdict}
         </Text>
       )}
+
       {canRetry ? (
         <Pressable
           onPress={onRetry}
-          style={({ pressed }) => ({ marginTop: space[4], opacity: pressed ? 0.6 : 1 })}
+          style={({ pressed }) => ({
+            marginTop: space[2],
+            height: 52,
+            borderRadius: 999,
+            borderWidth: 1,
+            borderColor: color.surface4,
+            alignItems: 'center',
+            justifyContent: 'center',
+            opacity: pressed ? 0.7 : 1,
+          })}
         >
-          <Text style={{ fontFamily: typeface, fontWeight: '700', color: color.white }}>
+          <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 15, color: color.white }}>
             다시 도전 ({mine?.attempts ?? 0}/3)
           </Text>
         </Pressable>
       ) : (
-        <Meta style={{ marginTop: space[4] }}>오늘 3판을 다 썼어요</Meta>
+        <Meta style={{ textAlign: 'center', marginTop: space[2] }}>오늘 3판을 다 썼어요</Meta>
       )}
     </View>
   );
 }
 
-/** 한 사람의 3판 — 최고점 칸만 초록으로 도드라진다 */
-function RoundRow({
+/** 한 사람의 3판 — 이름 옆에 최고 기록, 아래에 차시별로 편다 */
+function PlayerCard({
   label,
   game,
   score,
@@ -203,16 +197,31 @@ function RoundRow({
   placeholder: string;
 }) {
   const rounds = score?.rounds ?? [];
-  // 같은 점수가 두 번 나오면 앞선 판을 최고로 친다 (indexOf)
+  // 같은 점수가 두 번 나오면 앞선 판을 최고로 친다
   const bestIndex = score ? rounds.indexOf(score.bestScore) : -1;
 
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: space[3] }}>
-      <Meta numberOfLines={1} style={{ width: 64 }}>
-        {label}
-      </Meta>
+    <View style={{ borderRadius: 14, padding: space[4], backgroundColor: color.surface1 }}>
+      <View
+        style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' }}
+      >
+        <Text
+          numberOfLines={1}
+          style={{ fontFamily: typeface, fontWeight: '700', fontSize: 15, color: color.white }}
+        >
+          {label}
+        </Text>
+        {score ? (
+          <Text
+            style={{ fontFamily: typeface, fontWeight: '800', fontSize: 19, color: color.accent }}
+          >
+            {game.format(score.bestScore)}
+          </Text>
+        ) : null}
+      </View>
+
       {!score ? (
-        <Meta style={{ flex: 1, textAlign: 'center', fontSize: 12 }}>{placeholder}</Meta>
+        <Meta style={{ marginTop: space[3] }}>{placeholder}</Meta>
       ) : (
         [0, 1, 2].map((i) => {
           const value = rounds[i];
@@ -221,21 +230,24 @@ function RoundRow({
             <View
               key={i}
               style={{
-                flex: 1,
-                marginHorizontal: 3,
-                paddingVertical: space[2],
-                borderRadius: 8,
+                flexDirection: 'row',
                 alignItems: 'center',
-                backgroundColor: isBest ? tintBg.accent : 'transparent',
+                justifyContent: 'space-between',
+                marginTop: space[2],
+                paddingHorizontal: space[3],
+                paddingVertical: space[3],
+                borderRadius: 10,
+                backgroundColor: isBest ? tintBg.accent : color.surface2,
               }}
             >
+              <Meta style={{ fontSize: 13 }}>{i + 1}차시</Meta>
               <Text
-                numberOfLines={1}
                 style={{
                   fontFamily: typeface,
                   fontWeight: isBest ? '800' : '600',
-                  fontSize: 13,
-                  color: value === undefined ? color.muted : isBest ? color.accent : color.sub,
+                  fontSize: 15,
+                  color:
+                    value === undefined ? color.muted : isBest ? color.accent : color.white,
                 }}
               >
                 {value === undefined ? '—' : game.format(value)}
