@@ -4,7 +4,10 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { User } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 
-/** 첫 로그인 시 프로필 행 보장 (닉네임·프로필 사진은 소셜 메타데이터에서) */
+/**
+ * 첫 로그인 시 프로필 행 보장 (닉네임·프로필 사진은 소셜 메타데이터에서).
+ * 행이 이미 있으면 손대지 않는다 — 앱에서 고친 이름·사진이 재로그인 때 카카오 값으로 되돌아가면 안 된다.
+ */
 async function ensureProfile(user: User) {
   const nickname =
     (user.user_metadata?.name as string | undefined) ??
@@ -18,7 +21,7 @@ async function ensureProfile(user: User) {
     .from('profiles')
     .upsert(
       { id: user.id, nickname, avatar_url: avatarUrl },
-      { onConflict: 'id', ignoreDuplicates: false },
+      { onConflict: 'id', ignoreDuplicates: true },
     );
   if (error) throw error;
 }
