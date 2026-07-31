@@ -26,7 +26,8 @@ export default function Index() {
     return <Redirect href={`/(auth)/code-entry?code=${pendingInvite.data}`} />;
   }
   if (!c) return <Redirect href="/(auth)/connect" />;
-  if (c.memberCount < 2) return <Redirect href="/(auth)/send-invite" />;
+  // 시작일을 상대 수락보다 먼저 묻는다 — 판을 깐 사람이 채우고, 들어온 사람은 바로 홈으로
   if (!c.startedAt) return <Redirect href="/(auth)/start-date" />;
+  if (c.memberCount < 2) return <Redirect href="/(auth)/send-invite" />;
   return <Redirect href="/(tabs)/home" />;
 }

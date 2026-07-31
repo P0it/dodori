@@ -38,7 +38,8 @@ export default function StartDate() {
     complete.mutate(
       { startedAt, myBirthday: birthday || undefined },
       {
-        onSuccess: () => router.replace('/(tabs)/home'),
+        // 다음 화면은 가드가 정한다 — 상대가 아직 안 들어왔으면 초대 대기로, 다 됐으면 홈으로
+        onSuccess: () => router.replace('/'),
         onError: (e) => setError(e instanceof Error ? e.message : String(e)),
       },
     );

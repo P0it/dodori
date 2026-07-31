@@ -25,12 +25,12 @@ export default function SendInvite() {
   const couple = useMyCouple();
   const createInvite = useCreateInvite();
 
-  // 커플 미생성 상태로 진입하면 초대 생성
+  // 커플 미생성 상태로 진입하면 초대 생성. 만들고 나면 가드로 돌려보내 시작일부터 받는다
   useEffect(() => {
     if (couple.isSuccess && couple.data === null && createInvite.isIdle) {
-      createInvite.mutate();
+      createInvite.mutate(undefined, { onSuccess: () => router.replace('/') });
     }
-  }, [couple.isSuccess, couple.data, createInvite]);
+  }, [couple.isSuccess, couple.data, createInvite, router]);
 
   // 상대 수락 감지 — 5초 폴링 (M2에서 Realtime 구독으로 교체 여지)
   useEffect(() => {

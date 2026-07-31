@@ -24,7 +24,8 @@ export default function CodeEntry() {
       onSuccess: async () => {
         await clearPendingInvite();
         refreshPending();
-        router.replace('/(auth)/start-date');
+        // 초대한 쪽이 시작일을 이미 넣어뒀으면 가드가 곧장 홈으로 보낸다
+        router.replace('/');
       },
       onError: (e) => setError(e instanceof Error ? e.message : String(e)),
     });
