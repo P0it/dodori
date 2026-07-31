@@ -202,23 +202,13 @@ function PlayerCard({
 
   return (
     <View style={{ borderRadius: 14, padding: space[4], backgroundColor: color.surface1 }}>
-      <View
-        style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' }}
+      {/* 최고 기록은 아래 차시 줄의 하이라이트가 말해준다 — 위에 또 쓰면 같은 값이 두 번 */}
+      <Text
+        numberOfLines={1}
+        style={{ fontFamily: typeface, fontWeight: '700', fontSize: 15, color: color.white }}
       >
-        <Text
-          numberOfLines={1}
-          style={{ fontFamily: typeface, fontWeight: '700', fontSize: 15, color: color.white }}
-        >
-          {label}
-        </Text>
-        {score ? (
-          <Text
-            style={{ fontFamily: typeface, fontWeight: '800', fontSize: 19, color: color.accent }}
-          >
-            {game.format(score.bestScore)}
-          </Text>
-        ) : null}
-      </View>
+        {label}
+      </Text>
 
       {!score ? (
         <Meta style={{ marginTop: space[3] }}>{placeholder}</Meta>
@@ -238,6 +228,9 @@ function PlayerCard({
                 paddingVertical: space[3],
                 borderRadius: 10,
                 backgroundColor: isBest ? tintBg.accent : color.surface2,
+                // 테두리는 항상 있고 색만 바뀐다 — 최고 줄에만 넣으면 그 줄만 1px씩 커진다
+                borderWidth: 1,
+                borderColor: isBest ? color.accent : 'transparent',
               }}
             >
               <Meta style={{ fontSize: 13 }}>{i + 1}차시</Meta>
