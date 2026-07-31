@@ -31,6 +31,8 @@ const REAL_DOT_D = 5;
 
 /** 마크에서 제자리 수직 낙하 */
 const DROP_DURATION = 300;
+/** 착지점에서 이만큼도 안 떨어진 글자는 밟지 않는다 — 제자리에서 한 번 더 튀는 걸로 보인다 */
+const MIN_HOP_DX = 24;
 /** 착지 후 오른쪽 글자를 하나씩 밟아 i까지. 남은 글자 수만큼 앞에서 잘라 쓴다 (마지막 홉이 늘 제일 작다) */
 const HOP_HEIGHTS = [34, 20, 14, 10, 7, 5];
 const HOP_DURATIONS = [380, 320, 280, 250, 220, 200];
@@ -93,9 +95,9 @@ export function BrandSplash({ onDone }: Props) {
     // 바닥 = 글자 윗면. 마크 점 크기 그대로 이 수평선 위를 튄다
     const floor = row.y + FLOOR_CY;
     const stops = boxes.map((b) => row.x + b.x + b.width / 2);
-    // 제자리에 떨어지므로 착지점 오른쪽에 남은 글자만 밟는다. 마크 점이 i보다 오른쪽일 리는 없지만
-    // 그래도 비면 i로 한 번에 간다
-    const remaining = stops.filter((x) => x > from.x);
+    // 제자리에 떨어지므로 착지점 오른쪽에 남은 글자만 밟는다. 너무 가까운 글자는 건너뛴다 —
+    // 제자리에서 한 번 더 튀는 것처럼 보인다. 그래서 다 걸러지면 i로 한 번에 간다
+    const remaining = stops.filter((x) => x - from.x > MIN_HOP_DX);
     const hops = remaining.length > 0 ? remaining : [stops[stops.length - 1]];
 
     dotX.setValue(from.x);
