@@ -45,18 +45,35 @@ export default function SendInvite() {
   const code = couple.data?.inviteCode ?? createInvite.data?.invite_code ?? null;
   const link = code ? inviteUrl(webBaseUrl, code) : null;
 
+  // 웹에는 Alert.alert 구현이 없어 조용히 사라진다 — 알림이 안 보이면 실패를 알 길이 없다
+  const notify = (title: string, body: string) => {
+    if (Platform.OS === 'web') window.alert(`${title}\n\n${body}`);
+    else Alert.alert(title, body);
+  };
+
   const copy = async () => {
     if (!code) return;
     await Clipboard.setStringAsync(link ?? code);
-    Alert.alert(
+    notify(
       '복사됨',
       link ? '초대 링크를 붙여넣어 상대에게 보내주세요.' : '초대 코드를 붙여넣어 상대에게 보내주세요.',
     );
   };
 
-  const share = () => {
+  /** 주 동선 — 초대는 결국 카톡으로 보내는 일이다. 웹은 Share.share가 없어 navigator.share로, 그마저 없으면 복사로 떨어진다 */
+  const share = async () => {
     if (!code) return;
-    Share.share({ message: inviteShareMessage(link, code) });
+    const message = inviteShareMessage(link, code);
+    if (Platform.OS !== 'web') {
+      Share.share({ message });
+      return;
+    }
+    if (navigator.share) {
+      // 사용자가 공유 시트를 닫으면 reject된다 — 실패가 아니므로 조용히 넘어간다
+      await navigator.share({ text: message }).catch(() => {});
+      return;
+    }
+    await copy();
   };
 
   return (
@@ -83,7 +100,7 @@ export default function SendInvite() {
               color: code ? color.accent : color.muted,
             }}
           >
-            {code ?? '생성 중…'}
+            {code ?? (createInvite.isError ? '생성 실패' : '생성 중…')}
           </Text>
           <Meta style={{ marginTop: 10, fontSize: 12.5 }}>
             {link
@@ -93,8 +110,8 @@ export default function SendInvite() {
         </View>
 
         <View style={{ gap: 12, marginTop: 24 }}>
-          <PrimaryBtn label={link ? '초대 링크 복사' : '코드 복사'} onPress={copy} disabled={!code} />
-          <SecondaryBtn label="카톡 등으로 공유" onPress={share} disabled={!code} />
+          <PrimaryBtn label={link ? '초대 링크 공유' : '초대 코드 공유'} onPress={share} disabled={!code} />
+          <SecondaryBtn label={link ? '링크 복사' : '코드 복사'} onPress={copy} disabled={!code} />
         </View>
 
         <View style={{ alignItems: 'center', marginTop: 28, gap: 8 }}>
