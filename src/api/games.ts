@@ -8,6 +8,8 @@ export interface Score {
   userId: string;
   bestScore: number;
   attempts: number;
+  /** 회차별 원점수 — 1차부터 순서대로 */
+  rounds: number[];
 }
 
 /** 오늘의 내/상대 점수. 상대는 RLS 때문에 내가 마치기 전엔 아예 안 온다(null) */
@@ -21,13 +23,14 @@ export function useTodayGameScores() {
     queryFn: async (): Promise<{ mine: Score | null; partner: Score | null }> => {
       const { data, error } = await supabase
         .from('game_scores')
-        .select('user_id, best_score, attempts')
+        .select('user_id, best_score, attempts, scores')
         .eq('game_date', today);
       if (error) throw error;
       const rows = (data ?? []).map((r) => ({
         userId: r.user_id,
         bestScore: Number(r.best_score),
         attempts: r.attempts,
+        rounds: (r.scores ?? []).map(Number),
       }));
       return {
         mine: rows.find((r) => r.userId === uid) ?? null,

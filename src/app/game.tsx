@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { color, space, typeface } from '@/theme/tokens';
+import { color, space, tintBg, typeface } from '@/theme/tokens';
 import { todayKST } from '@/lib/date';
 import { outcome, pickTodayGame, type GameDef } from '@/lib/games';
 import { useCoupleProfiles } from '@/api/couple';
-import { useSubmitRound, useTodayGameScores } from '@/api/games';
+import { useSubmitRound, useTodayGameScores, type Score } from '@/api/games';
 import { GameHost } from '@/components/game/GameHost';
 import { Meta } from '@/components/Meta';
 import { Eyebrow } from '@/components/Eyebrow';
@@ -103,9 +103,8 @@ export default function GameScreen() {
       {showResult && (
         <ResultCard
           game={game}
-          mineBest={mine?.bestScore ?? null}
-          partnerBest={scores.data.partner?.bestScore ?? null}
-          attempts={attempts}
+          mine={mine}
+          partner={scores.data.partner}
           partnerName={partnerName}
           canRetry={!capped}
           onRetry={() => setPhase('intro')}
@@ -117,25 +116,21 @@ export default function GameScreen() {
 
 function ResultCard({
   game,
-  mineBest,
-  partnerBest,
-  attempts,
+  mine,
+  partner,
   partnerName,
   canRetry,
   onRetry,
 }: {
   game: GameDef;
-  mineBest: number | null;
-  partnerBest: number | null;
-  attempts: number;
+  mine: Score | null;
+  partner: Score | null;
   partnerName: string;
   canRetry: boolean;
   onRetry: () => void;
 }) {
   const o =
-    mineBest !== null && partnerBest !== null
-      ? outcome(mineBest, partnerBest, game.higherIsBetter)
-      : null;
+    mine && partner ? outcome(mine.bestScore, partner.bestScore, game.higherIsBetter) : null;
   const verdict =
     o === 'win' ? '이기고 있어요' : o === 'lose' ? '지고 있어요' : o === 'draw' ? '동점!' : null;
 
@@ -148,17 +143,24 @@ function ResultCard({
         backgroundColor: color.surface1,
       }}
     >
-      <Row label="나" value={mineBest !== null ? game.format(mineBest) : '-'} />
-      <Row
+      {/* 회차 머리글 — 세 줄이 같은 열에 서야 1·2·3차를 나란히 비교할 수 있다 */}
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <View style={{ width: 64 }} />
+        {[1, 2, 3].map((n) => (
+          <Meta key={n} style={{ flex: 1, textAlign: 'center', fontSize: 11 }}>
+            {n}차
+          </Meta>
+        ))}
+      </View>
+
+      <RoundRow label="나" game={game} score={mine} placeholder="아직 안 했어요" />
+      <RoundRow
         label={partnerName}
-        value={
-          partnerBest !== null
-            ? game.format(partnerBest)
-            : mineBest !== null
-              ? '아직 안 했어요'
-              : '먼저 한 판 해야 열려요'
-        }
+        game={game}
+        score={partner}
+        placeholder={mine ? '아직 안 했어요' : '먼저 한 판 해야 열려요'}
       />
+
       {verdict && (
         <Text
           style={{
@@ -173,9 +175,12 @@ function ResultCard({
         </Text>
       )}
       {canRetry ? (
-        <Pressable onPress={onRetry} style={({ pressed }) => ({ marginTop: space[4], opacity: pressed ? 0.6 : 1 })}>
+        <Pressable
+          onPress={onRetry}
+          style={({ pressed }) => ({ marginTop: space[4], opacity: pressed ? 0.6 : 1 })}
+        >
           <Text style={{ fontFamily: typeface, fontWeight: '700', color: color.white }}>
-            다시 도전 ({attempts}/3)
+            다시 도전 ({mine?.attempts ?? 0}/3)
           </Text>
         </Pressable>
       ) : (
@@ -185,13 +190,60 @@ function ResultCard({
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+/** 한 사람의 3판 — 최고점 칸만 초록으로 도드라진다 */
+function RoundRow({
+  label,
+  game,
+  score,
+  placeholder,
+}: {
+  label: string;
+  game: GameDef;
+  score: Score | null;
+  placeholder: string;
+}) {
+  const rounds = score?.rounds ?? [];
+  // 같은 점수가 두 번 나오면 앞선 판을 최고로 친다 (indexOf)
+  const bestIndex = score ? rounds.indexOf(score.bestScore) : -1;
+
   return (
-    <View
-      style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: space[2] }}
-    >
-      <Meta>{label}</Meta>
-      <Text style={{ fontFamily: typeface, fontWeight: '700', color: color.white }}>{value}</Text>
+    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: space[3] }}>
+      <Meta numberOfLines={1} style={{ width: 64 }}>
+        {label}
+      </Meta>
+      {!score ? (
+        <Meta style={{ flex: 1, textAlign: 'center', fontSize: 12 }}>{placeholder}</Meta>
+      ) : (
+        [0, 1, 2].map((i) => {
+          const value = rounds[i];
+          const isBest = i === bestIndex;
+          return (
+            <View
+              key={i}
+              style={{
+                flex: 1,
+                marginHorizontal: 3,
+                paddingVertical: space[2],
+                borderRadius: 8,
+                alignItems: 'center',
+                backgroundColor: isBest ? tintBg.accent : 'transparent',
+              }}
+            >
+              <Text
+                numberOfLines={1}
+                style={{
+                  fontFamily: typeface,
+                  fontWeight: isBest ? '800' : '600',
+                  fontSize: 13,
+                  color: value === undefined ? color.muted : isBest ? color.accent : color.sub,
+                }}
+              >
+                {value === undefined ? '—' : game.format(value)}
+              </Text>
+            </View>
+          );
+        })
+      )}
     </View>
   );
 }

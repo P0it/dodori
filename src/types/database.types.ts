@@ -189,6 +189,7 @@ export type Database = {
           game_date: string
           game_key: string
           higher_is_better: boolean
+          scores: number[]
           updated_at: string
           user_id: string
         }
@@ -199,6 +200,7 @@ export type Database = {
           game_date: string
           game_key: string
           higher_is_better: boolean
+          scores?: number[]
           updated_at?: string
           user_id: string
         }
@@ -209,6 +211,7 @@ export type Database = {
           game_date?: string
           game_key?: string
           higher_is_better?: boolean
+          scores?: number[]
           updated_at?: string
           user_id?: string
         }
@@ -1011,6 +1014,7 @@ export type Database = {
           game_date: string
           game_key: string
           higher_is_better: boolean
+          scores: number[]
           updated_at: string
           user_id: string
         }
