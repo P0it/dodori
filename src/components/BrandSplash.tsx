@@ -36,8 +36,10 @@ const HOP_HEIGHTS = [34, 20, 14, 10, 7, 5];
 const HOP_DURATIONS = [380, 320, 280, 250, 220, 200];
 /** 떨어지는 동안 브랜드 그린 → 흰색 */
 const SETTLE_DURATION = 250;
-/** 공이 진짜 i 점으로 수렴하며 사라지는 시간 */
+/** 공이 진짜 i 점 자리로 내려앉으며 같은 크기가 되는 시간 (덮개는 아직 덮인 채) */
 const CONDENSE_DURATION = 200;
+/** 겹쳐 선 뒤 공만 사라지는 시간 — 자리도 크기도 같으니 짧게 */
+const HANDOFF_DURATION = 120;
 /** 안착 후 머무는 시간 */
 const HOLD_DURATION = 1050;
 
@@ -167,33 +169,34 @@ export function BrandSplash({ onDone }: Props) {
         }),
       ]),
       ...hops.map((x, i) => arc(x, HOP_HEIGHTS[i], HOP_DURATIONS[i])),
+      // 마지막 홉이 끝나면 공이 진짜 점 자리로 내려앉아 그 크기가 된다. 덮개는 아직 덮인 채 —
+      // 여기서 덮개를 치우면 12px 떨어진 두 점이 잠깐 같이 보인다
+      Animated.parallel([
+        Animated.timing(dotY, {
+          toValue: row.y + REAL_DOT_CY,
+          duration: CONDENSE_DURATION,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(dotScale, {
+          toValue: REAL_DOT_D / MARK_DOT_D,
+          duration: CONDENSE_DURATION,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        }),
+      ]),
     ]).start(({ finished }) => {
       if (!finished) return;
-      // 속임수 — 여기서 i의 점을 덮고 있던 사각형을 치운다. 글자는 처음부터 진짜 i였으니 점만 나타난다.
-      // 공은 그 점 위로 내려앉으며 폰트 점 크기로 줄고 사라진다 → 겹치는 200ms가 교대를 가린다.
+      // 속임수 — 공이 진짜 점 위에 같은 크기로 겹쳐 선 상태에서 덮개를 치운다. 그 뒤 공만 사라진다.
       // 최종 점은 Pretendard가 그린 진짜 점이라 크기도 중심도 저절로 맞는다.
       setLanded(true);
       Animated.sequence([
-        Animated.parallel([
-          Animated.timing(dotY, {
-            toValue: row.y + REAL_DOT_CY,
-            duration: CONDENSE_DURATION,
-            easing: Easing.out(Easing.quad),
-            useNativeDriver: true,
-          }),
-          Animated.timing(dotScale, {
-            toValue: REAL_DOT_D / MARK_DOT_D,
-            duration: CONDENSE_DURATION,
-            easing: Easing.out(Easing.quad),
-            useNativeDriver: true,
-          }),
-          Animated.timing(dotFade, {
-            toValue: 0,
-            duration: CONDENSE_DURATION,
-            easing: Easing.in(Easing.quad),
-            useNativeDriver: true,
-          }),
-        ]),
+        Animated.timing(dotFade, {
+          toValue: 0,
+          duration: HANDOFF_DURATION,
+          easing: Easing.in(Easing.quad),
+          useNativeDriver: true,
+        }),
         Animated.delay(HOLD_DURATION),
         Animated.timing(fade, {
           toValue: 0,
