@@ -6,10 +6,15 @@ import { DodoriMark, MARK_LOWER_DOT } from './DodoriMark';
 
 type Props = { onDone: () => void };
 
-/** 튀는 동안은 마지막 글자가 점 없는 i(U+0131). 안착하면 진짜 i로 바꿔치기한다 */
-const LETTERS = ['d', 'o', 'd', 'o', 'r', 'ı'] as const;
-const DOTLESS_I = 'ı';
-const REAL_I = 'i';
+/**
+ * 처음부터 진짜 i를 그린다. 점 없는 ı(U+0131)로 바꿔치기하는 방식은 폐기 — Pretendard에 그 글자가
+ * 없어 그 한 글자만 다른 폰트로 폴백되고, 줄기 높이가 달라 교체할 때 늘어나는 게 보였다.
+ * 대신 i의 점만 배경색 사각형으로 덮어둔다 (배경이 단색이라 안 보인다) → 글자가 바뀌지 않으니
+ * metric 차이가 원천적으로 없다.
+ */
+const LETTERS = ['d', 'o', 'd', 'o', 'r', 'i'] as const;
+/** 점을 덮는 사각형의 높이 (줄 상단부터) — 점은 가리고 줄기 윗면은 안 건드리는 값. 눈으로 맞춘다 */
+const DOT_MASK_H = 16;
 
 const MARK_SIZE = 64;
 const MARK_DOT_D = MARK_SIZE * MARK_LOWER_DOT.d;
@@ -37,6 +42,7 @@ const CONDENSE_DURATION = 200;
 const HOLD_DURATION = 1050;
 
 type Box = { x: number; y: number };
+type LetterBox = { x: number; width: number };
 
 /**
  * 인앱 스플래시 — 네이티브 스플래시(마크만)를 이어받아 워드마크를 띄우고 사라진다.
@@ -59,12 +65,12 @@ export function BrandSplash({ onDone }: Props) {
   /** 0=브랜드 그린(마크의 점) → 1=흰색(워드마크의 점). 색은 네이티브 드라이버가 못 굴린다 */
   const settle = useRef(new Animated.Value(0)).current;
 
-  const letters = useRef<number[]>([]);
+  const letters = useRef<LetterBox[]>([]);
   const started = useRef(false);
   const [mark, setMark] = useState<Box | null>(null);
   const [row, setRow] = useState<Box | null>(null);
-  const [centers, setCenters] = useState<number[] | null>(null);
-  /** 공이 다 튀었나 — 마지막 글자를 진짜 i로 바꿔치기하는 스위치 */
+  const [boxes, setBoxes] = useState<LetterBox[] | null>(null);
+  /** 공이 다 튀었나 — i의 점을 덮고 있던 사각형을 치우는 스위치 */
   const [landed, setLanded] = useState(false);
 
   useEffect(() => {
@@ -73,8 +79,8 @@ export function BrandSplash({ onDone }: Props) {
 
   // 점이 그려지기 전에 시작 좌표가 박혀 있어야 한다 (useEffect면 한 프레임 (0,0)에 번쩍인다)
   useLayoutEffect(() => {
-    if (!mark || !row || !centers || started.current) return;
-    // 마지막 글자를 i로 바꿔치기하면 줄 폭이 미세하게 달라져 onLayout이 다시 뜬다 — 한 번만 돈다
+    if (!mark || !row || !boxes || started.current) return;
+    // onLayout이 다시 떠도(창 크기 변경 등) 시퀀스는 한 번만 돈다
     started.current = true;
 
     // 시작점 = 마크의 아래 점 자리 (겹쳐 있으므로 티가 안 난다)
@@ -84,7 +90,7 @@ export function BrandSplash({ onDone }: Props) {
     };
     // 바닥 = 글자 윗면. 마크 점 크기 그대로 이 수평선 위를 튄다
     const floor = row.y + FLOOR_CY;
-    const stops = centers.map((cx) => row.x + cx);
+    const stops = boxes.map((b) => row.x + b.x + b.width / 2);
     // 제자리에 떨어지므로 착지점 오른쪽에 남은 글자만 밟는다. 마크 점이 i보다 오른쪽일 리는 없지만
     // 그래도 비면 i로 한 번에 간다
     const remaining = stops.filter((x) => x > from.x);
@@ -163,8 +169,8 @@ export function BrandSplash({ onDone }: Props) {
       ...hops.map((x, i) => arc(x, HOP_HEIGHTS[i], HOP_DURATIONS[i])),
     ]).start(({ finished }) => {
       if (!finished) return;
-      // 속임수 — 여기서 마지막 글자를 진짜 i로 바꾼다. 줄기는 ı와 같으니 점만 생긴다.
-      // 공은 그 점 위로 내려앉으며 폰트 점 크기로 줄고 사라진다 → 겹치는 200ms가 교체를 가린다.
+      // 속임수 — 여기서 i의 점을 덮고 있던 사각형을 치운다. 글자는 처음부터 진짜 i였으니 점만 나타난다.
+      // 공은 그 점 위로 내려앉으며 폰트 점 크기로 줄고 사라진다 → 겹치는 200ms가 교대를 가린다.
       // 최종 점은 Pretendard가 그린 진짜 점이라 크기도 중심도 저절로 맞는다.
       setLanded(true);
       Animated.sequence([
@@ -199,10 +205,10 @@ export function BrandSplash({ onDone }: Props) {
         if (r.finished) onDone();
       });
     });
-  }, [mark, row, centers, word, fade, dotX, dotY, dotScale, dotFade, settle, onDone]);
+  }, [mark, row, boxes, word, fade, dotX, dotY, dotScale, dotFade, settle, onDone]);
 
   // 실측이 끝나기 전에는 마크가 자기 점을 그대로 그린다 — 교대하는 순간 좌표가 같아 이음매가 없다
-  const ready = mark !== null && row !== null && centers !== null;
+  const ready = mark !== null && row !== null && boxes !== null;
 
   return (
     <Animated.View
@@ -232,9 +238,9 @@ export function BrandSplash({ onDone }: Props) {
             key={i}
             onLayout={(e) => {
               const { x, width } = e.nativeEvent.layout;
-              letters.current[i] = x + width / 2;
+              letters.current[i] = { x, width };
               if (letters.current.length === LETTERS.length && !letters.current.includes(undefined!)) {
-                setCenters([...letters.current]);
+                setBoxes([...letters.current]);
               }
             }}
             style={{
@@ -246,9 +252,23 @@ export function BrandSplash({ onDone }: Props) {
               color: color.white,
             }}
           >
-            {landed && ch === DOTLESS_I ? REAL_I : ch}
+            {ch}
           </Text>
         ))}
+
+        {/* i의 점을 덮는 배경색 사각형 — 공이 안착하면 치운다. 단색 배경이라 덮개가 안 보인다 */}
+        {boxes && !landed && (
+          <View
+            style={{
+              position: 'absolute',
+              left: boxes[boxes.length - 1].x,
+              top: 0,
+              width: boxes[boxes.length - 1].width,
+              height: DOT_MASK_H,
+              backgroundColor: color.bg,
+            }}
+          />
+        )}
       </Animated.View>
 
       {/* 떼어낸 마크의 아래 점 — 화면 좌표계에서 마크와 워드마크 사이를 오간다 */}
