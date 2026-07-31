@@ -1,25 +1,26 @@
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { color, typeface } from '@/theme/tokens';
 import { TopBar } from '@/components/TopBar';
 import { Eyebrow } from '@/components/Eyebrow';
 import { Meta } from '@/components/Meta';
 import { StarGlyph } from '@/components/glyphs';
-import { isISODate } from '@/lib/date';
+import { DatePicker, initialMonth } from '@/components/DatePicker';
+import { isISODate, todayKST, weekdayKo } from '@/lib/date';
 import { nthDayAnniversary, yearlyAnniversary } from '@/lib/anniversaries';
 import { useCompleteSetup } from '@/api/couple';
 
-/** 시작일·생일 입력 (목업 06 StartDate) — 완료 시 기념일 자동 생성 (§7.1) */
+/** 시작일 입력 (목업 06 StartDate) — 완료 시 기념일 자동 생성 (§7.1). 생일은 설정에서 받는다 */
 export default function StartDate() {
   const router = useRouter();
   const complete = useCompleteSetup();
   const [startedAt, setStartedAt] = useState('');
-  const [birthday, setBirthday] = useState('');
+  const [month, setMonth] = useState(() => initialMonth(''));
   const [error, setError] = useState<string | null>(null);
 
   const validStart = isISODate(startedAt);
-  const validBirthday = birthday === '' || isISODate(birthday);
+  const today = todayKST();
 
   const preview = useMemo(() => {
     if (!validStart) return [];
@@ -33,10 +34,10 @@ export default function StartDate() {
   }, [startedAt, validStart]);
 
   const submit = () => {
-    if (!validStart || !validBirthday || complete.isPending) return;
+    if (!validStart || complete.isPending) return;
     setError(null);
     complete.mutate(
-      { startedAt, myBirthday: birthday || undefined },
+      { startedAt },
       {
         // 다음 화면은 가드가 정한다 — 상대가 아직 안 들어왔으면 초대 대기로, 다 됐으면 홈으로
         onSuccess: () => router.replace('/'),
@@ -50,20 +51,22 @@ export default function StartDate() {
       <TopBar title="함께한 시작" onBack={false} />
       <View style={{ paddingHorizontal: 24, paddingTop: 8 }}>
         <Text style={{ fontFamily: typeface, fontWeight: '800', fontSize: 24, color: color.white, letterSpacing: -0.5 }}>
-          두 사람의 정보를{'\n'}알려주세요
+          언제부터{'\n'}함께했나요
         </Text>
-        <Meta style={{ marginTop: 8, marginBottom: 22, lineHeight: 20 }}>
-          이 날짜로 기념일이 자동으로 만들어져요.
+        <Meta style={{ marginTop: 8, marginBottom: 18, lineHeight: 20 }}>
+          이 날짜로 기념일이 자동으로 만들어져요.{'\n'}생일은 나중에 설정에서 추가할 수 있어요.
         </Meta>
 
-        <Eyebrow style={{ marginBottom: 8 }}>처음 만난 날</Eyebrow>
-        <DateField value={startedAt} onChange={setStartedAt} placeholder="2026-01-05" />
-
-        <Eyebrow style={{ marginTop: 16, marginBottom: 8 }}>내 생일 (선택)</Eyebrow>
-        <DateField value={birthday} onChange={setBirthday} placeholder="1997-03-22" />
-        <Meta style={{ fontSize: 11.5, marginTop: 6 }}>
-          상대 생일은 상대가 직접 입력하면 기념일에 추가돼요.
-        </Meta>
+        <Eyebrow style={{ marginBottom: 8 }}>
+          {validStart ? `처음 만난 날 · ${startedAt.replaceAll('-', '.')} ${weekdayKo(startedAt)}` : '처음 만난 날'}
+        </Eyebrow>
+        <DatePicker
+          value={startedAt}
+          onChange={setStartedAt}
+          month={month}
+          onMonthChange={setMonth}
+          maxDate={today}
+        />
 
         {preview.length > 0 && (
           <View
@@ -114,7 +117,7 @@ export default function StartDate() {
 
         <Pressable
           onPress={submit}
-          disabled={!validStart || !validBirthday || complete.isPending}
+          disabled={!validStart || complete.isPending}
           style={({ pressed }) => ({
             marginTop: 24,
             height: 52,
@@ -122,7 +125,7 @@ export default function StartDate() {
             backgroundColor: color.accent,
             alignItems: 'center',
             justifyContent: 'center',
-            opacity: !validStart || !validBirthday ? 0.4 : pressed ? 0.85 : 1,
+            opacity: !validStart ? 0.4 : pressed ? 0.85 : 1,
           })}
         >
           {complete.isPending ? (
@@ -135,48 +138,5 @@ export default function StartDate() {
         </Pressable>
       </View>
     </View>
-  );
-}
-
-/** YYYY-MM-DD 입력 필드 — 숫자만 받아 하이픈 자동 삽입 */
-function DateField({
-  value,
-  onChange,
-  placeholder,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  placeholder: string;
-}) {
-  const handle = (t: string) => {
-    const digits = t.replace(/\D/g, '').slice(0, 8);
-    let out = digits;
-    if (digits.length > 6) out = `${digits.slice(0, 4)}-${digits.slice(4, 6)}-${digits.slice(6)}`;
-    else if (digits.length > 4) out = `${digits.slice(0, 4)}-${digits.slice(4)}`;
-    onChange(out);
-  };
-  const complete = value.length === 10;
-  const valid = !complete || isISODate(value);
-  return (
-    <TextInput
-      value={value}
-      onChangeText={handle}
-      keyboardType="number-pad"
-      placeholder={placeholder}
-      placeholderTextColor={color.muted}
-      maxLength={10}
-      style={{
-        height: 56,
-        borderRadius: 12,
-        backgroundColor: color.surface1,
-        borderWidth: 1.5,
-        borderColor: !valid ? '#E8567A' : complete ? color.accent : color.surface3,
-        color: color.white,
-        fontSize: 17,
-        fontFamily: typeface, fontWeight: '700',
-        letterSpacing: 1,
-        textAlign: 'center',
-      }}
-    />
   );
 }

@@ -96,10 +96,14 @@ export function useMyProfile() {
   return useQuery({
     enabled: !!uid,
     queryKey: ['profile', 'mine', uid],
-    queryFn: async (): Promise<{ nickname: string; avatar_url: string | null }> => {
+    queryFn: async (): Promise<{
+      nickname: string;
+      avatar_url: string | null;
+      birthday: string | null;
+    }> => {
       const { data, error } = await supabase
         .from('profiles')
-        .select('nickname, avatar_url')
+        .select('nickname, avatar_url, birthday')
         .eq('id', uid!)
         .single();
       if (error) throw error;
@@ -112,12 +116,19 @@ export function useMyProfile() {
 export function useUpdateProfile() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { nickname: string; avatarUrl?: string | null }) => {
+    mutationFn: async (input: {
+      nickname: string;
+      avatarUrl?: string | null;
+      birthday?: string | null;
+    }) => {
       const { data: userData } = await supabase.auth.getUser();
       const uid = userData.user?.id;
       if (!uid) throw new Error('로그인이 필요해요');
-      const patch: { nickname: string; avatar_url?: string | null } = { nickname: input.nickname };
+      const patch: { nickname: string; avatar_url?: string | null; birthday?: string | null } = {
+        nickname: input.nickname,
+      };
       if (input.avatarUrl !== undefined) patch.avatar_url = input.avatarUrl;
+      if (input.birthday !== undefined) patch.birthday = input.birthday;
       const { error } = await supabase.from('profiles').update(patch).eq('id', uid);
       if (error) throw error;
     },

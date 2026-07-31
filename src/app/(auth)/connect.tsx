@@ -4,6 +4,7 @@ import Svg, { Path } from 'react-native-svg';
 import { color, typeface } from '@/theme/tokens';
 import { DodoriMark } from '@/components/DodoriMark';
 import { Meta } from '@/components/Meta';
+import { signOut } from '@/api/auth';
 
 /** 커플 연결 선택 (목업 02 ConnectChoice + §6.1 코드 입력 분기) */
 export default function Connect() {
@@ -42,7 +43,14 @@ export default function Connect() {
           />
         </View>
       </View>
-      <View style={{ height: 30 }} />
+      {/* 연결 전에는 탭바가 없다 — 계정을 잘못 골랐을 때 빠져나갈 유일한 길 */}
+      <Pressable
+        onPress={() => signOut()}
+        style={({ pressed }) => ({ paddingVertical: 14, alignItems: 'center', opacity: pressed ? 0.6 : 1 })}
+      >
+        <Text style={{ fontFamily: typeface, fontSize: 12.5, color: color.muted }}>다른 계정으로 로그인</Text>
+      </Pressable>
+      <View style={{ height: 16 }} />
     </View>
   );
 }

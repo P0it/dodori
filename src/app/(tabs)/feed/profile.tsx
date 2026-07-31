@@ -7,6 +7,8 @@ import { pickAvatarImage, uploadAvatar } from '@/api/photos';
 import { TopBar } from '@/components/TopBar';
 import { Avatar } from '@/components/Avatar';
 import { Meta } from '@/components/Meta';
+import { DatePicker, initialMonth } from '@/components/DatePicker';
+import { todayKST } from '@/lib/date';
 
 /** 내 프로필 수정 — 닉네임 + 프로필 사진 */
 export default function EditProfile() {
@@ -17,6 +19,9 @@ export default function EditProfile() {
   const [avatar, setAvatar] = useState<string | null>(null);
   // 새로 고른 로컬 이미지 uri — 저장할 때만 업로드한다. null이면 사진 변경 없음.
   const [pickedUri, setPickedUri] = useState<string | null>(null);
+  const [birthday, setBirthday] = useState('');
+  const [birthdayMonth, setBirthdayMonth] = useState(() => initialMonth(''));
+  const [pickingBirthday, setPickingBirthday] = useState(false);
   const [saving, setSaving] = useState(false);
   const [seeded, setSeeded] = useState(false);
 
@@ -25,6 +30,8 @@ export default function EditProfile() {
     if (!seeded && profile.data) {
       setNickname(profile.data.nickname ?? '');
       setAvatar(profile.data.avatar_url ?? null);
+      setBirthday(profile.data.birthday ?? '');
+      setBirthdayMonth(initialMonth(profile.data.birthday ?? ''));
       setSeeded(true);
     }
   }, [profile.data, seeded]);
@@ -45,7 +52,7 @@ export default function EditProfile() {
       setSaving(true);
       // 새로 고른 사진이 있을 때만 업로드 → 그 URL을 저장. 없으면 avatar_url은 건드리지 않는다.
       const avatarUrl = pickedUri ? await uploadAvatar(pickedUri) : undefined;
-      await update.mutateAsync({ nickname: name, avatarUrl });
+      await update.mutateAsync({ nickname: name, avatarUrl, birthday: birthday || null });
       router.back();
     } catch (e) {
       Alert.alert('저장 실패', e instanceof Error ? e.message : '프로필을 저장하지 못했어요.');
@@ -98,7 +105,46 @@ export default function EditProfile() {
             }}
           />
 
-          <View style={{ flex: 1 }} />
+          <Meta style={{ fontSize: 11, marginTop: 18, marginBottom: 6 }}>생일</Meta>
+          <Pressable
+            onPress={() => setPickingBirthday((v) => !v)}
+            style={({ pressed }) => ({
+              height: 48,
+              borderRadius: 8,
+              backgroundColor: color.surface2,
+              paddingHorizontal: 14,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              opacity: pressed ? 0.85 : 1,
+            })}
+          >
+            <Text
+              style={{
+                fontFamily: typeface,
+                fontSize: 15.5,
+                color: birthday ? color.white : color.muted,
+              }}
+            >
+              {birthday ? birthday.replaceAll('-', '.') : '생일을 더하면 기념일에 나타나요'}
+            </Text>
+            <Text style={{ fontFamily: typeface, fontSize: 13, color: color.sub }}>
+              {pickingBirthday ? '닫기' : birthday ? '변경' : '추가'}
+            </Text>
+          </Pressable>
+          {pickingBirthday && (
+            <View style={{ marginTop: 10 }}>
+              <DatePicker
+                value={birthday}
+                onChange={setBirthday}
+                month={birthdayMonth}
+                onMonthChange={setBirthdayMonth}
+                maxDate={todayKST()}
+              />
+            </View>
+          )}
+
+          <View style={{ flex: 1, minHeight: 24 }} />
 
           <Pressable
             onPress={onSave}

@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Alert, Platform, Pressable, Share, Text, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
 import { color, typeface } from '@/theme/tokens';
 import { TopBar } from '@/components/TopBar';
@@ -75,6 +75,9 @@ export default function SendInvite() {
     }
     await copy();
   };
+
+  // 웹은 이 경로로 직접 새로고침할 수 있어 진입 가드를 건너뛴다 — 시작일이 먼저다
+  if (couple.data && !couple.data.startedAt) return <Redirect href="/(auth)/start-date" />;
 
   return (
     <View style={{ flex: 1, backgroundColor: color.bg }}>

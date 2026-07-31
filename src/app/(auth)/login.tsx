@@ -1,10 +1,18 @@
 import { useState } from 'react';
-import { Alert, Pressable, Text, TextInput, View } from 'react-native';
+import { Alert, Platform, Pressable, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { color, typeface } from '@/theme/tokens';
 import { KakaoButton } from '@/components/KakaoButton';
 import { DodoriMark } from '@/components/DodoriMark';
 import { useSignInWithEmailDev, useSignInWithKakao } from '@/api/auth';
+
+/** 웹에는 Alert.alert 구현이 없다 — 실패가 조용히 묻히면 원인을 알 길이 없다 */
+function notify(title: string, body: string) {
+  if (Platform.OS === 'web') window.alert(`${title}
+
+${body}`);
+  else Alert.alert(title, body);
+}
 
 export default function Login() {
   const router = useRouter();
@@ -15,7 +23,7 @@ export default function Login() {
     signIn.mutate(undefined, {
       onSuccess: () => router.replace('/'),
       onError: (e) =>
-        Alert.alert('카카오 로그인 실패', e instanceof Error ? e.message : String(e)),
+        notify('카카오 로그인 실패', e instanceof Error ? e.message : String(e)),
     });
   };
 
@@ -42,7 +50,8 @@ export default function Login() {
         >
           계속하면 이용약관과 개인정보 처리방침에{'\n'}동의하는 것으로 간주돼요.
         </Text>
-        {__DEV__ && <DevEmailSignIn />}
+        {/* 웹 배포는 테스트 채널이라 함께 노출한다 — 카카오 없이 개발 계정으로 화면을 확인해야 한다 */}
+        {(__DEV__ || Platform.OS === 'web') && <DevEmailSignIn />}
       </View>
     </View>
   );
@@ -62,7 +71,7 @@ function DevEmailSignIn() {
       {
         onSuccess: () => router.replace('/'),
         onError: (e) =>
-          Alert.alert('개발용 로그인 실패', e instanceof Error ? e.message : String(e)),
+          notify('개발용 로그인 실패', e instanceof Error ? e.message : String(e)),
       },
     );
   };
