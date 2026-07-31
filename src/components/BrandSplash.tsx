@@ -23,7 +23,7 @@ const DROP_DURATION = 300;
 /** 착지 후 오른쪽 글자를 하나씩 밟아 i까지. 남은 글자 수만큼 앞에서 잘라 쓴다 (마지막 홉이 늘 제일 작다) */
 const HOP_HEIGHTS = [34, 20, 14, 10, 7, 5];
 const HOP_DURATIONS = [380, 320, 280, 250, 220, 200];
-/** 안착하면서 브랜드 그린 → 흰색 */
+/** 떨어지는 동안 브랜드 그린 → 흰색 */
 const SETTLE_DURATION = 250;
 
 type Box = { x: number; y: number };
@@ -121,7 +121,8 @@ export function BrandSplash({ onDone }: Props) {
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
-      // 마크에서 이탈 — 제자리에서 수직으로 떨어지며 마크 점 크기에서 굴러다닐 크기로 줄어든다
+      // 마크에서 이탈 — 제자리에서 수직으로 떨어지며 굴러다닐 크기로 줄고, 그린에서 흰색으로 바뀐다.
+      // 떨어지는 순간 이미 워드마크의 것이 된다 (마크에서 떼어졌으니 마크 색을 들고 있을 이유가 없다)
       Animated.parallel([
         Animated.timing(dotY, {
           toValue: floor,
@@ -135,16 +136,15 @@ export function BrandSplash({ onDone }: Props) {
           easing: Easing.out(Easing.cubic),
           useNativeDriver: true,
         }),
+        Animated.timing(settle, {
+          toValue: 1,
+          duration: SETTLE_DURATION,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: false,
+        }),
       ]),
       ...hops.map((x, i) => arc(x, HOP_HEIGHTS[i], HOP_DURATIONS[i])),
-      // 안착 — 그린에서 흰색으로 (여기서 워드마크가 하나로 완성된다)
-      Animated.timing(settle, {
-        toValue: 1,
-        duration: SETTLE_DURATION,
-        easing: Easing.out(Easing.quad),
-        useNativeDriver: false,
-      }),
-      Animated.delay(800),
+      Animated.delay(1050),
       Animated.timing(fade, {
         toValue: 0,
         duration: 450,
