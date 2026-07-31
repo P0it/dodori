@@ -31,11 +31,16 @@ const REAL_DOT_D = 5;
 
 /** 마크에서 제자리 수직 낙하 */
 const DROP_DURATION = 300;
-/** 착지점에서 이만큼도 안 떨어진 글자는 밟지 않는다 — 제자리에서 한 번 더 튀는 걸로 보인다 */
-const MIN_HOP_DX = 24;
-/** 착지 후 오른쪽 글자를 하나씩 밟아 i까지. 남은 글자 수만큼 앞에서 잘라 쓴다 (마지막 홉이 늘 제일 작다) */
-const HOP_HEIGHTS = [34, 20, 14, 10, 7, 5];
-const HOP_DURATIONS = [380, 320, 280, 250, 220, 200];
+/**
+ * 홉의 높이·시간은 그 홉이 실제로 가는 가로 거리에서 뽑는다. 고정값을 쓰면 거리가 짧은 홉이
+ * 위로만 크게 튀어 "제자리에서 한 번 더 튀는" 걸로 보인다 (착지점이 워드마크 오른쪽이라 늘 짧다).
+ */
+const HOP_HEIGHT_RATIO = 0.6;
+const HOP_HEIGHT_RANGE = [6, 26] as const;
+const HOP_MS_PER_PX = 12;
+const HOP_DURATION_RANGE = [220, 380] as const;
+
+const clamp = (v: number, [lo, hi]: readonly [number, number]) => Math.min(hi, Math.max(lo, v));
 /** 떨어지는 동안 브랜드 그린 → 흰색 */
 const SETTLE_DURATION = 250;
 /** 공이 진짜 i 점 자리로 내려앉으며 같은 크기가 되는 시간 (덮개는 아직 덮인 채) */
@@ -95,10 +100,8 @@ export function BrandSplash({ onDone }: Props) {
     // 바닥 = 글자 윗면. 마크 점 크기 그대로 이 수평선 위를 튄다
     const floor = row.y + FLOOR_CY;
     const stops = boxes.map((b) => row.x + b.x + b.width / 2);
-    // 제자리에 떨어지므로 착지점 오른쪽에 남은 글자만 밟는다. 너무 가까운 글자는 건너뛴다 —
-    // 제자리에서 한 번 더 튀는 것처럼 보인다. 그래서 다 걸러지면 i로 한 번에 간다
-    const remaining = stops.filter((x) => x - from.x > MIN_HOP_DX);
-    const hops = remaining.length > 0 ? remaining : [stops[stops.length - 1]];
+    // 떨어진 자리부터 오른쪽에 남은 글자를 하나씩 밟는다
+    const hops = stops.filter((x) => x > from.x);
 
     dotX.setValue(from.x);
     dotY.setValue(from.y);
@@ -148,8 +151,8 @@ export function BrandSplash({ onDone }: Props) {
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
-      // 마크에서 이탈 — 제자리에서 수직 낙하. 떨어지며 굴러다닐 크기로 줄고 그린 → 흰색.
-      // 떨어지는 순간 이미 워드마크의 것이 된다 (마크에서 떼어졌으니 마크 색을 들고 있을 이유가 없다)
+      // 마크에서 이탈 — 제자리에서 수직 낙하. 떨어지며 굴러다닐 크기로 줄고 그린 → 흰색
+      // (마크에서 떼어졌으니 마크 색을 들고 있을 이유가 없다)
       Animated.parallel([
         Animated.timing(dotY, {
           toValue: floor,
@@ -170,7 +173,14 @@ export function BrandSplash({ onDone }: Props) {
           useNativeDriver: false,
         }),
       ]),
-      ...hops.map((x, i) => arc(x, HOP_HEIGHTS[i], HOP_DURATIONS[i])),
+      ...hops.map((x, i) => {
+        const dx = x - (i === 0 ? from.x : hops[i - 1]);
+        return arc(
+          x,
+          clamp(dx * HOP_HEIGHT_RATIO, HOP_HEIGHT_RANGE),
+          clamp(dx * HOP_MS_PER_PX, HOP_DURATION_RANGE),
+        );
+      }),
       // 마지막 홉이 끝나면 공이 진짜 점 자리로 내려앉아 그 크기가 된다. 덮개는 아직 덮인 채 —
       // 여기서 덮개를 치우면 12px 떨어진 두 점이 잠깐 같이 보인다
       Animated.parallel([
