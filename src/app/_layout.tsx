@@ -21,6 +21,16 @@ import { usePushRegistration } from '@/api/notifications';
 // 네이티브 스플래시는 BrandSplash가 마운트된 뒤 직접 내린다 (워드마크 등장까지 이어붙이기)
 SplashScreen.preventAutoHideAsync();
 
+/**
+ * 웹 카카오 OAuth는 페이지를 통째로 다시 로드하며 돌아온다 — 로그인 한 번에 스플래시를 두 번
+ * 보게 되므로 복귀 로드에서는 건너뛴다. supabase가 URL의 인증 파라미터를 지우기 전에 읽어야 해서
+ * 모듈 평가 시점(동기)에 판정한다.
+ */
+const isWebAuthReturn =
+  Platform.OS === 'web' &&
+  typeof window !== 'undefined' &&
+  /[?#].*(code=|access_token=|error=)/.test(window.location.href);
+
 // 크래시·에러 리포팅. DSN은 공개값이라 클라이언트에 박혀도 된다.
 // DSN이 없는 환경(DSN 미설정 로컬)에서는 초기화를 건너뛴다 — Sentry 없이도 앱은 떠야 한다.
 const sentryDsn = process.env.EXPO_PUBLIC_SENTRY_DSN;
@@ -50,10 +60,12 @@ function AuthBridge() {
 
 function RootLayout() {
   const insets = useSafeAreaInsets();
-  const [splashDone, setSplashDone] = useState(false);
+  const [splashDone, setSplashDone] = useState(isWebAuthReturn);
   const onSplashDone = useCallback(() => setSplashDone(true), []);
 
   useEffect(() => {
+    // BrandSplash를 띄우지 않으므로 네이티브 스플래시도 여기서 내린다
+    if (isWebAuthReturn) SplashScreen.hideAsync();
     SystemUI.setBackgroundColorAsync(color.bg);
     // 카카오 JS SDK 초기화 — 네이티브 모듈은 dev client에서만 존재
     const kakaoKey = Constants.expoConfig?.extra?.kakaoNativeAppKey as string | null;
