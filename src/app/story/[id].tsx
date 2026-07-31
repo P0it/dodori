@@ -262,25 +262,14 @@ export default function StoryViewer() {
               </ScrollView>
             )}
 
-            {/* 내 스토리 — 상대가 봤는지. 아바타가 누구인지 말해주므로 문구엔 이름을 넣지 않는다 */}
-            {isMine && profiles.data?.partner && (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7, paddingTop: 2 }}>
-                <View style={{ opacity: current.seenAt ? 1 : 0.4 }}>
-                  <Avatar
-                    url={profiles.data.partner.avatar_url ?? null}
-                    name={profiles.data.partner.nickname || '상대'}
-                    size={22}
-                  />
-                </View>
-                <Text
-                  style={{
-                    fontFamily: typeface,
-                    fontSize: 12.5,
-                    color: current.seenAt ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.55)',
-                  }}
-                >
-                  {current.seenAt ? `봤어요 · ${formatRelative(current.seenAt)}` : '아직 안 봤어요'}
-                </Text>
+            {/* 내 스토리 — 상대가 봤으면 프로필이 뜬다. 안 봤으면 자리 자체가 없다 */}
+            {isMine && current.seenAt && profiles.data?.partner && (
+              <View style={{ flexDirection: 'row', paddingTop: 2 }}>
+                <Avatar
+                  url={profiles.data.partner.avatar_url ?? null}
+                  name={profiles.data.partner.nickname || '상대'}
+                  size={24}
+                />
               </View>
             )}
           </View>
