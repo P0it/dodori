@@ -45,8 +45,9 @@ export const GAME_CATALOG: GameDef[] = [
   },
   {
     key: 'tensec',
-    name: '정확히 10초',
-    blurb: '타이머를 숨긴 채 10.000초에 정지',
+    // 목표 시간을 바꾸면 TenSecGame의 TARGET_MS도 같이 고칠 것 (key는 DB에 남은 값이라 유지)
+    name: '정확히 7초',
+    blurb: '타이머를 숨긴 채 7.000초에 정지',
     unit: 'ms',
     higherIsBetter: false,
     format: (s) => `${(s / 1000).toFixed(2)}초 오차`,
