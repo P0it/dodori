@@ -7,7 +7,7 @@ import { CalGlyph, FeedGlyph, HomeGlyph, LibGlyph } from '@/components/glyphs';
 const TABS = [
   { name: 'home', label: '홈', Glyph: HomeGlyph },
   { name: 'calendar', label: '캘린더', Glyph: CalGlyph },
-  { name: 'playlist', label: '플레이리스트', Glyph: LibGlyph },
+  { name: 'playlist', label: '라이브러리', Glyph: LibGlyph },
   { name: 'feed', label: '피드', Glyph: FeedGlyph },
 ] as const;
 

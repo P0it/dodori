@@ -84,7 +84,7 @@ export default function PlaylistRoot() {
       {/* 헤더 */}
       <View style={{ paddingHorizontal: 16, paddingTop: 8 }}>
         <Text style={{ fontFamily: typeface, fontWeight: '800', fontSize: 26, letterSpacing: -0.5, color: color.white }}>
-          플레이리스트
+          라이브러리
         </Text>
       </View>
 
@@ -92,35 +92,24 @@ export default function PlaylistRoot() {
         <FirstTrackHero onPress={() => router.push('/modals/create-track')} />
       ) : (
         /* 앨범 캐러셀 — 과거·미래를 한 줄에, 오늘 최근접이 포커스 */
-        <View style={{ marginTop: 14 }}>
-          <AlbumCarousel albums={albums} focusIndex={focusIndex} onPress={(id) => router.push(`/track/${id}`)} />
-        </View>
+        <>
+          <SectionHeader title="플레이리스트" onAdd={() => router.push('/modals/create-track')} />
+          <View style={{ marginTop: 2 }}>
+            <AlbumCarousel
+              albums={albums}
+              focusIndex={focusIndex}
+              onPress={(id) => router.push(`/track/${id}`)}
+              onCreate={() => router.push('/modals/create-track')}
+            />
+          </View>
+        </>
       )}
 
       {/* 테마 플레이리스트 — 첫 실행이고 만든 플리도 없으면 숨김 */}
       {!(noTracks && (playlists.data ?? []).length === 0) && (
       <>
-      <SectionHeader title="저장 리스트" />
+      <SectionHeader title="가보고 싶은 곳" onAdd={() => router.push('/modals/new-playlist')} />
       <View style={{ paddingHorizontal: 16, paddingTop: 10 }}>
-        {/* 만들기를 맨 위로 — 리스트를 새로 여는 게 목록을 훑는 것보다 잦은 동작 */}
-        <Pressable
-          onPress={() => router.push('/modals/new-playlist')}
-          style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 6 }}
-        >
-          <View
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: 8,
-              backgroundColor: color.surface2,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Text style={{ fontFamily: typeface, color: color.white, fontSize: 18 }}>+</Text>
-          </View>
-          <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 15, color: color.sub }}>새 리스트 만들기</Text>
-        </Pressable>
         {(playlists.data ?? []).map((p) => (
           <Pressable
             key={p.id}
@@ -172,39 +161,11 @@ export default function PlaylistRoot() {
         </>
       )}
     </ScrollView>
-
-    {/* 새 데이트 만들기 — 캘린더 FAB와 동일한 떠 있는 버튼 */}
-    {!noTracks && (
-      <Pressable
-        onPress={() => router.push('/modals/create-track')}
-        style={({ pressed }) => ({
-          position: 'absolute',
-          right: 16,
-          bottom: 16,
-          width: 56,
-          height: 56,
-          borderRadius: 28,
-          backgroundColor: color.accent,
-          alignItems: 'center',
-          justifyContent: 'center',
-          shadowColor: '#000',
-          shadowOpacity: 0.35,
-          shadowRadius: 8,
-          shadowOffset: { width: 0, height: 4 },
-          elevation: 6,
-          opacity: pressed ? 0.85 : 1,
-        })}
-      >
-        <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-          <Path d="M12 5v14M5 12h14" stroke={color.onPrimary} strokeWidth={2.5} strokeLinecap="round" />
-        </Svg>
-      </Pressable>
-    )}
     </View>
   );
 }
 
-function SectionHeader({ title, onMore }: { title: string; onMore?: () => void }) {
+function SectionHeader({ title, onAdd }: { title: string; onAdd?: () => void }) {
   return (
     <View
       style={{
@@ -218,9 +179,11 @@ function SectionHeader({ title, onMore }: { title: string; onMore?: () => void }
       <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 19, letterSpacing: -0.3, color: color.white }}>
         {title}
       </Text>
-      {onMore && (
-        <Pressable onPress={onMore}>
-          <Meta style={{ fontSize: 12.5 }}>더보기</Meta>
+      {onAdd && (
+        <Pressable onPress={onAdd} hitSlop={12}>
+          <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+            <Path d="M12 5v14M5 12h14" stroke={color.sub} strokeWidth={2} strokeLinecap="round" />
+          </Svg>
         </Pressable>
       )}
     </View>

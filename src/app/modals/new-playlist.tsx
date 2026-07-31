@@ -41,7 +41,7 @@ export default function NewPlaylist() {
         <Pressable onPress={() => router.back()} hitSlop={8}>
           <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 15, color: color.sub }}>취소</Text>
         </Pressable>
-        <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 16, color: color.white }}>새 리스트</Text>
+        <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 16, color: color.white }}>가보고 싶은 곳</Text>
         <Pressable onPress={submit} hitSlop={8} disabled={!name.trim()}>
           {create.isPending ? (
             <ActivityIndicator size="small" color={color.accent} />

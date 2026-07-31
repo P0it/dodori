@@ -36,14 +36,18 @@ export function AlbumCarousel({
   albums,
   focusIndex,
   onPress,
+  onCreate,
 }: {
   albums: CarouselAlbum[];
   focusIndex: number;
   onPress: (id: string) => void;
+  onCreate: () => void;
 }) {
   const ref = useRef<ScrollView>(null);
   const { width: screen } = useWindowDimensions();
   const [active, setActive] = useState(focusIndex);
+  // 앨범들 뒤에 "새 데이트" 빈 슬롯 한 장 — 마지막 칸은 앨범이 아니다
+  const total = albums.length + 1;
   const side = Math.max(0, (screen - CARD) / 2);
   // 이웃 카드의 바깥 가장자리가 GUTTER 안쪽에 오도록 보폭을 잡는다 (화면 밖으로 나가지 않게)
   const step = Math.min(CARD - MIN_OVERLAP, Math.max(CARD * 0.5, side - GUTTER));
@@ -57,7 +61,7 @@ export function AlbumCarousel({
 
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const i = Math.round(e.nativeEvent.contentOffset.x / step);
-    if (i !== active && i >= 0 && i < albums.length) setActive(i);
+    if (i !== active && i >= 0 && i < total) setActive(i);
   };
 
   const current = albums[active];
@@ -86,9 +90,9 @@ export function AlbumCarousel({
               style={{
                 width: CARD,
                 height: CARD,
-                marginRight: i === albums.length - 1 ? 0 : -overlap,
+                marginRight: -overlap,
                 // 가운데가 맨 위, 멀어질수록 뒤로
-                zIndex: albums.length - dist,
+                zIndex: total - dist,
                 opacity: isActive ? 1 : Math.max(0.25, 0.5 - (dist - 1) * 0.12),
                 transform: [{ scale: isActive ? 1 : Math.max(0.76, 0.86 - (dist - 1) * 0.05) }],
               }}
@@ -123,22 +127,59 @@ export function AlbumCarousel({
             </Pressable>
           );
         })}
+
+        {/* 꼬리의 빈 앨범 — "한 장 더 꽂는다". 활성 글로우는 주지 않는다(앨범이 아니므로) */}
+        <NewAlbumSlot
+          dist={Math.abs(albums.length - active)}
+          onPress={onCreate}
+        />
       </ScrollView>
 
-      {/* 제목은 가운데 앨범 것만 — 카드가 겹쳐 있어 카드마다 달 수 없다 */}
-      {current && (
-        <View style={{ alignItems: 'center', marginTop: 2, paddingHorizontal: 16 }}>
-          <Text
-            numberOfLines={1}
-            style={{ fontFamily: typeface, fontWeight: '700', fontSize: 15, color: color.white }}
-          >
-            {current.title}
-          </Text>
-          <Text style={{ marginTop: 2, fontFamily: typeface, fontSize: 12, color: color.muted }}>
-            {current.date.slice(5).replace('-', '.')}
-          </Text>
-        </View>
-      )}
+      {/* 제목은 가운데 카드 것만 — 카드가 겹쳐 있어 카드마다 달 수 없다.
+          빈 슬롯이 가운데일 때도 같은 자리를 채운다(비우면 아래 내용이 들썩인다) */}
+      <View style={{ alignItems: 'center', marginTop: 2, paddingHorizontal: 16 }}>
+        <Text
+          numberOfLines={1}
+          style={{ fontFamily: typeface, fontWeight: '700', fontSize: 15, color: color.white }}
+        >
+          {current ? current.title : '새 데이트'}
+        </Text>
+        <Text style={{ marginTop: 2, fontFamily: typeface, fontSize: 12, color: color.muted }}>
+          {current ? current.date.slice(5).replace('-', '.') : '탭해서 만들기'}
+        </Text>
+      </View>
     </View>
+  );
+}
+
+/** 캐러셀 꼬리의 빈 앨범 — 실제 앨범과 같은 규격에 점선 테두리만 두른다 */
+function NewAlbumSlot({ dist, onPress }: { dist: number; onPress: () => void }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={{
+        width: CARD,
+        height: CARD,
+        zIndex: 0,
+        opacity: dist === 0 ? 1 : Math.max(0.25, 0.5 - (dist - 1) * 0.12),
+        transform: [{ scale: dist === 0 ? 1 : Math.max(0.76, 0.86 - (dist - 1) * 0.05) }],
+      }}
+    >
+      <View
+        style={{
+          width: '100%',
+          height: '100%',
+          borderRadius: 6,
+          backgroundColor: color.surface1,
+          borderWidth: 1,
+          borderStyle: 'dashed',
+          borderColor: color.hairline,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Text style={{ fontFamily: typeface, fontSize: 34, fontWeight: '300', color: color.sub }}>+</Text>
+      </View>
+    </Pressable>
   );
 }
