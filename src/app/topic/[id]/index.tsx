@@ -146,7 +146,13 @@ export default function TopicDetail() {
           </View>
         ) : (
           <>
-            <Verdict mine={mine} partner={partner} partnerName={partnerName} />
+            {/* 누가 뭘 골랐는지는 선택지에 이름으로 붙는다 — 판정 문구는 같은 말의 반복.
+                상대를 기다리는 동안만, 아직 바꿀 수 있다는 걸 알린다 (UI로는 안 보인다) */}
+            {partner === null && (
+              <Meta style={{ marginTop: 16, textAlign: 'center' }}>
+                {partnerName}님을 기다리는 중 · 아직 바꿀 수 있어요
+              </Meta>
+            )}
 
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 26, marginBottom: 6 }}>
               <Text
@@ -255,37 +261,5 @@ export default function TopicDetail() {
         )}
       </ScrollView>
     </KeyboardAvoidingView>
-  );
-}
-
-function Verdict({
-  mine,
-  partner,
-  partnerName,
-}: {
-  mine: Choice | null;
-  partner: Choice | null;
-  partnerName: string;
-}) {
-  const waiting = partner === null;
-  const same = partner === mine;
-  const text = waiting
-    ? `${partnerName}님을 기다리는 중 · 아직 바꿀 수 있어요`
-    : same
-      ? '취향 일치. 오늘은 싸울 일 없겠네요'
-      : '갈렸어요. 할 말 있으면 아래에';
-  return (
-    <Text
-      style={{
-        fontFamily: typeface,
-        fontWeight: '700',
-        fontSize: 14,
-        color: waiting ? color.sub : same ? color.accent : color.anniv,
-        marginTop: 16,
-        textAlign: 'center',
-      }}
-    >
-      {text}
-    </Text>
   );
 }
