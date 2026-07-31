@@ -1,5 +1,12 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 import { color, space, typeface } from '@/theme/tokens';
 import type { GameProps } from '../GameHost';
 
@@ -22,23 +29,47 @@ export default function OddColorGame({ onFinish }: GameProps) {
   // 위치는 매 단계 무작위 — 고정 규칙이면 어디를 볼지 외워버린다
   const odd = useMemo(() => Math.floor(Math.random() * count), [count, level]);
 
+  const grid = useSharedValue(1);
+  const shake = useSharedValue(0);
+  const ending = useRef(false);
+
   function pick(i: number) {
-    if (i === odd) setLevel((l) => l + 1);
-    else onFinish(level - 1);
+    if (ending.current) return; // 흔들리는 동안 또 누르면 점수가 두 번 제출된다
+    if (i === odd) {
+      // 다음 판이 새로 깔리는 느낌 — 칸이 바뀐 걸 못 보고 헤매지 않게
+      grid.value = withSequence(withTiming(0.92, { duration: 70 }), withSpring(1, { damping: 11 }));
+      setLevel((l) => l + 1);
+      return;
+    }
+    // 종료 화면으로 바로 넘기면 컴포넌트가 사라져 흔들림이 보이지 않는다
+    ending.current = true;
+    shake.value = withSequence(
+      withTiming(-10, { duration: 50 }),
+      withTiming(10, { duration: 60 }),
+      withTiming(0, { duration: 50 }),
+    );
+    setTimeout(() => onFinish(level - 1), 190);
   }
+
+  const board = useAnimatedStyle(() => ({
+    transform: [{ scale: grid.value }, { translateX: shake.value }],
+  }));
 
   return (
     <View style={{ alignItems: 'center' }}>
       <Text style={{ fontFamily: typeface, fontWeight: '700', color: color.white }}>{level}단계</Text>
-      <View
-        style={{
-          flexDirection: 'row',
-          flexWrap: 'wrap',
-          width: cols * 56,
-          marginTop: space[3],
-          gap: 4,
-          justifyContent: 'center',
-        }}
+      <Animated.View
+        style={[
+          board,
+          {
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            width: cols * 56,
+            marginTop: space[3],
+            gap: 4,
+            justifyContent: 'center',
+          },
+        ]}
       >
         {Array.from({ length: count }, (_, i) => (
           <Pressable
@@ -52,7 +83,7 @@ export default function OddColorGame({ onFinish }: GameProps) {
             }}
           />
         ))}
-      </View>
+      </Animated.View>
     </View>
   );
 }

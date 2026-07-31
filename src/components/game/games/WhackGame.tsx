@@ -1,6 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
-import { color, space, typeface } from '@/theme/tokens';
+import { Pressable, View } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
+import { color, space } from '@/theme/tokens';
+import { CountdownRing } from '../CountdownRing';
 import type { GameProps } from '../GameHost';
 
 /** 길이를 바꾸면 GAME_CATALOG의 blurb도 같이 고칠 것 */
@@ -39,34 +47,68 @@ export default function WhackGame({ onFinish }: GameProps) {
   }, [left, hits, onFinish]);
 
   return (
-    <View>
-      <Text style={{ fontFamily: typeface, color: color.sub, textAlign: 'center' }}>
-        {(left / 1000).toFixed(1)}초 · {hits}마리
-      </Text>
+    <View style={{ alignItems: 'center' }}>
+      <CountdownRing durationMs={DURATION} label={`${hits}`} caption="마리" />
       <View
         style={{
           flexDirection: 'row',
           flexWrap: 'wrap',
           gap: space[2],
-          marginTop: space[3],
+          marginTop: space[4],
           justifyContent: 'center',
         }}
       >
         {Array.from({ length: CELLS }, (_, i) => (
-          <Pressable
+          <Hole
             key={i}
-            onPress={() => {
+            active={i === active}
+            onHit={() => {
               if (i === active && left > 0) setHits((h) => h + 1);
-            }}
-            style={{
-              width: 92,
-              height: 92,
-              borderRadius: 12,
-              backgroundColor: i === active ? color.greenCore : color.surface2,
             }}
           />
         ))}
       </View>
     </View>
+  );
+}
+
+/** 한 칸 — 두더지가 튀어나올 때 스프링으로 솟고, 맞으면 한 번 움츠렸다 사라진다 */
+function Hole({ active, onHit }: { active: boolean; onHit: () => void }) {
+  const pop = useSharedValue(0);
+
+  useEffect(() => {
+    pop.value = active ? withSpring(1, { damping: 11, stiffness: 260 }) : withTiming(0, { duration: 110 });
+  }, [active, pop]);
+
+  const mole = useAnimatedStyle(() => ({
+    transform: [{ scale: 0.4 + pop.value * 0.6 }],
+    opacity: pop.value,
+  }));
+
+  return (
+    <Pressable
+      onPress={() => {
+        if (!active) return;
+        // 맞은 순간 즉시 움츠러들게 — 다음 칸으로 넘어가기 전에 반응이 보인다
+        pop.value = withSequence(withTiming(1.15, { duration: 60 }), withTiming(0, { duration: 90 }));
+        onHit();
+      }}
+      style={{
+        width: 92,
+        height: 92,
+        borderRadius: 12,
+        backgroundColor: color.surface2,
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
+      }}
+    >
+      <Animated.View
+        style={[
+          { width: '100%', height: '100%', borderRadius: 12, backgroundColor: color.greenCore },
+          mole,
+        ]}
+      />
+    </Pressable>
   );
 }

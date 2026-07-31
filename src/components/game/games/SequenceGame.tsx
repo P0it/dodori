@@ -1,5 +1,11 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 import { color, space, typeface } from '@/theme/tokens';
 import type { GameProps } from '../GameHost';
 
@@ -44,31 +50,64 @@ export default function SequenceGame({ onFinish }: GameProps) {
         }}
       >
         {layout.map((v) => (
-          <Pressable
-            key={v}
-            onPress={() => tap(v)}
-            style={{
-              width: 56,
-              height: 56,
-              margin: 2,
-              borderRadius: 8,
-              backgroundColor: v < next ? color.surface1 : color.surface3,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Text
-              style={{
-                fontFamily: typeface,
-                fontWeight: '700',
-                color: v < next ? color.muted : color.white,
-              }}
-            >
-              {v}
-            </Text>
-          </Pressable>
+          <Cell key={v} value={v} done={v < next} isNext={v === next} onPress={() => tap(v)} />
         ))}
       </View>
     </View>
+  );
+}
+
+/** 한 칸 — 맞히면 사그라들고, 다음 차례 칸은 살짝 부풀어 눈에 걸린다 */
+function Cell({
+  value,
+  done,
+  isNext,
+  onPress,
+}: {
+  value: number;
+  done: boolean;
+  isNext: boolean;
+  onPress: () => void;
+}) {
+  const scale = useSharedValue(1);
+
+  useEffect(() => {
+    if (done) scale.value = withTiming(0.86, { duration: 140 });
+    else if (isNext) scale.value = withSpring(1.06, { damping: 12, stiffness: 220 });
+    else scale.value = withTiming(1, { duration: 140 });
+  }, [done, isNext, scale]);
+
+  const box = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    opacity: done ? 0.45 : 1,
+  }));
+
+  return (
+    <Pressable onPress={onPress}>
+      <Animated.View
+        style={[
+          {
+            width: 56,
+            height: 56,
+            margin: 2,
+            borderRadius: 8,
+            backgroundColor: done ? color.surface1 : color.surface3,
+            alignItems: 'center',
+            justifyContent: 'center',
+          },
+          box,
+        ]}
+      >
+        <Text
+          style={{
+            fontFamily: typeface,
+            fontWeight: '700',
+            color: done ? color.muted : color.white,
+          }}
+        >
+          {value}
+        </Text>
+      </Animated.View>
+    </Pressable>
   );
 }

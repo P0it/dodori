@@ -1,5 +1,6 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, Text } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { color, space, typeface } from '@/theme/tokens';
 import type { GameProps } from '../GameHost';
 
@@ -13,6 +14,17 @@ export default function ReactionGame({ onFinish }: GameProps) {
   const [times, setTimes] = useState<number[]>([]);
   const shownAt = useRef(0);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pulse = useSharedValue(1);
+
+  // 초록이 뜨는 순간 화면이 한 번 튀어야 "지금"이 눈에 박힌다.
+  // 초록 전(ready)에는 아무 움직임도 주지 않는다 — 미세한 변화도 예고가 되면 측정이 무의미해진다.
+  useEffect(() => {
+    if (state !== 'now') return;
+    pulse.value = 1.06;
+    pulse.value = withSpring(1, { damping: 8, stiffness: 300 });
+  }, [state, pulse]);
+
+  const surface = useAnimatedStyle(() => ({ transform: [{ scale: pulse.value }] }));
 
   function arm() {
     setState('ready');
@@ -53,24 +65,28 @@ export default function ReactionGame({ onFinish }: GameProps) {
     state === 'now' ? '지금!' : state === 'ready' ? '기다려…' : `탭해서 시작 (${times.length + 1}/${ROUNDS})`;
 
   return (
-    <Pressable
-      onPress={tap}
-      style={{
-        height: 300,
-        borderRadius: 16,
-        backgroundColor: bg,
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      <Text style={{ fontFamily: typeface, fontWeight: '800', fontSize: 22, color: color.white }}>
-        {label}
-      </Text>
-      {times.length > 0 && (
-        <Text style={{ fontFamily: typeface, color: color.white, marginTop: space[3] }}>
-          {times[times.length - 1] === PENALTY_MS ? '너무 빨라요 (+1000ms)' : `${times[times.length - 1]}ms`}
+    <Animated.View style={surface}>
+      <Pressable
+        onPress={tap}
+        style={{
+          height: 300,
+          borderRadius: 16,
+          backgroundColor: bg,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Text style={{ fontFamily: typeface, fontWeight: '800', fontSize: 22, color: color.white }}>
+          {label}
         </Text>
-      )}
-    </Pressable>
+        {times.length > 0 && (
+          <Text style={{ fontFamily: typeface, color: color.white, marginTop: space[3] }}>
+            {times[times.length - 1] === PENALTY_MS
+              ? '너무 빨라요 (+1000ms)'
+              : `${times[times.length - 1]}ms`}
+          </Text>
+        )}
+      </Pressable>
+    </Animated.View>
   );
 }
