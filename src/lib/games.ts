@@ -54,7 +54,7 @@ export const GAME_CATALOG: GameDef[] = [
   {
     key: 'taprush',
     name: '탭 연타',
-    blurb: '10초 동안 몇 번이나 누를 수 있나',
+    blurb: '5초 동안 몇 번이나 누를 수 있나',
     unit: 'count',
     higherIsBetter: true,
     format: (s) => `${s}번`,

@@ -3,9 +3,9 @@ import { Pressable, Text } from 'react-native';
 import { color, space, typeface } from '@/theme/tokens';
 import type { GameProps } from '../GameHost';
 
-const DURATION = 10_000;
+const DURATION = 5_000;
 
-/** 시작 후 10초 동안 최대한 많이 탭. 점수 = 탭 수. */
+/** 시작 후 5초 동안 최대한 많이 탭. 점수 = 탭 수. */
 export default function TapRushGame({ onFinish }: GameProps) {
   const [started, setStarted] = useState(false);
   const [taps, setTaps] = useState(0);
@@ -47,7 +47,7 @@ export default function TapRushGame({ onFinish }: GameProps) {
         {taps}
       </Text>
       <Text style={{ fontFamily: typeface, color: color.onPrimary, marginTop: space[2] }}>
-        {started ? `${(left / 1000).toFixed(1)}초` : '탭해서 시작 — 10초 연타!'}
+        {started ? `${(left / 1000).toFixed(1)}초` : '탭해서 시작 — 5초 연타!'}
       </Text>
     </Pressable>
   );
