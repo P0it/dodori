@@ -16,8 +16,10 @@ const MARK_DOT_D = MARK_SIZE * MARK_LOWER_DOT.d;
 
 const FONT_SIZE = 36;
 const LINE_HEIGHT = 44;
-/** 공이 튀는 바닥 — 글자 윗면. 줄 상단 기준 중심 y (마크 점 크기 그대로 튄다) */
+/** 공이 튀는 바닥 — 글자 윗면. 줄 상단 기준 중심 y */
 const FLOOR_CY = 0;
+/** 튀는 동안의 지름 — 마크 점(16.6px)보다 작다. 마지막에 진짜 점(5px)으로 바꿔치기할 때 낙차도 줄여준다 */
+const BALL_D = 9;
 /** 진짜 i 점의 대략 위치·지름 — 사라지는 공이 여기로 수렴한다 (겹치는 200ms만 보이면 되므로 대충이어도 된다) */
 const REAL_DOT_CY = 12;
 const REAL_DOT_D = 5;
@@ -136,13 +138,19 @@ export function BrandSplash({ onDone }: Props) {
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
-      // 마크에서 이탈 — 제자리에서 수직 낙하. 크기는 마크 점 그대로 두고 색만 그린 → 흰색.
+      // 마크에서 이탈 — 제자리에서 수직 낙하. 떨어지며 굴러다닐 크기로 줄고 그린 → 흰색.
       // 떨어지는 순간 이미 워드마크의 것이 된다 (마크에서 떼어졌으니 마크 색을 들고 있을 이유가 없다)
       Animated.parallel([
         Animated.timing(dotY, {
           toValue: floor,
           duration: DROP_DURATION,
           easing: Easing.in(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(dotScale, {
+          toValue: BALL_D / MARK_DOT_D,
+          duration: DROP_DURATION,
+          easing: Easing.out(Easing.cubic),
           useNativeDriver: true,
         }),
         Animated.timing(settle, {
