@@ -6,6 +6,16 @@ import { KakaoButton } from '@/components/KakaoButton';
 import { DodoriMark } from '@/components/DodoriMark';
 import { useSignInWithEmailDev, useSignInWithKakao } from '@/api/auth';
 
+/**
+ * 개발용 이메일 로그인 노출 여부. 웹에서는 `?dev=1`로 들어온 경우에만 — 공개 URL에 로그인 폼이
+ * 그대로 보이면 안 된다. 가드가 /login으로 보내며 쿼리를 버리므로 모듈 평가 시점에 붙잡아 둔다.
+ */
+const devLoginEnabled =
+  __DEV__ ||
+  (Platform.OS === 'web' &&
+    typeof window !== 'undefined' &&
+    new URLSearchParams(window.location.search).has('dev'));
+
 /** 웹에는 Alert.alert 구현이 없다 — 실패가 조용히 묻히면 원인을 알 길이 없다 */
 function notify(title: string, body: string) {
   if (Platform.OS === 'web') window.alert(`${title}
@@ -50,8 +60,7 @@ export default function Login() {
         >
           계속하면 이용약관과 개인정보 처리방침에{'\n'}동의하는 것으로 간주돼요.
         </Text>
-        {/* 웹 배포는 테스트 채널이라 함께 노출한다 — 카카오 없이 개발 계정으로 화면을 확인해야 한다 */}
-        {(__DEV__ || Platform.OS === 'web') && <DevEmailSignIn />}
+        {devLoginEnabled && <DevEmailSignIn />}
       </View>
     </View>
   );
