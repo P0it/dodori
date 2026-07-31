@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Alert, Pressable, Share, Text, View } from 'react-native';
+import { Alert, Platform, Pressable, Share, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
 import { color, typeface } from '@/theme/tokens';
@@ -7,6 +7,14 @@ import { TopBar } from '@/components/TopBar';
 import { Eyebrow } from '@/components/Eyebrow';
 import { Meta } from '@/components/Meta';
 import { useCreateInvite, useMyCouple } from '@/api/couple';
+import { inviteShareMessage, inviteUrl } from '@/lib/invite';
+
+/**
+ * 초대 링크의 베이스 주소 — 웹은 지금 열려 있는 주소가 정답이고,
+ * 네이티브는 웹 배포 주소를 env로 알려줘야 한다 (없으면 코드만 공유된다).
+ */
+const webBaseUrl =
+  Platform.OS === 'web' ? window.location.origin : (process.env.EXPO_PUBLIC_WEB_URL ?? null);
 
 /**
  * 초대 보내기 + 수락 대기 (목업 03·04, §6.1 코드 직접 전달이 주 경로)
@@ -35,18 +43,20 @@ export default function SendInvite() {
   }, [couple.data, couple, router]);
 
   const code = couple.data?.inviteCode ?? createInvite.data?.invite_code ?? null;
+  const link = code ? inviteUrl(webBaseUrl, code) : null;
 
   const copy = async () => {
     if (!code) return;
-    await Clipboard.setStringAsync(code);
-    Alert.alert('복사됨', '초대 코드를 붙여넣어 상대에게 보내주세요.');
+    await Clipboard.setStringAsync(link ?? code);
+    Alert.alert(
+      '복사됨',
+      link ? '초대 링크를 붙여넣어 상대에게 보내주세요.' : '초대 코드를 붙여넣어 상대에게 보내주세요.',
+    );
   };
 
   const share = () => {
     if (!code) return;
-    Share.share({
-      message: `dodori에서 함께 기록해요! 앱에서 이 초대 코드를 입력해줘: ${code}`,
-    });
+    Share.share({ message: inviteShareMessage(link, code) });
   };
 
   return (
@@ -76,12 +86,14 @@ export default function SendInvite() {
             {code ?? '생성 중…'}
           </Text>
           <Meta style={{ marginTop: 10, fontSize: 12.5 }}>
-            상대가 앱에서 이 코드를 입력하면 연결돼요
+            {link
+              ? '링크를 보내면 코드를 입력하지 않아도 연결돼요'
+              : '상대가 앱에서 이 코드를 입력하면 연결돼요'}
           </Meta>
         </View>
 
         <View style={{ gap: 12, marginTop: 24 }}>
-          <PrimaryBtn label="코드 복사" onPress={copy} disabled={!code} />
+          <PrimaryBtn label={link ? '초대 링크 복사' : '코드 복사'} onPress={copy} disabled={!code} />
           <SecondaryBtn label="카톡 등으로 공유" onPress={share} disabled={!code} />
         </View>
 

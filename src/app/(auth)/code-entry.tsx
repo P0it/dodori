@@ -1,23 +1,31 @@
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { color, typeface } from '@/theme/tokens';
 import { TopBar } from '@/components/TopBar';
 import { Meta } from '@/components/Meta';
 import { useClaimInvite } from '@/api/couple';
+import { clearPendingInvite, useRefreshPendingInvite } from '@/api/pendingInvite';
 
 /** 초대 코드 입력 (PRD §6.1 — Phase A 주 경로, 목업 StartDate 입력 필드 스타일 재조합) */
 export default function CodeEntry() {
   const router = useRouter();
   const claim = useClaimInvite();
-  const [code, setCode] = useState('');
+  const refreshPending = useRefreshPendingInvite();
+  // 초대 링크로 들어왔으면 코드가 채워진 채 시작한다
+  const params = useLocalSearchParams<{ code?: string }>();
+  const [code, setCode] = useState((params.code ?? '').toUpperCase());
   const [error, setError] = useState<string | null>(null);
 
   const submit = () => {
     if (code.trim().length < 6 || claim.isPending) return;
     setError(null);
     claim.mutate(code, {
-      onSuccess: () => router.replace('/(auth)/start-date'),
+      onSuccess: async () => {
+        await clearPendingInvite();
+        refreshPending();
+        router.replace('/(auth)/start-date');
+      },
       onError: (e) => setError(e instanceof Error ? e.message : String(e)),
     });
   };
@@ -59,6 +67,29 @@ export default function CodeEntry() {
           <Text style={{ fontFamily: typeface, color: '#E8567A', fontSize: 12.5, marginTop: 10, textAlign: 'center' }}>
             {error}
           </Text>
+        ) : null}
+        {/* 이미 쓰인 링크로 들어오면 여기서 갇히므로 탈출구를 둔다 */}
+        {error && params.code ? (
+          <Pressable
+            onPress={async () => {
+              await clearPendingInvite();
+              refreshPending();
+              router.replace('/(auth)/connect');
+            }}
+            style={({ pressed }) => ({ marginTop: 10, opacity: pressed ? 0.6 : 1 })}
+          >
+            <Text
+              style={{
+                fontFamily: typeface,
+                fontSize: 12.5,
+                color: color.muted,
+                textAlign: 'center',
+                textDecorationLine: 'underline',
+              }}
+            >
+              다른 방법으로 연결하기
+            </Text>
+          </Pressable>
         ) : null}
 
         <Pressable
