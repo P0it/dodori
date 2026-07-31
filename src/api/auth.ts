@@ -34,7 +34,12 @@ export async function signInWithKakao() {
   if (Platform.OS === 'web') {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'kakao',
-      options: { redirectTo: window.location.origin },
+      // Supabase 기본 scope에는 account_email이 붙는데, 카카오 콘솔 동의항목에 없으면 KOE205로 실패한다.
+      // 이메일은 저장하지도 쓰지도 않으므로(식별은 카카오 회원번호) 프로필 두 개만 요청한다
+      options: {
+        redirectTo: window.location.origin,
+        scopes: 'profile_nickname profile_image',
+      },
     });
     if (error) throw error;
     return null;
