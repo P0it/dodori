@@ -6,17 +6,21 @@ import { DodoriMark, MARK_LOWER_DOT } from './DodoriMark';
 
 type Props = { onDone: () => void };
 
-/** 마지막 글자는 점 없는 i(U+0131) — 그 점은 마크에서 떨어져 나와 앉는다 */
+/** 튀는 동안은 마지막 글자가 점 없는 i(U+0131). 안착하면 진짜 i로 바꿔치기한다 */
 const LETTERS = ['d', 'o', 'd', 'o', 'r', 'ı'] as const;
+const DOTLESS_I = 'ı';
+const REAL_I = 'i';
 
 const MARK_SIZE = 64;
 const MARK_DOT_D = MARK_SIZE * MARK_LOWER_DOT.d;
 
 const FONT_SIZE = 36;
 const LINE_HEIGHT = 44;
-/** i 점의 지름·중심 y(글자 상단 기준) — 실제 i 점보다 굵다. 굴러온 공이라는 게 읽혀야 한다 */
-const DOT_SIZE = 10;
-const DOT_CY = 12;
+/** 공이 튀는 바닥 — 글자 윗면. 줄 상단 기준 중심 y (마크 점 크기 그대로 튄다) */
+const FLOOR_CY = 0;
+/** 진짜 i 점의 대략 위치·지름 — 사라지는 공이 여기로 수렴한다 (겹치는 200ms만 보이면 되므로 대충이어도 된다) */
+const REAL_DOT_CY = 12;
+const REAL_DOT_D = 5;
 
 /** 마크에서 제자리 수직 낙하 */
 const DROP_DURATION = 300;
@@ -25,6 +29,10 @@ const HOP_HEIGHTS = [34, 20, 14, 10, 7, 5];
 const HOP_DURATIONS = [380, 320, 280, 250, 220, 200];
 /** 떨어지는 동안 브랜드 그린 → 흰색 */
 const SETTLE_DURATION = 250;
+/** 공이 진짜 i 점으로 수렴하며 사라지는 시간 */
+const CONDENSE_DURATION = 200;
+/** 안착 후 머무는 시간 */
+const HOLD_DURATION = 1050;
 
 type Box = { x: number; y: number };
 
@@ -45,13 +53,17 @@ export function BrandSplash({ onDone }: Props) {
   const dotX = useRef(new Animated.Value(0)).current;
   const dotY = useRef(new Animated.Value(0)).current;
   const dotScale = useRef(new Animated.Value(1)).current;
+  const dotFade = useRef(new Animated.Value(1)).current;
   /** 0=브랜드 그린(마크의 점) → 1=흰색(워드마크의 점). 색은 네이티브 드라이버가 못 굴린다 */
   const settle = useRef(new Animated.Value(0)).current;
 
   const letters = useRef<number[]>([]);
+  const started = useRef(false);
   const [mark, setMark] = useState<Box | null>(null);
   const [row, setRow] = useState<Box | null>(null);
   const [centers, setCenters] = useState<number[] | null>(null);
+  /** 공이 다 튀었나 — 마지막 글자를 진짜 i로 바꿔치기하는 스위치 */
+  const [landed, setLanded] = useState(false);
 
   useEffect(() => {
     SplashScreen.hideAsync();
@@ -59,15 +71,17 @@ export function BrandSplash({ onDone }: Props) {
 
   // 점이 그려지기 전에 시작 좌표가 박혀 있어야 한다 (useEffect면 한 프레임 (0,0)에 번쩍인다)
   useLayoutEffect(() => {
-    if (!mark || !row || !centers) return;
+    if (!mark || !row || !centers || started.current) return;
+    // 마지막 글자를 i로 바꿔치기하면 줄 폭이 미세하게 달라져 onLayout이 다시 뜬다 — 한 번만 돈다
+    started.current = true;
 
     // 시작점 = 마크의 아래 점 자리 (겹쳐 있으므로 티가 안 난다)
     const from = {
       x: mark.x + MARK_SIZE * MARK_LOWER_DOT.cx,
       y: mark.y + MARK_SIZE * MARK_LOWER_DOT.cy,
     };
-    // 바닥 = i 점이 앉을 높이. 글자 위 이 수평선을 튄다
-    const floor = row.y + DOT_CY;
+    // 바닥 = 글자 윗면. 마크 점 크기 그대로 이 수평선 위를 튄다
+    const floor = row.y + FLOOR_CY;
     const stops = centers.map((cx) => row.x + cx);
     // 제자리에 떨어지므로 착지점 오른쪽에 남은 글자만 밟는다. 마크 점이 i보다 오른쪽일 리는 없지만
     // 그래도 비면 i로 한 번에 간다
@@ -77,6 +91,7 @@ export function BrandSplash({ onDone }: Props) {
     dotX.setValue(from.x);
     dotY.setValue(from.y);
     dotScale.setValue(1);
+    dotFade.setValue(1);
     settle.setValue(0);
 
     const arc = (toX: number, height: number, duration: number, scaleTo?: number) =>
@@ -121,19 +136,13 @@ export function BrandSplash({ onDone }: Props) {
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
-      // 마크에서 이탈 — 제자리에서 수직으로 떨어지며 굴러다닐 크기로 줄고, 그린에서 흰색으로 바뀐다.
+      // 마크에서 이탈 — 제자리에서 수직 낙하. 크기는 마크 점 그대로 두고 색만 그린 → 흰색.
       // 떨어지는 순간 이미 워드마크의 것이 된다 (마크에서 떼어졌으니 마크 색을 들고 있을 이유가 없다)
       Animated.parallel([
         Animated.timing(dotY, {
           toValue: floor,
           duration: DROP_DURATION,
           easing: Easing.in(Easing.quad),
-          useNativeDriver: true,
-        }),
-        Animated.timing(dotScale, {
-          toValue: DOT_SIZE / MARK_DOT_D,
-          duration: DROP_DURATION,
-          easing: Easing.out(Easing.cubic),
           useNativeDriver: true,
         }),
         Animated.timing(settle, {
@@ -144,17 +153,45 @@ export function BrandSplash({ onDone }: Props) {
         }),
       ]),
       ...hops.map((x, i) => arc(x, HOP_HEIGHTS[i], HOP_DURATIONS[i])),
-      Animated.delay(1050),
-      Animated.timing(fade, {
-        toValue: 0,
-        duration: 450,
-        easing: Easing.in(Easing.quad),
-        useNativeDriver: true,
-      }),
     ]).start(({ finished }) => {
-      if (finished) onDone();
+      if (!finished) return;
+      // 속임수 — 여기서 마지막 글자를 진짜 i로 바꾼다. 줄기는 ı와 같으니 점만 생긴다.
+      // 공은 그 점 위로 내려앉으며 폰트 점 크기로 줄고 사라진다 → 겹치는 200ms가 교체를 가린다.
+      // 최종 점은 Pretendard가 그린 진짜 점이라 크기도 중심도 저절로 맞는다.
+      setLanded(true);
+      Animated.sequence([
+        Animated.parallel([
+          Animated.timing(dotY, {
+            toValue: row.y + REAL_DOT_CY,
+            duration: CONDENSE_DURATION,
+            easing: Easing.out(Easing.quad),
+            useNativeDriver: true,
+          }),
+          Animated.timing(dotScale, {
+            toValue: REAL_DOT_D / MARK_DOT_D,
+            duration: CONDENSE_DURATION,
+            easing: Easing.out(Easing.quad),
+            useNativeDriver: true,
+          }),
+          Animated.timing(dotFade, {
+            toValue: 0,
+            duration: CONDENSE_DURATION,
+            easing: Easing.in(Easing.quad),
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.delay(HOLD_DURATION),
+        Animated.timing(fade, {
+          toValue: 0,
+          duration: 450,
+          easing: Easing.in(Easing.quad),
+          useNativeDriver: true,
+        }),
+      ]).start((r) => {
+        if (r.finished) onDone();
+      });
     });
-  }, [mark, row, centers, word, fade, dotX, dotY, dotScale, settle, onDone]);
+  }, [mark, row, centers, word, fade, dotX, dotY, dotScale, dotFade, settle, onDone]);
 
   // 실측이 끝나기 전에는 마크가 자기 점을 그대로 그린다 — 교대하는 순간 좌표가 같아 이음매가 없다
   const ready = mark !== null && row !== null && centers !== null;
@@ -201,7 +238,7 @@ export function BrandSplash({ onDone }: Props) {
               color: color.white,
             }}
           >
-            {ch}
+            {landed && ch === DOTLESS_I ? REAL_I : ch}
           </Text>
         ))}
       </Animated.View>
@@ -216,6 +253,7 @@ export function BrandSplash({ onDone }: Props) {
             left: -MARK_DOT_D / 2,
             width: MARK_DOT_D,
             height: MARK_DOT_D,
+            opacity: dotFade,
             transform: [{ translateX: dotX }, { translateY: dotY }, { scale: dotScale }],
           }}
         >
