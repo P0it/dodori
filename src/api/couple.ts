@@ -188,9 +188,12 @@ export function useCompleteSetup() {
       }
       return data as { created: number };
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['couple'] });
-      qc.invalidateQueries({ queryKey: ['anniversaries'] });
+    // 무효화를 기다린다 — 화면이 곧바로 이동하면 가드가 낡은 커플 상태를 보고 되돌려보낸다
+    onSuccess: async () => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ['couple'] }),
+        qc.invalidateQueries({ queryKey: ['anniversaries'] }),
+      ]);
     },
   });
 }
