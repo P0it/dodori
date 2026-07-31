@@ -17,8 +17,9 @@ export function SongCard({ song }: { song: Song }) {
   const status = useAudioPlayerStatus(player);
   const [pickerOpen, setPickerOpen] = useState(false);
   const { width, height } = useWindowDimensions();
-  // 세로가 짧은 기기에서도 주제 카드가 접히지 않게 화면 높이로도 한 번 더 제한
-  const posterSize = Math.min(width - space[4] * 4, height * 0.2); // 화면 gutter + 카드 padding
+  // 자켓은 항상 정사각(비율을 깨지 않는다). 가로는 카드 안쪽 폭의 40%, 세로가 짧은 기기에서는
+  // 화면 높이로 한 번 더 눌러 추천곡·주제·게임 세 카드가 한 화면에 들어오게 한다.
+  const artSize = Math.min(Math.round((width - space[4] * 4) * 0.4), Math.round(height * 0.17), 148);
 
   function toggle() {
     if (status.playing) {
@@ -56,66 +57,74 @@ export function SongCard({ song }: { song: Song }) {
         </Pressable>
       </View>
 
-      {/* 포스터가 주인공이되 주제 카드까지 한 화면에 들어오는 크기 (스포티파이 Now Playing) */}
-      <Image
-        source={{ uri: song.artworkUrl }}
-        style={{
-          width: posterSize,
-          height: posterSize,
-          alignSelf: 'center',
-          borderRadius: 12,
-          backgroundColor: color.surface2,
-          marginTop: space[2],
-        }}
-        contentFit="cover"
-        transition={200}
-      />
+      {/* 자켓은 왼쪽에 크게, 제목·재생은 오른쪽 — 세로로 쌓으면 카드 하나가 화면을 다 먹는다 */}
+      <View style={{ flexDirection: 'row', gap: space[4], marginTop: space[3] }}>
+        <Image
+          source={{ uri: song.artworkUrl }}
+          style={{
+            width: artSize,
+            height: artSize,
+            borderRadius: 12,
+            backgroundColor: color.surface2,
+          }}
+          contentFit="cover"
+          transition={200}
+        />
 
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[4], marginTop: space[3] }}>
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, justifyContent: 'center' }}>
           <Text
             numberOfLines={2}
             style={{
               fontFamily: typeface,
               fontWeight: '800',
-              fontSize: font.section,
-              lineHeight: 30,
+              fontSize: font.albumTitle,
+              lineHeight: 28,
               letterSpacing: -0.5,
               color: color.white,
             }}
           >
             {song.title}
           </Text>
-          <Text
-            numberOfLines={1}
+
+          <View
             style={{
-              fontFamily: typeface,
-              fontWeight: '600',
-              fontSize: font.body,
-              color: color.sub,
-              marginTop: space[1],
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: space[3],
+              marginTop: space[2],
             }}
           >
-            {song.artist}
-          </Text>
-        </View>
+            <Text
+              numberOfLines={1}
+              style={{
+                flex: 1,
+                fontFamily: typeface,
+                fontWeight: '600',
+                fontSize: font.bodySm,
+                color: color.sub,
+              }}
+            >
+              {song.artist}
+            </Text>
 
-        <Pressable
-          onPress={toggle}
-          accessibilityRole="button"
-          accessibilityLabel={status.playing ? '미리듣기 정지' : '30초 미리듣기'}
-          hitSlop={8}
-          style={({ pressed }) => ({
-            width: 60,
-            height: 60,
-            borderRadius: radius.pill,
-            backgroundColor: pressed ? color.greenPress : color.greenCore,
-            alignItems: 'center',
-            justifyContent: 'center',
-          })}
-        >
-          {status.playing ? <PauseGlyph /> : <PlayGlyph />}
-        </Pressable>
+            <Pressable
+              onPress={toggle}
+              accessibilityRole="button"
+              accessibilityLabel={status.playing ? '미리듣기 정지' : '30초 미리듣기'}
+              hitSlop={8}
+              style={({ pressed }) => ({
+                width: 52,
+                height: 52,
+                borderRadius: radius.pill,
+                backgroundColor: pressed ? color.greenPress : color.greenCore,
+                alignItems: 'center',
+                justifyContent: 'center',
+              })}
+            >
+              {status.playing ? <PauseGlyph /> : <PlayGlyph />}
+            </Pressable>
+          </View>
+        </View>
       </View>
 
       <MusicServiceSheet

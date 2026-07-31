@@ -22,7 +22,7 @@ export function GameCard({
     <Pressable
       onPress={onPress}
       style={({ pressed }) => ({
-        marginTop: space[5],
+        marginTop: space[4],
         borderRadius: 14,
         padding: space[4],
         backgroundColor: color.surface1,
