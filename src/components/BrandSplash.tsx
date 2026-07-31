@@ -97,8 +97,13 @@ export function BrandSplash({ onDone }: Props) {
     // 바닥 = 글자 윗면. 마크 점 크기 그대로 이 수평선 위를 튄다
     const floor = row.y + FLOOR_CY;
     const stops = boxes.map((b) => row.x + b.x + b.width / 2);
-    // 떨어진 자리부터 오른쪽에 남은 글자를 하나씩 밟는다
-    const hops = stops.filter((x) => x > from.x);
+    // 떨어진 자리의 **다음** 글자부터 하나씩 밟는다. 지금 밟고 선 글자를 목록에 넣으면
+    // 그 글자 중심까지 몇 px을 가는 제자리 수직 도약이 한 번 생긴다
+    const landedOn = stops.reduce(
+      (best, x, i) => (Math.abs(x - from.x) < Math.abs(stops[best] - from.x) ? i : best),
+      0,
+    );
+    const hops = stops.slice(landedOn + 1);
 
     dotX.setValue(from.x);
     dotY.setValue(from.y);
