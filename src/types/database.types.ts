@@ -788,24 +788,21 @@ export type Database = {
         Row: {
           created_at: string
           id: string
-          option_a: string
-          option_b: string
+          options: Json
           question: string
           seq: number
         }
         Insert: {
           created_at?: string
           id?: string
-          option_a: string
-          option_b: string
+          options: Json
           question: string
           seq: number
         }
         Update: {
           created_at?: string
           id?: string
-          option_a?: string
-          option_b?: string
+          options?: Json
           question?: string
           seq?: number
         }
@@ -1093,4 +1090,3 @@ export const Constants = {
     Enums: {},
   },
 } as const
-

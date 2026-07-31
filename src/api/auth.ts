@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { Platform } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { User } from '@supabase/supabase-js';
 import { supabase } from './supabase';
@@ -23,11 +24,21 @@ async function ensureProfile(user: User) {
 }
 
 /**
- * 카카오 네이티브 로그인 → Supabase 세션 교환.
- * 카카오 콘솔에서 OpenID Connect 활성화 필수 (idToken 발급 조건).
- * 네이티브 SDK는 dev client 빌드에서만 동작 (Expo Go 불가).
+ * 카카오 로그인 → Supabase 세션.
+ * - 네이티브: 카카오 SDK idToken을 Supabase와 교환 (dev client 빌드 필요, Expo Go 불가).
+ *   카카오 콘솔에서 OpenID Connect 활성화 필수 (idToken 발급 조건).
+ * - 웹: Supabase 카카오 OAuth로 리다이렉트 — 세션은 복귀 후 detectSessionInUrl이 세우고
+ *   프로필 행은 useAuthListener가 보장한다. 그래서 여기선 null을 돌려준다.
  */
 export async function signInWithKakao() {
+  if (Platform.OS === 'web') {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'kakao',
+      options: { redirectTo: window.location.origin },
+    });
+    if (error) throw error;
+    return null;
+  }
   const { login } = await import('@react-native-kakao/user');
   const token = await login();
   if (!token.idToken) {
@@ -88,7 +99,9 @@ export function useSession() {
 export function useAuthListener() {
   const qc = useQueryClient();
   useEffect(() => {
-    const { data: sub } = supabase.auth.onAuthStateChange(() => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      // 웹 OAuth는 리다이렉트로 돌아오며 로그인이 끝나므로 프로필 행 보장이 여기서만 가능하다
+      if (event === 'SIGNED_IN' && session) void ensureProfile(session.user);
       qc.invalidateQueries({ queryKey: ['session'] });
       qc.invalidateQueries({ queryKey: ['couple'] });
     });

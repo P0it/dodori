@@ -9,11 +9,18 @@ export interface Topic {
   id: string;
   seq: number;
   question: string;
-  optionA: string;
-  optionB: string;
+  /** 2~5개. 순서가 곧 선택 키 — options[0]='a', [1]='b', … */
+  options: string[];
 }
 
-export type Choice = 'a' | 'b';
+/** 상한 5는 DB 제약과 짝이다 (topics_options_len, topic_votes_choice_check) */
+export const CHOICE_KEYS = ['a', 'b', 'c', 'd', 'e'] as const;
+export type Choice = (typeof CHOICE_KEYS)[number];
+
+/** jsonb 컬럼은 Json으로 내려온다. 내용 제약(2~5개 text)은 DB가 건다 */
+function toOptions(v: unknown): string[] {
+  return Array.isArray(v) ? v.map(String) : [];
+}
 
 /** 전체 주제 개수 — 순환 배정의 나눗수. 시드가 늘면 자연히 반영된다 */
 function useTopicCount() {
@@ -44,7 +51,7 @@ export function useTodayTopic() {
     queryFn: async (): Promise<Topic> => {
       const { data, error } = await supabase
         .from('topics')
-        .select('id, seq, question, option_a, option_b')
+        .select('id, seq, question, options')
         .eq('seq', seq!)
         .single();
       if (error) throw error;
@@ -52,8 +59,7 @@ export function useTodayTopic() {
         id: data.id,
         seq: data.seq,
         question: data.question,
-        optionA: data.option_a,
-        optionB: data.option_b,
+        options: toOptions(data.options),
       };
     },
   });
@@ -67,7 +73,7 @@ export function useTopic(id: string | undefined) {
     queryFn: async (): Promise<Topic> => {
       const { data, error } = await supabase
         .from('topics')
-        .select('id, seq, question, option_a, option_b')
+        .select('id, seq, question, options')
         .eq('id', id!)
         .single();
       if (error) throw error;
@@ -75,8 +81,7 @@ export function useTopic(id: string | undefined) {
         id: data.id,
         seq: data.seq,
         question: data.question,
-        optionA: data.option_a,
-        optionB: data.option_b,
+        options: toOptions(data.options),
       };
     },
   });
@@ -209,7 +214,7 @@ export function usePastTopics() {
     queryFn: async (): Promise<PastTopic[]> => {
       const { data, error } = await supabase
         .from('topics')
-        .select('id, seq, question, option_a, option_b, topic_votes(user_id, choice)')
+        .select('id, seq, question, options, topic_votes(user_id, choice)')
         .lt('seq', todaySeq!)
         .order('seq', { ascending: false });
       if (error) throw error;
@@ -217,8 +222,7 @@ export function usePastTopics() {
         id: t.id,
         seq: t.seq,
         question: t.question,
-        optionA: t.option_a,
-        optionB: t.option_b,
+        options: toOptions(t.options),
         mine: (t.topic_votes?.find((v) => v.user_id === uid)?.choice as Choice) ?? null,
         partner: (t.topic_votes?.find((v) => v.user_id !== uid)?.choice as Choice) ?? null,
       }));

@@ -11,7 +11,7 @@ type Props = {
   onPress: () => void;
 };
 
-/** 2지선다 한 행 — 라디오 + 한 줄 라벨. 세로로 쌓아 줄바꿈 없이 읽힌다 */
+/** 선택지 한 행 — 라디오 + 한 줄 라벨. 세로로 쌓아 줄바꿈 없이 읽힌다 (2~5개) */
 export function ChoiceRow({ label, pickedBy, selected, disabled, onPress }: Props) {
   return (
     <Pressable

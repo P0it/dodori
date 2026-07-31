@@ -19,6 +19,7 @@ import {
   useVote,
   useTopicComments,
   useAddComment,
+  CHOICE_KEYS,
   type Choice,
   type TopicComment,
 } from '@/api/topics';
@@ -108,20 +109,19 @@ export default function TopicDetail() {
         </Text>
 
         <View style={{ gap: 10, marginTop: 18 }}>
-          <ChoiceRow
-            label={topic.data.optionA}
-            pickedBy={pickedBy('a')}
-            selected={mine === 'a'}
-            disabled={!editable || vote.isPending}
-            onPress={() => vote.mutate('a')}
-          />
-          <ChoiceRow
-            label={topic.data.optionB}
-            pickedBy={pickedBy('b')}
-            selected={mine === 'b'}
-            disabled={!editable || vote.isPending}
-            onPress={() => vote.mutate('b')}
-          />
+          {topic.data.options.map((label, i) => {
+            const key = CHOICE_KEYS[i];
+            return (
+              <ChoiceRow
+                key={key}
+                label={label}
+                pickedBy={pickedBy(key)}
+                selected={mine === key}
+                disabled={!editable || vote.isPending}
+                onPress={() => vote.mutate(key)}
+              />
+            );
+          })}
         </View>
 
         {locked ? (
