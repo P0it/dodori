@@ -14,20 +14,17 @@ const MARK_DOT_D = MARK_SIZE * MARK_LOWER_DOT.d;
 
 const FONT_SIZE = 36;
 const LINE_HEIGHT = 44;
-/** i 점의 지름·중심 y(글자 상단 기준) — Pretendard ExtraBold 36px에 맞춘 눈대중 값 */
-const DOT_SIZE = 5;
+/** i 점의 지름·중심 y(글자 상단 기준) — 실제 i 점보다 굵다. 굴러온 공이라는 게 읽혀야 한다 */
+const DOT_SIZE = 10;
 const DOT_CY = 12;
 
-/** 마크에서 떨어져 나올 때 첫 아치 — 왼쪽 위로 튀어올라 d에 떨어진다 */
-const LAUNCH = { height: 46, duration: 320 };
-/** d→o→d→o→r→i 다섯 번, 점점 낮고 빠르게 */
-const HOPS = [
-  { height: 30, duration: 190 },
-  { height: 22, duration: 170 },
-  { height: 15, duration: 155 },
-  { height: 10, duration: 140 },
-  { height: 6, duration: 125 },
-];
+/** 마크에서 제자리 수직 낙하 */
+const DROP_DURATION = 300;
+/** 착지 후 오른쪽 글자를 하나씩 밟아 i까지. 남은 글자 수만큼 앞에서 잘라 쓴다 (마지막 홉이 늘 제일 작다) */
+const HOP_HEIGHTS = [34, 20, 14, 10, 7, 5];
+const HOP_DURATIONS = [380, 320, 280, 250, 220, 200];
+/** 안착하면서 브랜드 그린 → 흰색 */
+const SETTLE_DURATION = 250;
 
 type Box = { x: number; y: number };
 
@@ -48,6 +45,8 @@ export function BrandSplash({ onDone }: Props) {
   const dotX = useRef(new Animated.Value(0)).current;
   const dotY = useRef(new Animated.Value(0)).current;
   const dotScale = useRef(new Animated.Value(1)).current;
+  /** 0=브랜드 그린(마크의 점) → 1=흰색(워드마크의 점). 색은 네이티브 드라이버가 못 굴린다 */
+  const settle = useRef(new Animated.Value(0)).current;
 
   const letters = useRef<number[]>([]);
   const [mark, setMark] = useState<Box | null>(null);
@@ -70,10 +69,15 @@ export function BrandSplash({ onDone }: Props) {
     // 바닥 = i 점이 앉을 높이. 글자 위 이 수평선을 튄다
     const floor = row.y + DOT_CY;
     const stops = centers.map((cx) => row.x + cx);
+    // 제자리에 떨어지므로 착지점 오른쪽에 남은 글자만 밟는다. 마크 점이 i보다 오른쪽일 리는 없지만
+    // 그래도 비면 i로 한 번에 간다
+    const remaining = stops.filter((x) => x > from.x);
+    const hops = remaining.length > 0 ? remaining : [stops[stops.length - 1]];
 
     dotX.setValue(from.x);
     dotY.setValue(from.y);
     dotScale.setValue(1);
+    settle.setValue(0);
 
     const arc = (toX: number, height: number, duration: number, scaleTo?: number) =>
       Animated.parallel([
@@ -113,24 +117,44 @@ export function BrandSplash({ onDone }: Props) {
       Animated.delay(100),
       Animated.timing(word, {
         toValue: 1,
-        duration: 280,
+        duration: 420,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
-      // 마크에서 이탈 — 날아가는 동안 마크 점 크기에서 i 점 크기로 줄어든다
-      arc(stops[0], LAUNCH.height, LAUNCH.duration, DOT_SIZE / MARK_DOT_D),
-      ...HOPS.map(({ height, duration }, i) => arc(stops[i + 1], height, duration)),
-      Animated.delay(280),
+      // 마크에서 이탈 — 제자리에서 수직으로 떨어지며 마크 점 크기에서 굴러다닐 크기로 줄어든다
+      Animated.parallel([
+        Animated.timing(dotY, {
+          toValue: floor,
+          duration: DROP_DURATION,
+          easing: Easing.in(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(dotScale, {
+          toValue: DOT_SIZE / MARK_DOT_D,
+          duration: DROP_DURATION,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+      ]),
+      ...hops.map((x, i) => arc(x, HOP_HEIGHTS[i], HOP_DURATIONS[i])),
+      // 안착 — 그린에서 흰색으로 (여기서 워드마크가 하나로 완성된다)
+      Animated.timing(settle, {
+        toValue: 1,
+        duration: SETTLE_DURATION,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: false,
+      }),
+      Animated.delay(800),
       Animated.timing(fade, {
         toValue: 0,
-        duration: 300,
+        duration: 450,
         easing: Easing.in(Easing.quad),
         useNativeDriver: true,
       }),
     ]).start(({ finished }) => {
       if (finished) onDone();
     });
-  }, [mark, row, centers, word, fade, dotX, dotY, dotScale, onDone]);
+  }, [mark, row, centers, word, fade, dotX, dotY, dotScale, settle, onDone]);
 
   // 실측이 끝나기 전에는 마크가 자기 점을 그대로 그린다 — 교대하는 순간 좌표가 같아 이음매가 없다
   const ready = mark !== null && row !== null && centers !== null;
@@ -184,18 +208,29 @@ export function BrandSplash({ onDone }: Props) {
 
       {/* 떼어낸 마크의 아래 점 — 화면 좌표계에서 마크와 워드마크 사이를 오간다 */}
       {ready && (
-      <Animated.View
-        style={{
-          position: 'absolute',
-          top: -MARK_DOT_D / 2,
-          left: -MARK_DOT_D / 2,
-          width: MARK_DOT_D,
-          height: MARK_DOT_D,
-          borderRadius: MARK_DOT_D / 2,
-          backgroundColor: color.accent,
-          transform: [{ translateX: dotX }, { translateY: dotY }, { scale: dotScale }],
-        }}
-      />
+        // 이동은 네이티브 드라이버(바깥), 색은 JS 드라이버(안쪽) — 한 View에 섞으면 RN이 거부한다
+        <Animated.View
+          style={{
+            position: 'absolute',
+            top: -MARK_DOT_D / 2,
+            left: -MARK_DOT_D / 2,
+            width: MARK_DOT_D,
+            height: MARK_DOT_D,
+            transform: [{ translateX: dotX }, { translateY: dotY }, { scale: dotScale }],
+          }}
+        >
+          <Animated.View
+            style={{
+              width: '100%',
+              height: '100%',
+              borderRadius: MARK_DOT_D / 2,
+              backgroundColor: settle.interpolate({
+                inputRange: [0, 1],
+                outputRange: [color.accent, color.white],
+              }),
+            }}
+          />
+        </Animated.View>
       )}
     </Animated.View>
   );
