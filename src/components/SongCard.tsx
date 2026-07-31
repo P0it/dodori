@@ -17,9 +17,9 @@ export function SongCard({ song }: { song: Song }) {
   const status = useAudioPlayerStatus(player);
   const [pickerOpen, setPickerOpen] = useState(false);
   const { width, height } = useWindowDimensions();
-  // 자켓은 항상 정사각(비율을 깨지 않는다). 가로는 카드 안쪽 폭의 40%, 세로가 짧은 기기에서는
-  // 화면 높이로 한 번 더 눌러 추천곡·주제·게임 세 카드가 한 화면에 들어오게 한다.
-  const artSize = Math.min(Math.round((width - space[4] * 4) * 0.4), Math.round(height * 0.17), 148);
+  // 자켓은 항상 정사각(비율을 깨지 않는다). 큰 폰에서는 자켓이 커져 히어로답게 보이고,
+  // 세로가 짧은 기기에서는 눌려서 추천곡·주제·게임 세 카드가 한 화면에 들어온다.
+  const artSize = Math.min(Math.round((width - space[4] * 4) * 0.46), Math.round(height * 0.2), 170);
 
   function toggle() {
     if (status.playing) {

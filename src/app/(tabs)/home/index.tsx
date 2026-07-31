@@ -56,7 +56,15 @@ export default function Today() {
   return (
     <ScrollView
       style={{ backgroundColor: color.bg }}
-      contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 32 }}
+      contentContainerStyle={{
+        paddingHorizontal: 16,
+        paddingTop: 12,
+        paddingBottom: 32,
+        // 카드 높이는 고정이라 큰 폰에서는 아래가 빈다 — 남는 세로를 카드 사이 간격으로 흘려보낸다.
+        // 내용이 화면보다 길어지면 flexGrow는 아무 일도 하지 않고 평소처럼 스크롤된다.
+        flexGrow: 1,
+        justifyContent: 'space-between',
+      }}
     >
       <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 10 }}>
         <Text
