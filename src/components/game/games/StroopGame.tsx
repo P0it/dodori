@@ -3,7 +3,8 @@ import { Pressable, Text, View } from 'react-native';
 import { color, space, typeface } from '@/theme/tokens';
 import type { GameProps } from '../GameHost';
 
-const DURATION = 30_000;
+/** 길이를 바꾸면 GAME_CATALOG의 blurb도 같이 고칠 것 */
+const DURATION = 15_000;
 const WORDS = [
   { label: '빨강', key: 'red', hex: color.holiday },
   { label: '초록', key: 'green', hex: color.accent },
@@ -11,7 +12,7 @@ const WORDS = [
   { label: '노랑', key: 'yellow', hex: color.anniv },
 ];
 
-/** 글자의 뜻이 아니라 '글자색'을 고른다. 30초간 맞힌 수. */
+/** 글자의 뜻이 아니라 '글자색'을 고른다. 제한 시간 안에 맞힌 수. */
 export default function StroopGame({ onFinish }: GameProps) {
   const [n, setN] = useState(0);
   const [score, setScore] = useState(0);

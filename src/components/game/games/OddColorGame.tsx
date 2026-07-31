@@ -11,9 +11,11 @@ import type { GameProps } from '../GameHost';
 export default function OddColorGame({ onFinish }: GameProps) {
   const [level, setLevel] = useState(1);
 
-  const cols = Math.min(2 + Math.floor(level / 2), 6);
+  const cols = Math.min(2 + Math.floor(level / 2), 5);
   const count = cols * cols;
-  const diff = Math.max(6, 60 - level * 4); // 명도차(작을수록 어려움)
+  // 명도차(작을수록 어려움). 가파르게 좁혀야 한 판이 10초대에서 끝난다 —
+  // 완만하면 잘하는 사람이 20단계까지 가면서 판이 늘어진다.
+  const diff = Math.max(4, 44 - level * 7);
   const base = 60;
   const baseColor = `hsl(210, 12%, ${base}%)`;
   const oddColor = `hsl(210, 12%, ${base - diff / 3}%)`;

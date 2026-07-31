@@ -3,9 +3,11 @@ import { Pressable, Text, View } from 'react-native';
 import { color, space, typeface } from '@/theme/tokens';
 import type { GameProps } from '../GameHost';
 
-const N = 25;
+/** 4x4. 개수를 바꾸면 GAME_CATALOG의 blurb와 아래 그리드 폭(COLS)도 같이 고칠 것 */
+const N = 16;
+const COLS = 4;
 
-/** 흩어진 1~25를 순서대로. 1을 누르면 타이머 시작, 25에서 종료. 점수 = 걸린 시간(ms). */
+/** 흩어진 1~16을 순서대로. 1을 누르면 타이머 시작, 마지막에서 종료. 점수 = 걸린 시간(ms). */
 export default function SequenceGame({ onFinish }: GameProps) {
   // 배치는 판마다 새로 섞는다 — 고정이면 두 번째 판부터 위치를 외운 사람이 이긴다
   const layout = useMemo(() => {
@@ -36,7 +38,7 @@ export default function SequenceGame({ onFinish }: GameProps) {
         style={{
           flexDirection: 'row',
           flexWrap: 'wrap',
-          width: 5 * 60,
+          width: COLS * 60,
           marginTop: space[3],
           justifyContent: 'center',
         }}

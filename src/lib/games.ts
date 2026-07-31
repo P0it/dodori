@@ -22,7 +22,7 @@ export const GAME_CATALOG: GameDef[] = [
   {
     key: 'reaction',
     name: '반응속도',
-    blurb: '초록으로 바뀌는 순간 탭 — 5번의 평균',
+    blurb: '초록으로 바뀌는 순간 탭 — 4번의 평균',
     unit: 'ms',
     higherIsBetter: false,
     format: (s) => `${Math.round(s)}ms`,
@@ -30,7 +30,7 @@ export const GAME_CATALOG: GameDef[] = [
   {
     key: 'whack',
     name: '두더지 잡기',
-    blurb: '10초 동안 튀어나오는 칸을 탭',
+    blurb: '8초 동안 튀어나오는 칸을 탭',
     unit: 'count',
     higherIsBetter: true,
     format: (s) => `${s}마리`,
@@ -63,7 +63,7 @@ export const GAME_CATALOG: GameDef[] = [
   {
     key: 'stroop',
     name: '글자색 고르기',
-    blurb: '글자의 뜻이 아니라 글자색을 고른다 — 30초',
+    blurb: '글자의 뜻이 아니라 글자색을 고른다 — 15초',
     unit: 'count',
     higherIsBetter: true,
     format: (s) => `${s}개`,
@@ -71,7 +71,7 @@ export const GAME_CATALOG: GameDef[] = [
   {
     key: 'sequence',
     name: '숫자 순서 탭',
-    blurb: '흩어진 1~25를 순서대로',
+    blurb: '흩어진 1~16을 순서대로',
     unit: 'ms',
     higherIsBetter: false,
     format: (s) => `${(s / 1000).toFixed(1)}초`,
