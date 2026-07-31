@@ -66,7 +66,17 @@ function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-    <PersistQueryClientProvider client={queryClient} persistOptions={{ persister }}>
+    <PersistQueryClientProvider
+      client={queryClient}
+      persistOptions={{
+        persister,
+        // 이미 ['session']=null이 저장된 기기가 있다 — 버스터를 올려 옛 캐시를 한 번 버린다
+        buster: 'session-excluded-1',
+        // 세션은 캐시로 복원하지 않는다 — supabase가 토큰을 따로 들고 있고, 여기 담긴 낡은 값이
+        // 복원되면 (staleTime Infinity라 재조회도 없어) 로그인 직후에도 로그아웃 상태로 보인다
+        dehydrateOptions: { shouldDehydrateQuery: (q) => q.queryKey[0] !== 'session' },
+      }}
+    >
       <AuthBridge />
       <StatusBar style="light" />
       <View style={{ flex: 1, backgroundColor: color.bg }}>
