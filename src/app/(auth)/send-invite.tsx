@@ -53,11 +53,24 @@ export default function SendInvite() {
 
   const copy = async () => {
     if (!code) return;
-    await Clipboard.setStringAsync(link ?? code);
-    notify(
-      '복사됨',
-      link ? '초대 링크를 붙여넣어 상대에게 보내주세요.' : '초대 코드를 붙여넣어 상대에게 보내주세요.',
-    );
+    const text = link ?? code;
+    const done = () =>
+      notify(
+        '복사됨',
+        link ? '초대 링크를 붙여넣어 상대에게 보내주세요.' : '초대 코드를 붙여넣어 상대에게 보내주세요.',
+      );
+    if (Platform.OS !== 'web') {
+      await Clipboard.setStringAsync(text);
+      done();
+      return;
+    }
+    // 웹은 브라우저 API를 직접 쓴다 — 권한·포커스 문제로 막히면 최소한 값을 눈에 보이게 준다
+    try {
+      await navigator.clipboard.writeText(text);
+      done();
+    } catch {
+      window.prompt('복사가 막혔어요. 아래 내용을 직접 복사해 주세요.', text);
+    }
   };
 
   /** 주 동선 — 초대는 결국 카톡으로 보내는 일이다. 웹은 Share.share가 없어 navigator.share로, 그마저 없으면 복사로 떨어진다 */
