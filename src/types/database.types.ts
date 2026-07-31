@@ -181,6 +181,47 @@ export type Database = {
           },
         ]
       }
+      game_scores: {
+        Row: {
+          attempts: number
+          best_score: number
+          couple_id: string
+          game_date: string
+          game_key: string
+          higher_is_better: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          best_score: number
+          couple_id: string
+          game_date: string
+          game_key: string
+          higher_is_better: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          best_score?: number
+          couple_id?: string
+          game_date?: string
+          game_key?: string
+          higher_is_better?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_scores_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       holidays_extra: {
         Row: {
           date: string
@@ -950,11 +991,36 @@ export type Database = {
     }
     Functions: {
       create_couple: { Args: { p_invite_code: string }; Returns: string }
+      has_played: { Args: { p_date: string }; Returns: boolean }
       has_voted: { Args: { p_topic_id: string }; Returns: boolean }
       invoke_daily_release: { Args: never; Returns: undefined }
       invoke_sync_holidays: { Args: never; Returns: undefined }
       my_couple_id: { Args: never; Returns: string }
       partner_voted: { Args: { p_topic_id: string }; Returns: boolean }
+      submit_game_round: {
+        Args: {
+          p_date: string
+          p_game_key: string
+          p_higher_is_better: boolean
+          p_score: number
+        }
+        Returns: {
+          attempts: number
+          best_score: number
+          couple_id: string
+          game_date: string
+          game_key: string
+          higher_is_better: boolean
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "game_scores"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
     }
     Enums: {
       [_ in never]: never
