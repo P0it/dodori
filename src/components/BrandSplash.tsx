@@ -32,15 +32,12 @@ const REAL_DOT_D = 5;
 /** 마크에서 제자리 수직 낙하 */
 const DROP_DURATION = 300;
 /**
- * 홉의 높이·시간은 그 홉이 실제로 가는 가로 거리에서 뽑는다. 고정값을 쓰면 거리가 짧은 홉이
- * 위로만 크게 튀어 "제자리에서 한 번 더 튀는" 걸로 보인다 (착지점이 워드마크 오른쪽이라 늘 짧다).
+ * 홉은 감쇠한다 — 첫 홉이 가장 높고 매번 반발계수만큼 낮아진다. 시간은 높이의 제곱근에 비례한다
+ * (자유낙하). 높이를 이동 거리에서 뽑아봤지만 그건 물리가 아니라 통통이 안 산다.
  */
-const HOP_HEIGHT_RATIO = 0.6;
-const HOP_HEIGHT_RANGE = [6, 26] as const;
-const HOP_MS_PER_PX = 12;
-const HOP_DURATION_RANGE = [220, 380] as const;
-
-const clamp = (v: number, [lo, hi]: readonly [number, number]) => Math.min(hi, Math.max(lo, v));
+const HOP_FIRST_HEIGHT = 34;
+const HOP_RESTITUTION = 0.55;
+const HOP_MS_PER_SQRT_PX = 69;
 /** 떨어지는 동안 브랜드 그린 → 흰색 */
 const SETTLE_DURATION = 250;
 /** 공이 진짜 i 점 자리로 내려앉으며 같은 크기가 되는 시간 (덮개는 아직 덮인 채) */
@@ -174,12 +171,8 @@ export function BrandSplash({ onDone }: Props) {
         }),
       ]),
       ...hops.map((x, i) => {
-        const dx = x - (i === 0 ? from.x : hops[i - 1]);
-        return arc(
-          x,
-          clamp(dx * HOP_HEIGHT_RATIO, HOP_HEIGHT_RANGE),
-          clamp(dx * HOP_MS_PER_PX, HOP_DURATION_RANGE),
-        );
+        const height = HOP_FIRST_HEIGHT * HOP_RESTITUTION ** i;
+        return arc(x, height, HOP_MS_PER_SQRT_PX * Math.sqrt(height));
       }),
       // 마지막 홉이 끝나면 공이 진짜 점 자리로 내려앉아 그 크기가 된다. 덮개는 아직 덮인 채 —
       // 여기서 덮개를 치우면 12px 떨어진 두 점이 잠깐 같이 보인다
