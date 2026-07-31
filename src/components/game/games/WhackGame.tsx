@@ -3,11 +3,12 @@ import { Pressable, Text, View } from 'react-native';
 import { color, space, typeface } from '@/theme/tokens';
 import type { GameProps } from '../GameHost';
 
-const DURATION = 15_000;
+/** 길이를 바꾸면 GAME_CATALOG의 blurb도 같이 고칠 것 */
+const DURATION = 10_000;
 const CELLS = 9;
 const HOP_MS = 700;
 
-/** 3x3 그리드에서 한 칸만 활성. 그 칸을 누르면 +1. 15초. */
+/** 3x3 그리드에서 한 칸만 활성. 그 칸을 누르면 +1. */
 export default function WhackGame({ onFinish }: GameProps) {
   const [active, setActive] = useState(() => Math.floor(Math.random() * CELLS));
   const [hits, setHits] = useState(0);

@@ -30,7 +30,7 @@ export const GAME_CATALOG: GameDef[] = [
   {
     key: 'whack',
     name: '두더지 잡기',
-    blurb: '15초 동안 튀어나오는 칸을 탭',
+    blurb: '10초 동안 튀어나오는 칸을 탭',
     unit: 'count',
     higherIsBetter: true,
     format: (s) => `${s}마리`,
