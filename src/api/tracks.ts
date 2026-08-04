@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from './supabase';
 import { useMyCouple } from './couple';
-import { signedThumbUrl, uploadPhotos, type PickedPhoto } from './photos';
+import { signedThumbUrl, signedThumbUrls, uploadPhotos, type PickedPhoto } from './photos';
 import { todayKST, type ISODate } from '@/lib/date';
 
 export interface MonthTrack {
@@ -33,24 +33,27 @@ export function useMonthTracks(monthKey: string) {
         .lt('date', to)
         .order('date');
       if (error) throw error;
-      return Promise.all(
-        data.map(async (t) => {
-          // 지정 커버가 없으면 가장 이른 사진으로 — 그날 담긴 스토리 사진도 후보에 넣는다
-          const fallback = [
-            ...(t.photos ?? []),
-            ...(t.stories ?? []).flatMap((s) => s.photos ?? []),
-          ].sort((a, b) => a.created_at.localeCompare(b.created_at))[0];
-          const cover = t.cover ?? fallback ?? null;
-          return {
-            id: t.id,
-            title: t.title,
-            date: t.date,
-            coverThumbUrl: cover
-              ? await signedThumbUrl(cover.storage_path, 'grid', cover.renditions)
-              : null,
-          };
-        }),
+      // 커버를 먼저 다 고른 뒤 서명은 한 번에 — 트랙마다 낱개로 서명하면 그 달 트랙 수만큼 왕복이 된다
+      const picked = data.map((t) => {
+        // 지정 커버가 없으면 가장 이른 사진으로 — 그날 담긴 스토리 사진도 후보에 넣는다
+        const fallback = [
+          ...(t.photos ?? []),
+          ...(t.stories ?? []).flatMap((s) => s.photos ?? []),
+        ].sort((a, b) => a.created_at.localeCompare(b.created_at))[0];
+        return { id: t.id, title: t.title, date: t.date, cover: t.cover ?? fallback ?? null };
+      });
+      const urls = await signedThumbUrls(
+        picked.flatMap((t) =>
+          t.cover ? [{ storagePath: t.cover.storage_path, renditions: t.cover.renditions }] : [],
+        ),
+        'grid',
       );
+      return picked.map((t) => ({
+        id: t.id,
+        title: t.title,
+        date: t.date,
+        coverThumbUrl: t.cover ? (urls.get(t.cover.storage_path) ?? null) : null,
+      }));
     },
   });
 }
@@ -78,23 +81,23 @@ export function useAllTracks() {
         )
         .order('date', { ascending: false });
       if (error) throw error;
-      return Promise.all(
-        data.map(async (t) => {
-          const cover = t.cover ?? t.photos?.[0] ?? null;
-          return {
-            id: t.id,
-            title: t.title,
-            date: t.date,
-            // 캐러셀 자켓이 화면 폭의 2/3까지 커져서 grid(360)로는 확대돼 보인다 — 커버만 feed(1080)
-            coverThumbUrl: cover
-              ? await signedThumbUrl(cover.storage_path, 'feed', cover.renditions)
-              : null,
-            photoCount: t.photos?.length ?? 0,
-            noteCount: t.notes?.length ?? 0,
-            placeCount: t.track_places?.length ?? 0,
-          };
-        }),
+      const picked = data.map((t) => ({ row: t, cover: t.cover ?? t.photos?.[0] ?? null }));
+      // 캐러셀 자켓이 화면 폭의 2/3까지 커져서 grid(360)로는 확대돼 보인다 — 커버만 feed(1080)
+      const urls = await signedThumbUrls(
+        picked.flatMap((p) =>
+          p.cover ? [{ storagePath: p.cover.storage_path, renditions: p.cover.renditions }] : [],
+        ),
+        'feed',
       );
+      return picked.map(({ row: t, cover }) => ({
+        id: t.id,
+        title: t.title,
+        date: t.date,
+        coverThumbUrl: cover ? (urls.get(cover.storage_path) ?? null) : null,
+        photoCount: t.photos?.length ?? 0,
+        noteCount: t.notes?.length ?? 0,
+        placeCount: t.track_places?.length ?? 0,
+      }));
     },
   });
 }
@@ -206,24 +209,26 @@ export function useTrack(id: string | undefined) {
       const storyPhotos = (stories ?? []).flatMap((s) =>
         (s.photos ?? []).map((p) => ({ ...p, storyId: s.id })),
       );
-      const photos = await Promise.all(
-        [...(t.photos ?? []).map((p) => ({ ...p, storyId: null as string | null })), ...storyPhotos]
-          .sort((a, b) =>
-            (a.taken_at ?? a.created_at).localeCompare(b.taken_at ?? b.created_at),
-          )
-          .map(async (p) => ({
-            id: p.id,
-            storagePath: p.storage_path,
-            renditions: p.renditions,
-            thumbUrl: await signedThumbUrl(p.storage_path, 'grid', p.renditions),
-            uploaderId: p.uploader_id,
-            takenAt: p.taken_at,
-            createdAt: p.created_at,
-            width: p.width,
-            height: p.height,
-            storyId: p.storyId,
-          })),
+      const sorted = [
+        ...(t.photos ?? []).map((p) => ({ ...p, storyId: null as string | null })),
+        ...storyPhotos,
+      ].sort((a, b) => (a.taken_at ?? a.created_at).localeCompare(b.taken_at ?? b.created_at));
+      const gridUrls = await signedThumbUrls(
+        sorted.map((p) => ({ storagePath: p.storage_path, renditions: p.renditions })),
+        'grid',
       );
+      const photos = sorted.map((p) => ({
+        id: p.id,
+        storagePath: p.storage_path,
+        renditions: p.renditions,
+        thumbUrl: gridUrls.get(p.storage_path) ?? '',
+        uploaderId: p.uploader_id,
+        takenAt: p.taken_at,
+        createdAt: p.created_at,
+        width: p.width,
+        height: p.height,
+        storyId: p.storyId,
+      }));
       return {
         id: t.id,
         title: t.title,

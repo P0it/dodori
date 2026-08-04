@@ -60,6 +60,12 @@ export async function signedThumbUrl(
   return data.signedUrl;
 }
 
+/** 서명 배치가 받는 최소 형태 — 어느 테이블에서 왔든 이 둘만 있으면 된다 */
+export interface PhotoRef {
+  storagePath: string;
+  renditions: boolean;
+}
+
 /**
  * 여러 장의 서명 URL을 한 번에 — 화면 첫 진입이 느린 진짜 원인이 여기 있었다.
  *
@@ -73,7 +79,7 @@ export async function signedThumbUrl(
  * 반환은 storagePath -> 서명 URL. 서명에 실패한 항목은 키가 없다(호출부에서 null 처리).
  */
 export async function signedThumbUrls(
-  photos: { storagePath: string; renditions: boolean }[],
+  photos: PhotoRef[],
   kind: RenditionKind,
 ): Promise<Map<string, string>> {
   const out = new Map<string, string>();

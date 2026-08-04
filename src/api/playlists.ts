@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from './supabase';
 import { useMyCouple } from './couple';
 import { upsertPlace, type SearchPlace } from './places';
-import { signedThumbUrl } from './photos';
+import { signedThumbUrls, type PhotoRef } from './photos';
 
 export interface PlaylistSummary {
   id: string;
@@ -149,13 +149,28 @@ async function visitStats(placeIds: string[]) {
     .from('track_places')
     .select('place_id, tracks(date, photos!photos_track_id_fkey(storage_path, renditions))')
     .in('place_id', placeIds);
+  // 먼저 장소별로 쓸 사진을 고르고, 서명은 마지막에 한 번에 — 예전엔 for 안에서 await라
+  // 요청이 순차로 나갔다(장소 20개면 최대 80건이 줄줄이 대기)
+  const picked = new Map<string, { count: number; photos: PhotoRef[] }>();
   for (const row of data ?? []) {
-    const entry = map.get(row.place_id) ?? { count: 0, thumbs: [] };
+    const entry = picked.get(row.place_id) ?? { count: 0, photos: [] };
     entry.count++;
     for (const ph of row.tracks?.photos ?? []) {
-      if (entry.thumbs.length < 4) entry.thumbs.push(await signedThumbUrl(ph.storage_path, 'grid', ph.renditions));
+      if (entry.photos.length < 4) {
+        entry.photos.push({ storagePath: ph.storage_path, renditions: ph.renditions });
+      }
     }
-    map.set(row.place_id, entry);
+    picked.set(row.place_id, entry);
+  }
+  const urls = await signedThumbUrls([...picked.values()].flatMap((e) => e.photos), 'grid');
+  for (const [placeId, entry] of picked) {
+    map.set(placeId, {
+      count: entry.count,
+      thumbs: entry.photos.flatMap((ph) => {
+        const url = urls.get(ph.storagePath);
+        return url ? [url] : [];
+      }),
+    });
   }
   return map;
 }
@@ -233,12 +248,15 @@ export function usePlaceDetail(id: string | undefined) {
         .map((tp) => tp.tracks)
         .filter((t): t is NonNullable<typeof t> => !!t)
         .sort((a, b) => b.date.localeCompare(a.date));
-      const thumbs = await Promise.all(
-        tracks
-          .flatMap((t) => t.photos ?? [])
-          .slice(0, 6)
-          .map((ph) => signedThumbUrl(ph.storage_path, 'grid', ph.renditions)),
-      );
+      const heroPhotos = tracks
+        .flatMap((t) => t.photos ?? [])
+        .slice(0, 6)
+        .map((ph) => ({ storagePath: ph.storage_path, renditions: ph.renditions }));
+      const heroUrls = await signedThumbUrls(heroPhotos, 'grid');
+      const thumbs = heroPhotos.flatMap((ph) => {
+        const url = heroUrls.get(ph.storagePath);
+        return url ? [url] : [];
+      });
       return {
         id: p.id,
         name: p.name,
