@@ -54,10 +54,11 @@ export function AlbumCarousel({
   const overlap = CARD - step;
 
   // 마운트·포커스 변경 시 해당 앨범을 가운데로
+  const centerX = focusIndex * step;
   useEffect(() => {
     setActive(focusIndex);
-    ref.current?.scrollTo({ x: focusIndex * step, animated: false });
-  }, [focusIndex, albums.length, step]);
+    ref.current?.scrollTo({ x: centerX, animated: false });
+  }, [focusIndex, albums.length, step, centerX]);
 
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const i = Math.round(e.nativeEvent.contentOffset.x / step);
@@ -77,6 +78,9 @@ export function AlbumCarousel({
         decelerationRate="fast"
         onScroll={onScroll}
         scrollEventThrottle={16}
+        // 위 effect의 scrollTo는 콘텐츠가 아직 안 깔린 프레임에 나가면 0으로 잘린다
+        // (마운트 직후·앨범 추가 직후). 실제 콘텐츠 폭이 잡힐 때 한 번 더 가운데로 보낸다.
+        onContentSizeChange={() => ref.current?.scrollTo({ x: centerX, animated: false })}
         contentContainerStyle={{ paddingHorizontal: side, paddingVertical: 42 }}
       >
         {albums.map((a, i) => {
