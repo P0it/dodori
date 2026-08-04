@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from './supabase';
 import { useMyCouple } from './couple';
 import { cropToCanvas, signedThumbUrl, uploadPhotos, type PickedPhoto } from './photos';
-import { parseOverlays, rebaseOverlays, type TextOverlay } from '@/lib/stories';
+import { parseOverlays, type TextOverlay } from '@/lib/stories';
 import type { Json } from '@/types/database.types';
 
 export interface StoryPhoto {
@@ -140,26 +140,17 @@ export function useCreateStory() {
       overlays,
     }: {
       photo: PickedPhoto;
-      /** 편집 캔버스에서 잡은 구도 — 올릴 때 그대로 잘라 굽는다 */
-      crop: { canvasWidth: number; canvasHeight: number; scale: number; tx: number; ty: number };
+      /**
+       * 편집 캔버스에서 잡은 구도 — 올릴 때 그대로 잘라 굽는다.
+       * 화면을 통째로 구워 온 경우(네이티브)에는 이미 완성된 그림이라 생략한다.
+       */
+      crop?: { canvasWidth: number; canvasHeight: number; scale: number; tx: number; ty: number };
       trackId: string | null;
       overlays: TextOverlay[];
     }) => {
       const { data: userData } = await supabase.auth.getUser();
       const uid = userData.user?.id;
       if (!uid || !couple.data) throw new Error('로그인·연결이 필요해요');
-      // 좌표는 캔버스 기준으로 잡혔다 — 잘라낸 사진 기준으로 옮겨야 뷰어에서 같은 자리에 찍힌다
-      // (축소해서 여백이 생긴 구도일 때만 실제로 값이 바뀐다)
-      const placed = rebaseOverlays(
-        overlays,
-        photo.width,
-        photo.height,
-        crop.canvasWidth,
-        crop.canvasHeight,
-        crop.scale,
-        crop.tx,
-        crop.ty,
-      );
       const { data, error } = await supabase
         .from('stories')
         .insert({
@@ -167,13 +158,14 @@ export function useCreateStory() {
           author_id: uid,
           track_id: trackId,
           // TextOverlay는 JSON 그대로지만 인덱스 시그니처가 없어 Json 타입과 구조적으로 안 맞는다
-          overlays: placed as unknown as Json,
+          overlays: overlays as unknown as Json,
         })
         .select('id')
         .single();
       if (error) throw error;
       const storyId = data.id as string;
-      await uploadPhotos({ storyId }, couple.data.coupleId, [await cropToCanvas(photo, crop)]);
+      const baked = crop ? await cropToCanvas(photo, crop) : photo;
+      await uploadPhotos({ storyId }, couple.data.coupleId, [baked]);
       return storyId;
     },
     onSuccess: (_id, vars) => {

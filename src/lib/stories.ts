@@ -173,6 +173,16 @@ export interface Rect {
 
 /** cover 배율 대비 최대 확대 */
 export const CANVAS_ZOOM_MAX = 4;
+/**
+ * cover 배율 대비 최소 축소. contain(사진 전체가 보이는 지점)보다 더 줄여
+ * 사방에 여백을 두는 구도까지 허용한다 — 그 여백은 인스타처럼 같은 사진의 흐린 배경으로 채운다.
+ * 더 내려가면 사진이 알아볼 수 없이 작아진다.
+ *
+ * 웹에는 이 구간이 없다(`CANVAS_ZOOM_MIN_WEB`) — 화면을 이미지로 굽는 건 네이티브 전용이라
+ * 웹에서는 여백 있는 구도를 저장할 방법이 없다.
+ */
+export const CANVAS_ZOOM_MIN = 0.25;
+export const CANVAS_ZOOM_MIN_WEB = 1;
 
 /**
  * 캔버스를 빈틈없이 덮는 최소 배율.
@@ -233,60 +243,6 @@ export function cropRect(
     width: Math.round(width),
     height: Math.round(height),
   };
-}
-
-/**
- * 사진 전체가 캔버스 안에 들어오는 최소 배율 — cover 대비 비율이라 1 이하다.
- * 핀치 축소의 바닥. 여기까지 줄이면 잘리는 곳 없이 사진 전부가 보이고,
- * 남는 자리는 뷰어와 같은 검은 여백이 된다.
- */
-export function containRatio(
-  photoW: number,
-  photoH: number,
-  canvasW: number,
-  canvasH: number,
-): number {
-  if (photoW <= 0 || photoH <= 0) return 1;
-  const cover = coverScale(photoW, photoH, canvasW, canvasH);
-  if (cover <= 0) return 1;
-  return Math.min(canvasW / photoW, canvasH / photoH) / cover;
-}
-
-/**
- * 캔버스 기준으로 잡은 텍스트 좌표 → **잘라낸 사진** 기준 좌표.
- *
- * cover 이상으로 확대했을 때는 캔버스에 보이는 것이 곧 잘려 나오는 사진이라 이 함수는 항등이다.
- * 축소해서 여백이 생기면 저장되는 사진이 캔버스보다 작아지는데, 그때 좌표를 그대로 두면
- * 뷰어에서 글자가 여백만큼 밀린다 — 그 차이를 여기서 흡수한다.
- */
-export function rebaseOverlays(
-  overlays: TextOverlay[],
-  photoW: number,
-  photoH: number,
-  canvasW: number,
-  canvasH: number,
-  scale: number,
-  tx: number,
-  ty: number,
-): TextOverlay[] {
-  const s = coverScale(photoW, photoH, canvasW, canvasH) * scale;
-  if (s <= 0) return overlays;
-  // 캔버스가 원본 픽셀에서 차지하는 사각형 — 사진 밖으로 넘칠 수 있다(=여백)
-  const viewW = canvasW / s;
-  const viewH = canvasH / s;
-  const originX = photoW / 2 - tx / s - viewW / 2;
-  const originY = photoH / 2 - ty / s - viewH / 2;
-  // 실제로 잘려 나가는 사각형 — 사진 안으로 잘린 것
-  const r = cropRect(photoW, photoH, canvasW, canvasH, scale, tx, ty);
-  if (r.width <= 0 || r.height <= 0) return overlays;
-  return overlays.map((o) =>
-    clampOverlay({
-      ...o,
-      x: (originX + o.x * viewW - r.x) / r.width,
-      y: (originY + o.y * viewH - r.y) / r.height,
-      size: (o.size * viewW) / r.width,
-    }),
-  );
 }
 
 /**

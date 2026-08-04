@@ -3,13 +3,18 @@ import {
   ActivityIndicator,
   Alert,
   Dimensions,
+  Image as RNImage,
+  Platform,
   Pressable,
+  StyleSheet,
   Text,
   View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Crypto from 'expo-crypto';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
+import { captureRef } from 'react-native-view-shot';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   color,
@@ -20,6 +25,8 @@ import {
   typeface,
 } from '@/theme/tokens';
 import {
+  CANVAS_ZOOM_MIN,
+  CANVAS_ZOOM_MIN_WEB,
   createTextOverlay,
   OVERLAY_MAX,
   OVERLAY_SIZE_DEFAULT,
@@ -33,6 +40,15 @@ import { useCreateStory } from '@/api/stories';
 import { useTodayTrack } from '@/api/tracks';
 
 const IDENTITY: CanvasTransform = { scale: 1, tx: 0, ty: 0 };
+
+/**
+ * 화면을 이미지로 굽는 건 네이티브 전용이다(react-native-view-shot).
+ * 웹에서는 사진을 잘라내는 길밖에 없어서 여백이 생기는 구간을 아예 열지 않는다.
+ */
+const CAN_BAKE = Platform.OS !== 'web';
+
+/** 사진 뒤에 까는 흐린 배경 — 사진을 줄였을 때 드러난다 (인스타와 같은 그림) */
+const BLUR_RADIUS = 28;
 
 /** 사진 위에 얹는 도구 버튼 — 글리프가 아니라 라벨이라 뭘 하는지 읽힌다 */
 function ToolPill({
@@ -91,6 +107,8 @@ export default function CreateStory() {
 
   const createStory = useCreateStory();
   const todayTrack = useTodayTrack();
+  /** 굽기의 대상 — 사진과 흐린 배경까지, 텍스트는 뺀 레이어 */
+  const photoLayer = useRef<View>(null);
 
   // 텍스트는 캔버스에 붙는다 — 잘라낸 사진이 곧 캔버스라 이 좌표가 저장 후에도 그대로 맞는다
   const rect = { x: 0, y: 0, width: canvas.width, height: canvas.height };
@@ -141,13 +159,29 @@ export default function CreateStory() {
     setEditingId(null);
   };
 
+  /**
+   * 편집 화면의 사진 레이어를 그대로 한 장으로 굽는다 — 흐린 배경과 여백까지 픽셀로 남는다.
+   * 이래야 뷰어·피드·보관함이 구도를 몰라도 되고, 텍스트의 0~1 좌표가 곧 이미지 좌표가 된다.
+   */
+  const bakePhotoLayer = async (source: PickedPhoto): Promise<PickedPhoto> => {
+    const uri = await captureRef(photoLayer, { format: 'jpg', quality: 0.92, result: 'tmpfile' });
+    const size = await new Promise<{ width: number; height: number }>((resolve, reject) =>
+      RNImage.getSize(uri, (width, height) => resolve({ width, height }), reject),
+    );
+    return { uri, width: size.width, height: size.height, takenAt: source.takenAt };
+  };
+
   const save = async () => {
     if (!photo || saving) return;
     setSaving(true);
     try {
+      // 웹은 굽지 못한다 — 대신 축소 구간이 막혀 있어 잘라내기만으로 같은 그림이 나온다
+      const baked = CAN_BAKE ? await bakePhotoLayer(photo) : null;
       await createStory.mutateAsync({
-        photo,
-        crop: { ...transform, canvasWidth: canvas.width, canvasHeight: canvas.height },
+        photo: baked ?? photo,
+        crop: baked
+          ? undefined
+          : { ...transform, canvasWidth: canvas.width, canvasHeight: canvas.height },
         trackId: attachToTrack ? (todayTrack.data?.id ?? null) : null,
         overlays,
       });
@@ -164,14 +198,33 @@ export default function CreateStory() {
       {/* 사진 — 화면에 못 박혀 있다. 키보드가 올라와도 여기는 움직이지 않는다 */}
       {photo && (
         <View style={{ position: 'absolute', top: 0, left: 0, width: canvas.width, height: canvas.height }}>
-          <StoryCanvas
-            uri={photo.uri}
-            photoWidth={photo.width}
-            photoHeight={photo.height}
-            width={canvas.width}
-            height={canvas.height}
-            onChange={setTransform}
-          />
+          {/*
+            굽는 건 이 안쪽만 — 사진과 흐린 배경까지다.
+            텍스트는 바깥에 두어 좌표로 저장되고 볼 때 얹힌다 (해상도에 안 눌린다)
+          */}
+          <View
+            ref={photoLayer}
+            collapsable={false}
+            style={{ width: canvas.width, height: canvas.height, backgroundColor: '#000' }}
+          >
+            <Image
+              source={{ uri: photo.uri }}
+              style={StyleSheet.absoluteFill}
+              contentFit="cover"
+              blurRadius={BLUR_RADIUS}
+            />
+            {/* 흐린 배경이 사진보다 튀지 않게 한 겹 눌러 준다 */}
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.32)' }]} />
+            <StoryCanvas
+              uri={photo.uri}
+              photoWidth={photo.width}
+              photoHeight={photo.height}
+              width={canvas.width}
+              height={canvas.height}
+              minScale={CAN_BAKE ? CANVAS_ZOOM_MIN : CANVAS_ZOOM_MIN_WEB}
+              onChange={setTransform}
+            />
+          </View>
           {/* 편집 중인 글자는 입력 쪽에 떠 있다 — 캔버스에 두 번 그리지 않는다 */}
           <StoryTextEditor
             overlays={overlays.filter((o) => o.id !== editingId && !!o.text)}

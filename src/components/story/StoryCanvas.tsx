@@ -8,7 +8,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
-import { CANVAS_ZOOM_MAX, clampPan, containRatio, coverScale } from '@/lib/stories';
+import { CANVAS_ZOOM_MAX, clampPan, coverScale } from '@/lib/stories';
 
 /** 캔버스에 보이는 만큼만 저장된다 — 올릴 때 이 값으로 원본을 자른다 */
 export interface CanvasTransform {
@@ -24,6 +24,8 @@ type Props = {
   photoHeight: number;
   width: number;
   height: number;
+  /** 축소의 바닥 (cover 대비). 여기까지 줄인 구도를 저장할 수 있는지는 부르는 쪽이 안다 */
+  minScale: number;
   /** 손을 뗐을 때 확정된 구도 */
   onChange: (t: CanvasTransform) => void;
 };
@@ -31,10 +33,10 @@ type Props = {
 /**
  * 편집 캔버스의 사진 — 오므려 키우거나 줄이고, 끌어서 구도를 잡는다.
  *
- * 배율의 범위는 contain(사진 전체가 보이는 지점) ~ cover×4다. 1(=cover) 밑으로 내려가면
- * 검은 여백이 생기는데, 그건 사고가 아니라 고른 구도다 — 뷰어도 같은 검정 위에
- * contain으로 얹으므로 여기 보이는 그림이 그대로 남는다.
- * 팬은 매 프레임 clampPan으로 잘려 사진이 여백 쪽으로 새지 않는다.
+ * 배율의 범위는 `minScale` ~ cover×4다. 1(=cover) 밑으로 내려가면 사진이 캔버스를 다 덮지 못해
+ * 뒤가 비치는데, 그건 사고가 아니라 고른 구도다 — 뒤를 무엇으로 채울지는 부르는 쪽이 정한다
+ * (편집 화면은 같은 사진의 흐린 배경을 깐다).
+ * 팬은 매 프레임 clampPan으로 잘려 사진이 그 여백 쪽으로 새지 않는다.
  */
 export function StoryCanvas({
   uri,
@@ -42,6 +44,7 @@ export function StoryCanvas({
   photoHeight,
   width,
   height,
+  minScale,
   onChange,
 }: Props) {
   const scale = useSharedValue(1);
@@ -59,9 +62,6 @@ export function StoryCanvas({
     // onChange는 매 렌더 새 함수 — 사진이 바뀔 때만 되돌린다
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [uri]);
-
-  // 축소의 바닥 = 사진 전체가 보이는 배율. 여기까지는 줄어들고, 줄인 채로 그대로 올라간다
-  const minScale = containRatio(photoWidth, photoHeight, width, height);
 
   const commit = () => onChange({ scale: scale.value, tx: tx.value, ty: ty.value });
 

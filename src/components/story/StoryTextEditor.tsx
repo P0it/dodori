@@ -119,8 +119,13 @@ function EditableText({
       }}
     >
       <GestureDetector gesture={gesture}>
-        {/* 글자 딱 만큼이면 잡기가 어렵다 — 여백을 둬서 손가락이 닿을 자리를 만든다 */}
-        <Animated.View style={[{ padding: 14 }, box]}>
+        {/*
+          글자 딱 만큼이면 잡기가 어렵다 — 여백을 둬서 손가락이 닿을 자리를 만든다.
+          특히 핀치·회전은 **두 손가락이 모두 이 상자 안**에 들어와야 이 글자에 먹는다.
+          하나라도 밖에 떨어지면 밑에 깔린 사진 캔버스의 핀치로 새기 때문에,
+          한 손가락이 글자를 잡는 폭보다 넉넉히 크게 잡는다.
+        */}
+        <Animated.View style={[{ paddingHorizontal: 36, paddingVertical: 28 }, box]}>
           <Animated.Text style={[overlayTextStyle(overlay, rect), text]}>
             {overlay.text}
           </Animated.Text>
