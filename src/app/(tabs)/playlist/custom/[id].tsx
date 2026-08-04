@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { color, typeface } from '@/theme/tokens';
@@ -13,6 +13,7 @@ import { Meta } from '@/components/Meta';
 import { PlaylistTile } from '@/components/playlist/PlaylistTile';
 import { ChevronGlyph, CloseGlyph } from '@/components/glyphs';
 import { PlaceKindTile } from '@/components/PlaceKindTile';
+import { confirmDialog } from '@/components/dialog';
 
 /** 테마(커스텀) 플레이리스트 상세 (목업 P1) — 데이트가 아니라 장소를 모은다 */
 export default function CustomPlaylist() {
@@ -29,15 +30,10 @@ export default function CustomPlaylist() {
   // 조회가 기본, "수정"을 눌러야 편집 어포던스(장소 ×·리스트 삭제)가 열린다 — 앨범 상세와 같은 규칙
   const [editing, setEditing] = useState(false);
 
-  const onDelete = () =>
-    Alert.alert('리스트 삭제', '장소 목록만 삭제되고 기록은 남아요.', [
-      { text: '취소', style: 'cancel' },
-      {
-        text: '삭제',
-        style: 'destructive',
-        onPress: () => delPlaylist.mutate(id!, { onSuccess: () => router.back() }),
-      },
-    ]);
+  const onDelete = async () => {
+    if (!(await confirmDialog('리스트 삭제', '장소 목록만 삭제되고 기록은 남아요.', '삭제'))) return;
+    delPlaylist.mutate(id!, { onSuccess: () => router.back() });
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: color.bg }}>
