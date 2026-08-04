@@ -2,8 +2,10 @@ import {
   clampOverlay,
   clampPan,
   containedRect,
+  containRatio,
   coverScale,
   cropRect,
+  rebaseOverlays,
   createTextOverlay,
   formatMonthLabel,
   groupByMonth,
@@ -229,5 +231,76 @@ describe('cropRect', () => {
     const zoomed = cropRect(2000, 1000, 360, 640, 2, 0, 0);
     expect(zoomed.width).toBeLessThan(wide.width);
     expect(zoomed.height).toBeLessThan(wide.height);
+  });
+});
+
+describe('containRatio', () => {
+  it('사진 비율이 캔버스와 같으면 cover와 contain이 같다', () => {
+    expect(containRatio(900, 1600, 360, 640)).toBeCloseTo(1);
+  });
+
+  it('가로로 긴 사진은 한참 줄여야 다 보인다', () => {
+    // 2000×1000을 360×640에 담으려면 cover는 세로(0.64), contain은 가로(0.18) 기준
+    expect(containRatio(2000, 1000, 360, 640)).toBeCloseTo(0.18 / 0.64);
+  });
+
+  it('바닥은 언제나 1 이하다 — cover보다 더 키워야 다 보이는 경우는 없다', () => {
+    expect(containRatio(1000, 2000, 360, 640)).toBeLessThanOrEqual(1);
+    expect(containRatio(2000, 1000, 360, 640)).toBeLessThanOrEqual(1);
+  });
+
+  it('빈 사진은 1', () => {
+    expect(containRatio(0, 0, 360, 640)).toBe(1);
+  });
+});
+
+describe('rebaseOverlays', () => {
+  const at = (x: number, y: number, size = 0.1): TextOverlay => ({
+    id: 't',
+    text: '안녕',
+    x,
+    y,
+    size,
+    rotation: 0,
+    color: 'white',
+  });
+
+  it('cover 이상이면 캔버스가 곧 잘린 사진이라 좌표가 그대로다', () => {
+    const [o] = rebaseOverlays([at(0.3, 0.7)], 2000, 1000, 360, 640, 1, 0, 0);
+    expect(o.x).toBeCloseTo(0.3);
+    expect(o.y).toBeCloseTo(0.7);
+    expect(o.size).toBeCloseTo(0.1);
+  });
+
+  it('확대해서 잘라도 그대로다', () => {
+    const [o] = rebaseOverlays([at(0.5, 0.5)], 2000, 1000, 360, 640, 2, 40, -20);
+    expect(o.x).toBeCloseTo(0.5);
+    expect(o.y).toBeCloseTo(0.5);
+  });
+
+  it('축소해 여백이 생기면 좌표가 사진 쪽으로 당겨진다', () => {
+    // 가로로 긴 사진을 contain까지 줄이면 위아래로 여백이 크게 남는다
+    const ratio = containRatio(2000, 1000, 360, 640);
+    const [o] = rebaseOverlays([at(0.5, 0.5)], 2000, 1000, 360, 640, ratio, 0, 0);
+    // 한가운데는 여백이 생겨도 한가운데
+    expect(o.x).toBeCloseTo(0.5);
+    expect(o.y).toBeCloseTo(0.5);
+
+    // 위쪽 여백에 걸친 글자는 사진 기준으로는 훨씬 위 — 사진 밖이면 0으로 잘린다
+    const [top] = rebaseOverlays([at(0.5, 0.25)], 2000, 1000, 360, 640, ratio, 0, 0);
+    expect(top.y).toBe(0);
+  });
+
+  it('좌우에 여백이 생기면 글자 크기도 사진 대비로 커진다 — 보이던 비중을 지킨다', () => {
+    // 크기는 '너비 대비'라 좌우에 여백이 남는 구도(세로로 긴 사진)에서만 값이 바뀐다
+    const ratio = containRatio(1000, 3000, 360, 640);
+    const [o] = rebaseOverlays([at(0.5, 0.5, 0.05)], 1000, 3000, 360, 640, ratio, 0, 0);
+    expect(o.size).toBeGreaterThan(0.05);
+  });
+
+  it('위아래 여백만 생기는 구도에서는 너비가 그대로라 크기도 그대로다', () => {
+    const ratio = containRatio(2000, 1000, 360, 640);
+    const [o] = rebaseOverlays([at(0.5, 0.5, 0.05)], 2000, 1000, 360, 640, ratio, 0, 0);
+    expect(o.size).toBeCloseTo(0.05);
   });
 });

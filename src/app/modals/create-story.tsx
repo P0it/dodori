@@ -34,6 +34,36 @@ import { useTodayTrack } from '@/api/tracks';
 
 const IDENTITY: CanvasTransform = { scale: 1, tx: 0, ty: 0 };
 
+/** 사진 위에 얹는 도구 버튼 — 글리프가 아니라 라벨이라 뭘 하는지 읽힌다 */
+function ToolPill({
+  label,
+  onPress,
+  disabled,
+}: {
+  label: string;
+  onPress: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      hitSlop={8}
+      style={({ pressed }) => ({
+        paddingHorizontal: 13,
+        paddingVertical: 7,
+        borderRadius: radius.pill,
+        backgroundColor: 'rgba(0,0,0,0.45)',
+        opacity: disabled ? 0.4 : pressed ? 0.75 : 1,
+      })}
+    >
+      <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 12.5, color: color.white }}>
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
 /**
  * 스토리 올리기 — 인스타식 풀블리드 캔버스.
  *
@@ -166,7 +196,11 @@ export default function CreateStory() {
             pointerEvents="none"
           />
 
-          {/* 상단 — 닫기 / 사진 바꾸기 / 텍스트 */}
+          {/*
+            상단 — 왼쪽은 '이 사진을 떠나는' 것들(닫기·바꾸기), 오른쪽은 '얹는' 것(텍스트).
+            둘을 화면 양끝으로 갈라 놓고 각각 라벨을 붙인다 — 나란한 두 글리프는
+            어느 쪽이 뭔지 알 수 없었다.
+          */}
           <View
             style={{
               position: 'absolute',
@@ -176,29 +210,19 @@ export default function CreateStory() {
               flexDirection: 'row',
               alignItems: 'center',
               paddingHorizontal: space[4],
+              gap: space[3],
             }}
           >
             <Pressable hitSlop={12} onPress={() => router.dismiss()}>
               <Text style={{ fontFamily: typeface, fontSize: 22, color: color.white }}>×</Text>
             </Pressable>
+            <ToolPill label="사진 바꾸기" onPress={() => onPick(false)} />
             <View style={{ flex: 1 }} />
-            <Pressable hitSlop={12} onPress={() => onPick(false)}>
-              <Text style={{ fontFamily: typeface, fontSize: 13, color: 'rgba(255,255,255,0.85)' }}>
-                사진 바꾸기
-              </Text>
-            </Pressable>
-            <Pressable
-              hitSlop={12}
+            <ToolPill
+              label="텍스트"
               onPress={addText}
               disabled={overlays.length >= OVERLAY_MAX}
-              style={{ marginLeft: space[4], opacity: overlays.length >= OVERLAY_MAX ? 0.4 : 1 }}
-            >
-              <Text
-                style={{ fontFamily: typeface, fontWeight: '900', fontSize: 19, color: color.white }}
-              >
-                T
-              </Text>
-            </Pressable>
+            />
           </View>
 
           {/* 하단 — 앨범에 담기(좌) + 올리기(우). 사진 위에 얹힌 한 줄 */}
