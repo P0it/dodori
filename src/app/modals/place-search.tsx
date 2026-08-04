@@ -14,6 +14,15 @@ import { SavedHeart } from '@/components/SavedHeart';
 import { PlaylistPickerSheet } from '@/components/playlist/PlaylistPickerSheet';
 import { CheckGlyph, PlusGlyph } from '@/components/glyphs';
 
+// Supabase 에러는 Error 인스턴스가 아니라 {code, message, details, hint} 객체라 통째로 찍는다
+const describeError = (e: unknown) => {
+  if (e && typeof e === 'object' && 'message' in e) {
+    const { code, message, details, hint } = e as Record<string, unknown>;
+    return [code && `[${code}]`, message, details, hint].filter(Boolean).join(' · ');
+  }
+  return String(e);
+};
+
 /**
  * 장소 검색 — 단일 공용 (§7.4).
  * trackId 파라미터가 있으면 트랙 코스에 담기, playlistId면 테마 플리에 담기(M4).
@@ -47,6 +56,8 @@ export default function PlaceSearch() {
   };
   const [staged, setStaged] = useState<Staged[]>([]);
   const [committing, setCommitting] = useState(false);
+  // 담기 실패 사유 — Alert는 웹에서 no-op이라 화면에 직접 띄운다
+  const [failReason, setFailReason] = useState<string | null>(null);
   const stagedIds = useMemo(() => new Set(staged.map((s) => s.id)), [staged]);
   // 이미 이 날짜 코스에 담긴 찜한 곳 — + 버튼을 눌러도 조용히 실패하지 않도록 미리 added 처리
   const existingPlaceIds = useMemo(
@@ -87,8 +98,10 @@ export default function PlaceSearch() {
       return;
     }
     setCommitting(true);
+    setFailReason(null);
     let order = nextSortOrder;
     const failed: Staged[] = [];
+    const reasons: string[] = [];
     for (const s of staged) {
       try {
         if (s.payload.kind === 'search') {
@@ -97,13 +110,15 @@ export default function PlaceSearch() {
         } else {
           await addSaved.mutateAsync({ placeId: s.payload.placeId, sortOrder: order++ });
         }
-      } catch {
+      } catch (e) {
         failed.push(s);
+        reasons.push(`${s.name}: ${describeError(e)}`);
       }
     }
     setCommitting(false);
     if (failed.length) {
-      Alert.alert('일부 담기 실패', `${failed.map((f) => f.name).join(', ')}을(를) 담지 못했어요.`);
+      setFailReason(reasons.join('\n'));
+      Alert.alert('일부 담기 실패', reasons.join('\n'));
       setStaged(failed); // 성공분은 이미 저장됨 — 실패한 것만 남겨 다시 시도
     } else {
       router.back();
@@ -248,6 +263,14 @@ export default function PlaceSearch() {
         </ScrollView>
       )}
       <View style={{ padding: 16, paddingBottom: 26 }}>
+        {failReason && (
+          <Text
+            selectable
+            style={{ fontFamily: typeface, fontSize: 12, color: color.sunday, marginBottom: 10 }}
+          >
+            담기 실패 — {failReason}
+          </Text>
+        )}
         {staged.length > 0 && (
           <Meta numberOfLines={1} style={{ fontSize: 12, marginBottom: 10 }}>
             담을 곳 {staged.length} · {staged.map((s) => s.name).join(', ')}
