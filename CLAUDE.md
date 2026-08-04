@@ -120,6 +120,16 @@ Windows 작업 트리에서는 iOS 빌드가 불가능하다. 맥미니에 같�
   3판 상한·최고점·"내가 마쳐야 상대 공개"는 전부 서버(`submit_game_round` RPC + `has_played` RLS)가 강제
 - Edge Functions: `claim-invite` / `search-places` / `daily-release` / `generate-anniversaries` / `sync-holidays` / `notify-game`
 - `couple_members.user_id`는 unique(유저당 커플 1개), RLS 공통 술어는 `public.my_couple_id()`
+- **사진은 렌디션 2종**: 업로드할 때 기기에서 1080(본체)·360(목록)을 만들어 함께 올린다
+  (`api/photos.ts`의 `RENDITION`). **서버 이미지 변환은 쓰지 않는다** — Pro 무료분이 원본 100장뿐이라
+  Spend Cap에 걸리면 앱 전체 사진이 안 보인다. `renditions=false`인 옛 사진만 폴백으로 변환을 쓴다.
+  `signedThumbUrl(path, kind, renditions)`에 **세 번째 인자를 빠뜨리면 신규 사진도 폴백을 탄다**(타입은 통과).
+  삭제는 반드시 `storagePathsFor()` 경유 — 본체만 지우면 `_360`이 고아 파일로 남는다.
+  커플당 사진 쿼터는 `couples.photo_quota`(무료 100장)를 읽는 `photos` insert 트리거가 강제하고,
+  한도에 닿아도 **기존 사진은 지우지 않고 열람도 계속 된다**(새 업로드만 막는다)
+- 게시물 사진 프레임은 `lib/posts.ts`의 `postFrameRatio`(가로 16:9 ~ 세로 4:5 클램프) 하나로
+  업로드 크롭(`PostCropSheet`)과 피드 표시(`PostCard`)가 같은 값을 쓴다 — 한쪽만 바꾸면 어긋난다.
+  크롭 제스처는 스토리 편집기의 `StoryCanvas`·`cropToCanvas` 재사용(게시물은 `minScale=1`)
 
 ## 마일스톤 현황
 
