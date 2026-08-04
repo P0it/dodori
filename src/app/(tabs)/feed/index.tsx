@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Pressable, RefreshControl, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { FlashList } from '@shopify/flash-list';
@@ -17,7 +16,6 @@ import { PostGridCell } from '@/components/feed/PostGridCell';
 export default function Studio() {
   const router = useRouter();
   const posts = usePosts();
-  const [fabOpen, setFabOpen] = useState(false);
 
   return (
     <View style={{ flex: 1, backgroundColor: color.bg }}>
@@ -47,33 +45,10 @@ export default function Studio() {
         )}
       />
 
-      {/* 올리기 — (+)를 누르면 피드·스토리 두 갈래로 펼쳐진다 (캘린더 FAB과 같은 패턴) */}
-      {fabOpen && (
-        <>
-          <Pressable
-            onPress={() => setFabOpen(false)}
-            style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)' }}
-          />
-          <View style={{ position: 'absolute', right: 16, bottom: 84, alignItems: 'flex-end', gap: 10 }}>
-            <FabAction
-              label="피드"
-              onPress={() => {
-                setFabOpen(false);
-                router.push('/modals/create-post');
-              }}
-            />
-            <FabAction
-              label="스토리"
-              onPress={() => {
-                setFabOpen(false);
-                router.push('/modals/create-story');
-              }}
-            />
-          </View>
-        </>
-      )}
+      {/* 올리기 — 스토리는 홈 화면의 일이라 여기선 갈래를 두지 않는다 */}
       <Pressable
-        onPress={() => setFabOpen((v) => !v)}
+        accessibilityLabel="게시물 올리기"
+        onPress={() => router.push('/modals/create-post')}
         style={({ pressed }) => ({
           position: 'absolute',
           right: 16,
@@ -92,38 +67,9 @@ export default function Studio() {
           opacity: pressed ? 0.85 : 1,
         })}
       >
-        <View style={{ transform: [{ rotate: fabOpen ? '45deg' : '0deg' }] }}>
-          <PlusGlyph size={26} color={color.onPrimary} />
-        </View>
+        <PlusGlyph size={26} color={color.onPrimary} />
       </Pressable>
     </View>
-  );
-}
-
-/** FAB에서 펼쳐지는 선택지 — 캘린더 FabAction과 같은 알약 버튼 */
-function FabAction({ label, onPress }: { label: string; onPress: () => void }) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => ({
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: 40,
-        paddingHorizontal: 18,
-        borderRadius: 20,
-        backgroundColor: color.surface2,
-        shadowColor: '#000',
-        shadowOpacity: 0.35,
-        shadowRadius: 8,
-        shadowOffset: { width: 0, height: 4 },
-        elevation: 6,
-        opacity: pressed ? 0.85 : 1,
-      })}
-    >
-      <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 13.5, color: color.white }}>
-        {label}
-      </Text>
-    </Pressable>
   );
 }
 
