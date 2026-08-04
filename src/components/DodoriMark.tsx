@@ -71,7 +71,7 @@ export function DodoriMark({ size = 40, showWord = false, hideLowerDot = false }
             color: color.white,
           }}
         >
-          dodori
+          Dodori
         </Text>
       )}
     </View>

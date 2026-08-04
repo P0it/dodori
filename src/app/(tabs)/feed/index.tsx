@@ -175,7 +175,7 @@ function AccountHeader() {
             </View>
           </View>
         ) : (
-          <NameText style={{ marginTop: 14 }}>{me || partner || 'dodori'}</NameText>
+          <NameText style={{ marginTop: 14 }}>{me || partner || 'Dodori'}</NameText>
         )}
         {couple.data?.startedAt && (
           <>

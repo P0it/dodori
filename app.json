@@ -25,8 +25,8 @@
       "package": "com.hyunwoo.dodori"
     },
     "web": {
-      "name": "dodori",
-      "shortName": "dodori",
+      "name": "Dodori",
+      "shortName": "Dodori",
       "output": "single",
       "favicon": "./assets/images/favicon.png"
     },
