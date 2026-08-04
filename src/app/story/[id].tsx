@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -31,6 +30,7 @@ import {
   type Story,
 } from '@/api/stories';
 import { Avatar } from '@/components/Avatar';
+import { confirmDialog } from '@/components/dialog';
 import { Meta } from '@/components/Meta';
 import { HeartGlyph } from '@/components/glyphs';
 import { StoryProgress } from '@/components/story/StoryProgress';
@@ -191,18 +191,11 @@ export default function StoryViewer() {
   const heart = REACTIONS[0];
   const hearted = current.reactions.some((r) => r.emoji === heart && r.userIds.includes(uid));
 
-  const onDelete = () =>
-    Alert.alert('스토리 삭제', '되돌릴 수 없어요.', [
-      { text: '취소', style: 'cancel' },
-      {
-        text: '삭제',
-        style: 'destructive',
-        onPress: () => {
-          deleteStory.mutate({ id: current.id, photo: current.photo });
-          router.back();
-        },
-      },
-    ]);
+  const onDelete = async () => {
+    if (!(await confirmDialog('이 스토리를 삭제할까요?', '되돌릴 수 없어요.', '삭제'))) return;
+    deleteStory.mutate({ id: current.id, photo: current.photo });
+    router.back();
+  };
 
   const go = (delta: number) => {
     const next = index + delta;
@@ -224,11 +217,11 @@ export default function StoryViewer() {
     setReply('');
   };
 
-  const onDeleteComment = (commentId: string) =>
-    Alert.alert('답장 삭제', undefined, [
-      { text: '취소', style: 'cancel' },
-      { text: '삭제', style: 'destructive', onPress: () => deleteComment.mutate(commentId) },
-    ]);
+  const onDeleteComment = async (commentId: string) => {
+    if (await confirmDialog('이 답장을 삭제할까요?', undefined, '삭제')) {
+      deleteComment.mutate(commentId);
+    }
+  };
 
   return (
     <GestureDetector gesture={swipeDown}>
@@ -282,15 +275,38 @@ export default function StoryViewer() {
             <Text style={{ fontFamily: typeface, fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>
               {formatRelative(current.createdAt)}
             </Text>
-            <View style={{ flex: 1 }} />
+            {/*
+              삭제는 작성자 쪽(왼쪽)에 붙이고 닫기는 오른쪽 끝에 혼자 둔다.
+              둘이 나란히 있으면 흰 글자 두 개라 어느 쪽이 닫기인지 알 수 없었다 —
+              자리·색·모양(알약 vs 맨 글리프)을 전부 갈라놓는다.
+            */}
             {isMine && (
-              <Pressable hitSlop={10} onPress={onDelete}>
-                <Text style={{ fontFamily: typeface, fontSize: 12.5, color: 'rgba(255,255,255,0.8)' }}>
+              <Pressable
+                hitSlop={10}
+                onPress={onDelete}
+                style={({ pressed }) => ({
+                  marginLeft: 2,
+                  paddingHorizontal: 10,
+                  paddingVertical: 5,
+                  borderRadius: 999,
+                  backgroundColor: 'rgba(0,0,0,0.45)',
+                  opacity: pressed ? 0.75 : 1,
+                })}
+              >
+                <Text
+                  style={{
+                    fontFamily: typeface,
+                    fontWeight: '700',
+                    fontSize: 12,
+                    color: color.danger,
+                  }}
+                >
                   삭제
                 </Text>
               </Pressable>
             )}
-            <Pressable hitSlop={10} onPress={() => router.back()}>
+            <View style={{ flex: 1 }} />
+            <Pressable hitSlop={12} onPress={() => router.back()}>
               <Text style={{ fontFamily: typeface, fontSize: 20, color: color.white }}>×</Text>
             </Pressable>
           </View>
