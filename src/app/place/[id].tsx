@@ -4,6 +4,7 @@ import { Image } from 'expo-image';
 import { color, typeface } from '@/theme/tokens';
 import { formatDday, isReleased } from '@/lib/date';
 import { naverMapUrl } from '@/lib/map';
+import { linkLabel } from '@/lib/link';
 import { NaverMapGlyph } from '@/components/glyphs';
 import { usePlaceDetail } from '@/api/playlists';
 import { TopBar } from '@/components/TopBar';
@@ -62,6 +63,24 @@ export default function PlaceDetail() {
               <NaverMapGlyph />
               <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 13, color: color.white }}>
                 네이버 지도에서 보기
+              </Text>
+            </Pressable>
+          ) : null}
+          {p?.link ? (
+            <Pressable
+              onPress={() => Linking.openURL(p.link!)}
+              style={({ pressed }) => ({
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: 34,
+                paddingHorizontal: 14,
+                borderRadius: 999,
+                backgroundColor: color.surface2,
+                opacity: pressed ? 0.7 : 1,
+              })}
+            >
+              <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 13, color: color.sub }}>
+                {linkLabel(p.link)}
               </Text>
             </Pressable>
           ) : null}
