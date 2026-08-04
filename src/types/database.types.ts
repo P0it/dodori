@@ -144,6 +144,7 @@ export type Database = {
           ends_at: string | null
           id: string
           owner_id: string
+          place_id: string | null
           starts_at: string
           title: string
         }
@@ -156,6 +157,7 @@ export type Database = {
           ends_at?: string | null
           id?: string
           owner_id: string
+          place_id?: string | null
           starts_at: string
           title: string
         }
@@ -168,6 +170,7 @@ export type Database = {
           ends_at?: string | null
           id?: string
           owner_id?: string
+          place_id?: string | null
           starts_at?: string
           title?: string
         }
@@ -177,6 +180,13 @@ export type Database = {
             columns: ["couple_id"]
             isOneToOne: false
             referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_place_id_fkey"
+            columns: ["place_id"]
+            isOneToOne: false
+            referencedRelation: "places"
             referencedColumns: ["id"]
           },
         ]
@@ -954,6 +964,7 @@ export type Database = {
           ends_at: string | null
           id: string | null
           owner_id: string | null
+          place_id: string | null
           starts_at: string | null
           title: string | null
         }
@@ -966,6 +977,7 @@ export type Database = {
           ends_at?: string | null
           id?: string | null
           owner_id?: string | null
+          place_id?: string | null
           starts_at?: string | null
           title?: string | null
         }
@@ -978,6 +990,7 @@ export type Database = {
           ends_at?: string | null
           id?: string | null
           owner_id?: string | null
+          place_id?: string | null
           starts_at?: string | null
           title?: string | null
         }
@@ -987,6 +1000,13 @@ export type Database = {
             columns: ["couple_id"]
             isOneToOne: false
             referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_place_id_fkey"
+            columns: ["place_id"]
+            isOneToOne: false
+            referencedRelation: "places"
             referencedColumns: ["id"]
           },
         ]

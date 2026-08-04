@@ -31,7 +31,9 @@ import {
 import { Meta } from '@/components/Meta';
 import { DatePicker, initialMonth } from '@/components/DatePicker';
 import { TimePicker } from '@/components/TimePicker';
-import { ChevronGlyph, ClockGlyph } from '@/components/glyphs';
+import { ChevronGlyph, ClockGlyph, PinGlyph } from '@/components/glyphs';
+import { PlaceSearchSheet } from '@/components/PlaceSearchSheet';
+import type { SearchPlace } from '@/api/places';
 import { useCoupleProfiles } from '@/api/couple';
 
 /** 일정 추가/수정 (목업 21) — 주인(나/상대)·제목·날짜·시간·종일·설명 */
@@ -55,6 +57,14 @@ export default function AddEvent() {
   /** 어떤 피커가 펼쳐져 있나 — 한 번에 하나만 */
   const [open, setOpen] = useState<'none' | 'startDate' | 'endDate' | 'startTime' | 'endTime'>('none');
   const [pickerMonth, setPickerMonth] = useState(() => initialMonth(seed));
+  /**
+   * 장소 (선택). 새로 고른 곳은 `place`(검색 결과)로, 수정 모드에서 안 건드린 기존 장소는
+   * `placeId`+`placeName`으로 들고 있는다 — 안 건드렸으면 places를 다시 upsert할 이유가 없다.
+   */
+  const [place, setPlace] = useState<SearchPlace | null>(null);
+  const [placeId, setPlaceId] = useState<string | null>(null);
+  const [placeName, setPlaceName] = useState<string | null>(null);
+  const [pickingPlace, setPickingPlace] = useState(false);
 
   // 수정 모드: 기존 값 로드 (해당 월 캐시에서)
   const monthEvents = useMonthEvents(startDate.slice(0, 7));
@@ -74,6 +84,9 @@ export default function AddEvent() {
     setEndTime(e.ends_at && !e.all_day ? kstTime(e.ends_at) : addHours(kstTime(e.starts_at), 2));
     setOwnerId(e.owner_id ?? '');
     setEventColorKey(toEventColor(e.color));
+    setPlace(null);
+    setPlaceId(e.place_id ?? null);
+    setPlaceName(e.place?.name ?? null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editingId, monthEvents.data]);
 
@@ -89,6 +102,9 @@ export default function AddEvent() {
     const meId = profiles.data?.me?.id;
     if (meId) setOwnerId(meId);
   }, [editingId, ownerId, profiles.data]);
+
+  /** 새로 고른 곳이 있으면 그것, 아니면 수정 모드에서 들고 온 기존 장소 이름 */
+  const pickedPlaceName = place?.name ?? placeName;
 
   const multiDay = daySpan(startDate, endDate) > 1;
   // 종료일은 시작일보다 앞설 수 없고, 하루짜리 시간 일정이면 종료 시각이 시작보다 뒤여야 한다.
@@ -115,6 +131,8 @@ export default function AddEvent() {
       allDay,
       description: description.trim() || null,
       color: eventColorKey,
+      place,
+      placeId,
     };
     const done = { onSuccess: () => router.back(), onError: showError };
     if (editingId) update.mutate({ id: editingId, ...input }, done);
@@ -317,6 +335,47 @@ export default function AddEvent() {
             </Meta>
           )}
 
+          {/* 장소 (선택) — 핀이 무엇을 묻는지 말하므로 라벨 없이 값만 놓는다 */}
+          <Pressable
+            onPress={() => setPickingPlace(true)}
+            style={({ pressed }) => ({
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 10,
+              paddingHorizontal: 14,
+              paddingVertical: 13,
+              borderRadius: 12,
+              backgroundColor: color.surface1,
+              opacity: pressed ? 0.85 : 1,
+            })}
+          >
+            <PinGlyph size={18} color={pickedPlaceName ? color.accent : color.sub} />
+            <Text
+              numberOfLines={1}
+              style={{
+                flex: 1,
+                fontFamily: typeface,
+                fontWeight: pickedPlaceName ? '600' : '500',
+                fontSize: 14.5,
+                color: pickedPlaceName ? color.white : color.muted,
+              }}
+            >
+              {pickedPlaceName ?? '장소 (선택)'}
+            </Text>
+            {pickedPlaceName && (
+              <Pressable
+                hitSlop={10}
+                onPress={() => {
+                  setPlace(null);
+                  setPlaceId(null);
+                  setPlaceName(null);
+                }}
+              >
+                <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 13, color: color.sub }}>지우기</Text>
+              </Pressable>
+            )}
+          </Pressable>
+
           {open === 'startDate' && (
             <DatePicker
               value={startDate}
@@ -397,6 +456,18 @@ export default function AddEvent() {
           </Pressable>
         )}
       </ScrollView>
+
+      <PlaceSearchSheet
+        visible={pickingPlace}
+        onClose={() => setPickingPlace(false)}
+        onSelect={(p) => {
+          setPlace(p);
+          // 새로 고르면 기존 id는 버린다 — 저장할 때 이 검색 결과를 places에 upsert해 새 id를 받는다
+          setPlaceId(null);
+          setPlaceName(null);
+          setPickingPlace(false);
+        }}
+      />
     </View>
   );
 }

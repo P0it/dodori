@@ -43,6 +43,21 @@ export function ClockGlyph({ size = 18, color: fg = color.sub }: GlyphProps) {
   );
 }
 
+/** 지도 핀 — 장소를 가리키는 줄 앞에 놓는다 */
+export function PinGlyph({ size = 18, color: fg = color.sub }: GlyphProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M12 21c4.5-4.5 7-7.8 7-11a7 7 0 1 0-14 0c0 3.2 2.5 6.5 7 11z"
+        stroke={fg}
+        strokeWidth={1.7}
+        strokeLinejoin="round"
+      />
+      <Circle cx={12} cy={10} r={2.6} stroke={fg} strokeWidth={1.7} />
+    </Svg>
+  );
+}
+
 /** 홈 탭 글리프 — 지붕 + 몸통 */
 export function HomeGlyph({ size = 24, filled, color: fg = color.white }: GlyphProps) {
   return (

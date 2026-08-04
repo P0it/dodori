@@ -1,11 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from './supabase';
 import { useMyCouple } from './couple';
+import { upsertPlace, type SearchPlace } from './places';
 import type { Database } from '@/types/database.types';
 import type { EventColorKey } from '@/theme/tokens';
 
-/** 조회는 events_visible 뷰(커플 공유 읽기 표면) 경유 */
-export type VisibleEvent = Database['public']['Views']['events_visible']['Row'];
+/** 조회는 events_visible 뷰(커플 공유 읽기 표면) 경유 + 장소는 조인해 이름까지 */
+export type VisibleEvent = Database['public']['Views']['events_visible']['Row'] & {
+  place?: { id: string; name: string; address: string | null; category: string | null } | null;
+};
 
 export interface EventInput {
   title: string;
@@ -18,6 +21,16 @@ export interface EventInput {
   description?: string | null;
   /** 일정 색 — 사람이 아니라 일정의 속성 (팔레트 키) */
   color: EventColorKey;
+  /** 장소 (선택) — 검색 결과면 places에 upsert한 뒤 그 id를 건다 */
+  place?: SearchPlace | null;
+  /** 이미 places에 있는 곳을 그대로 유지할 때 (수정 모드에서 장소를 안 건드린 경우) */
+  placeId?: string | null;
+}
+
+/** 입력의 place/placeId를 events.place_id 하나로 접는다 */
+async function resolvePlaceId(input: EventInput): Promise<string | null> {
+  if (input.place) return upsertPlace(input.place);
+  return input.placeId ?? null;
 }
 
 /** 월 범위 events 조회 (KST 월 경계, 뷰 경유) */
@@ -35,7 +48,7 @@ export function useMonthEvents(monthKey: string) {
       // "이 달이 시작되기 전에 시작했고 아직 안 끝난" 것까지 집는다 (ends_at 없으면 하루짜리).
       const { data, error } = await supabase
         .from('events_visible')
-        .select('*')
+        .select('*, place:places(id, name, address, category)')
         .lt('starts_at', to)
         .or(`ends_at.gte.${from},and(ends_at.is.null,starts_at.gte.${from})`)
         .order('starts_at');
@@ -60,6 +73,7 @@ export function useCreateEvent() {
         all_day: input.allDay,
         description: input.description ?? null,
         color: input.color,
+        place_id: await resolvePlaceId(input),
       });
       if (error) throw error;
     },
@@ -81,6 +95,7 @@ export function useUpdateEvent() {
           all_day: input.allDay,
           description: input.description ?? null,
           color: input.color,
+          place_id: await resolvePlaceId(input),
         })
         .eq('id', id);
       if (error) throw error;

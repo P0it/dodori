@@ -12,6 +12,7 @@ import { Meta } from '@/components/Meta';
 import { Divider } from '@/components/Divider';
 import { Avatar } from '@/components/Avatar';
 import { Dday } from '@/components/Dday';
+import { PinGlyph } from '@/components/glyphs';
 import { AnnivCover } from '@/components/AnnivCover';
 
 type Props = {
@@ -167,6 +168,14 @@ export function DayAgenda({ date, events, tracks, annivs, name, avatarUrl }: Pro
                 <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 15, color: color.white }}>
                   {e.title}
                 </Text>
+                {e.place?.name ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 3 }}>
+                    <PinGlyph size={12} color={color.muted} />
+                    <Meta numberOfLines={1} style={{ flex: 1, fontSize: 12 }}>
+                      {e.place.name}
+                    </Meta>
+                  </View>
+                ) : null}
                 {e.description ? (
                   <Text
                     numberOfLines={1}
