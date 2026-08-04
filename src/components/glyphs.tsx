@@ -523,11 +523,21 @@ export function NaverMapGlyph({ size = 16 }: { size?: number }) {
  */
 export function LinkKindGlyph({ kind, size = 16 }: { kind: LinkKind; size?: number }) {
   if (kind === 'instagram') {
+    // 인스타 로고는 단색이 아니라 왼쪽아래 주황 → 분홍 → 오른쪽위 보라 그라디언트다
     return (
       <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-        <Rect x={2.2} y={2.2} width={19.6} height={19.6} rx={5.5} stroke="#E4405F" strokeWidth={1.9} />
-        <Circle cx={12} cy={12} r={4.2} stroke="#E4405F" strokeWidth={1.9} />
-        <Circle cx={17.3} cy={6.7} r={1.25} fill="#E4405F" />
+        <Defs>
+          <LinearGradient id="instagram" x1="0" y1="1" x2="1" y2="0">
+            <Stop offset="0" stopColor="#FEDA75" />
+            <Stop offset="0.2" stopColor="#FA7E1E" />
+            <Stop offset="0.5" stopColor="#D62976" />
+            <Stop offset="0.85" stopColor="#962FBF" />
+            <Stop offset="1" stopColor="#8134AF" />
+          </LinearGradient>
+        </Defs>
+        <Rect x={2.2} y={2.2} width={19.6} height={19.6} rx={5.8} stroke="url(#instagram)" strokeWidth={2.1} />
+        <Circle cx={12} cy={12} r={4.3} stroke="url(#instagram)" strokeWidth={2.1} />
+        <Circle cx={17.4} cy={6.6} r={1.3} fill="url(#instagram)" />
       </Svg>
     );
   }

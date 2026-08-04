@@ -62,7 +62,7 @@ export default function PlaceDetail() {
             >
               <NaverMapGlyph />
               <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 13, color: color.white }}>
-                네이버 지도에서 보기
+                네이버 지도
               </Text>
             </Pressable>
           ) : null}
