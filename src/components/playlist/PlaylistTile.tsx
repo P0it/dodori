@@ -37,7 +37,8 @@ export function PlaylistIcon({ name, color, size }: { name: string; color: strin
       break;
     case 'utensils':
       glyph = [
-        p('M3 2v7c0 1.1.9 2 2 2h2c1.1 0 2-.9 2-2V2', 'a'),
+        // 머리 U자는 x 3~11(중심 7) — 손잡이(x=7)와 중심을 맞춘다. 어긋나면 큰 타일에서 찌그러져 보인다
+        p('M3 2v7c0 1.1.9 2 2 2h4c1.1 0 2-.9 2-2V2', 'a'),
         p('M7 2v20', 'b'),
         p('M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7', 'c'),
       ];
