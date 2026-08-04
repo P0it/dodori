@@ -13,21 +13,23 @@ type Props = { onDone: () => void };
  * metric 차이가 원천적으로 없다.
  */
 const LETTERS = ['d', 'o', 'd', 'o', 'r', 'i'] as const;
-/** 점을 덮는 사각형의 높이 (줄 상단부터) — 점은 가리고 줄기 윗면은 안 건드리는 값. 눈으로 맞춘다 */
-const DOT_MASK_H = 16;
 
-const MARK_SIZE = 64;
+/** app.json의 네이티브 스플래시(imageWidth 88)가 그리는 마크 높이와 같은 값 — 이어받을 때 안 튄다 */
+const MARK_SIZE = 100;
 const MARK_DOT_D = MARK_SIZE * MARK_LOWER_DOT.d;
 
-const FONT_SIZE = 36;
-const LINE_HEIGHT = 44;
+const FONT_SIZE = 46;
+/** 아래 값들은 FONT_SIZE 36에서 눈으로 맞춘 것 — 크기를 바꿔도 관계가 유지되도록 비율로 둔다 */
+const LINE_HEIGHT = FONT_SIZE * 1.22;
+/** 점을 덮는 사각형의 높이 (줄 상단부터) — 점은 가리고 줄기 윗면은 안 건드리는 값 */
+const DOT_MASK_H = FONT_SIZE * 0.44;
 /** 공이 튀는 바닥 — 글자 윗면. 줄 상단 기준 중심 y */
 const FLOOR_CY = 0;
-/** 튀는 동안의 지름 — 마크 점(16.6px)보다 작다. 마지막에 진짜 점(5px)으로 바꿔치기할 때 낙차도 줄여준다 */
-const BALL_D = 9;
+/** 튀는 동안의 지름 — 마크 점보다 작다. 마지막에 진짜 점으로 바꿔치기할 때 낙차도 줄여준다 */
+const BALL_D = FONT_SIZE * 0.25;
 /** 진짜 i 점의 대략 위치·지름 — 사라지는 공이 여기로 수렴한다 (겹치는 200ms만 보이면 되므로 대충이어도 된다) */
-const REAL_DOT_CY = 12;
-const REAL_DOT_D = 5;
+const REAL_DOT_CY = FONT_SIZE * 0.33;
+const REAL_DOT_D = FONT_SIZE * 0.14;
 
 /** 마크에서 제자리 수직 낙하 */
 const DROP_DURATION = 300;
@@ -35,7 +37,7 @@ const DROP_DURATION = 300;
  * 홉은 감쇠한다 — 첫 홉이 가장 높고 매번 반발계수만큼 낮아진다. 시간은 높이의 제곱근에 비례한다
  * (자유낙하). 높이를 이동 거리에서 뽑아봤지만 그건 물리가 아니라 통통이 안 산다.
  */
-const HOP_FIRST_HEIGHT = 34;
+const HOP_FIRST_HEIGHT = FONT_SIZE * 0.94;
 const HOP_RESTITUTION = 0.55;
 const HOP_MS_PER_SQRT_PX = 69;
 /** 떨어지는 동안 브랜드 그린 → 흰색 */
@@ -240,7 +242,7 @@ export function BrandSplash({ onDone }: Props) {
         style={{
           position: 'absolute',
           top: '50%',
-          marginTop: 52,
+          marginTop: MARK_SIZE / 2 + 20,
           flexDirection: 'row',
           opacity: word,
           transform: [{ translateY: word.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }],
@@ -261,7 +263,7 @@ export function BrandSplash({ onDone }: Props) {
               fontWeight: '800',
               fontSize: FONT_SIZE,
               lineHeight: LINE_HEIGHT,
-              letterSpacing: -1,
+              letterSpacing: FONT_SIZE * -0.028,
               color: color.white,
             }}
           >
