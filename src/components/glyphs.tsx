@@ -3,6 +3,7 @@ import { Image } from 'expo-image';
 import Svg, { Circle, G, Path, Rect } from 'react-native-svg';
 import { color } from '@/theme/tokens';
 import { MUSIC_BRAND_LOGO } from '@/lib/musicBrand';
+import type { LinkKind } from '@/lib/link';
 
 type GlyphProps = { size?: number; filled?: boolean; color?: string };
 
@@ -500,4 +501,30 @@ export function NaverMapGlyph({ size = 16 }: { size?: number }) {
       <Path d="M14.4 6.5h3.3v11h-3.9l-3.3-5.2v5.2H6.3v-11h3.9l3.3 5.2V6.5z" fill="#FFFFFF" />
     </Svg>
   );
+}
+
+/**
+ * 업체 링크 글리프 — places.link가 어디로 나가는지(lib/link의 LinkKind) 보여준다.
+ * 인스타·유튜브는 공식 로고(simple-icons, CC0) 실루엣 + 브랜드 고유색 — musicBrand와 같은 예외.
+ * 블로그·홈페이지는 도메인이 제각각이라 특정 로고를 못 쓴다 → 체인 링크 글리프.
+ */
+export function LinkKindGlyph({ kind, size = 16 }: { kind: LinkKind; size?: number }) {
+  if (kind === 'instagram') {
+    return (
+      <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+        <Rect x={2.2} y={2.2} width={19.6} height={19.6} rx={5.5} stroke="#E4405F" strokeWidth={1.9} />
+        <Circle cx={12} cy={12} r={4.2} stroke="#E4405F" strokeWidth={1.9} />
+        <Circle cx={17.3} cy={6.7} r={1.25} fill="#E4405F" />
+      </Svg>
+    );
+  }
+  if (kind === 'youtube') {
+    return (
+      <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+        <Rect x={1.5} y={5} width={21} height={14} rx={4} fill="#FF0000" />
+        <Path d="M10 8.8v6.4L15.5 12 10 8.8z" fill="#FFFFFF" />
+      </Svg>
+    );
+  }
+  return <LinkGlyph size={size} color={color.sub} />;
 }

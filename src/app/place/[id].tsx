@@ -4,8 +4,8 @@ import { Image } from 'expo-image';
 import { color, typeface } from '@/theme/tokens';
 import { formatDday, isReleased } from '@/lib/date';
 import { naverMapUrl } from '@/lib/map';
-import { linkLabel } from '@/lib/link';
-import { NaverMapGlyph } from '@/components/glyphs';
+import { linkKind, linkLabel } from '@/lib/link';
+import { LinkKindGlyph, NaverMapGlyph } from '@/components/glyphs';
 import { usePlaceDetail } from '@/api/playlists';
 import { TopBar } from '@/components/TopBar';
 import { Meta } from '@/components/Meta';
@@ -70,8 +70,9 @@ export default function PlaceDetail() {
             <Pressable
               onPress={() => Linking.openURL(p.link!)}
               style={({ pressed }) => ({
+                flexDirection: 'row',
                 alignItems: 'center',
-                justifyContent: 'center',
+                gap: 7,
                 height: 34,
                 paddingHorizontal: 14,
                 borderRadius: 999,
@@ -79,6 +80,7 @@ export default function PlaceDetail() {
                 opacity: pressed ? 0.7 : 1,
               })}
             >
+              <LinkKindGlyph kind={linkKind(p.link)} />
               <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 13, color: color.sub }}>
                 {linkLabel(p.link)}
               </Text>
