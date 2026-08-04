@@ -207,14 +207,19 @@ export default function CreateStory() {
             collapsable={false}
             style={{ width: canvas.width, height: canvas.height, backgroundColor: '#000' }}
           >
-            <Image
-              source={{ uri: photo.uri }}
-              style={StyleSheet.absoluteFill}
-              contentFit="cover"
-              blurRadius={BLUR_RADIUS}
-            />
-            {/* 흐린 배경이 사진보다 튀지 않게 한 겹 눌러 준다 */}
-            <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.32)' }]} />
+            {/* 웹은 축소가 cover에서 막혀 사진이 늘 다 덮는다 — 깔아 봐야 드러날 일이 없다 */}
+            {CAN_BAKE && (
+              <>
+                <Image
+                  source={{ uri: photo.uri }}
+                  style={StyleSheet.absoluteFill}
+                  contentFit="cover"
+                  blurRadius={BLUR_RADIUS}
+                />
+                {/* 흐린 배경이 사진보다 튀지 않게 한 겹 눌러 준다 */}
+                <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.32)' }]} />
+              </>
+            )}
             <StoryCanvas
               uri={photo.uri}
               photoWidth={photo.width}
