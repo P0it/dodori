@@ -11,6 +11,7 @@ import { TopBar } from '@/components/TopBar';
 import { Meta } from '@/components/Meta';
 import { PlaylistTile } from '@/components/playlist/PlaylistTile';
 import { ChevronGlyph, DotsGlyph } from '@/components/glyphs';
+import { PlaceKindTile } from '@/components/PlaceKindTile';
 
 /** 테마(커스텀) 플레이리스트 상세 (목업 P1) — 데이트가 아니라 장소를 모은다 */
 export default function CustomPlaylist() {
@@ -84,43 +85,12 @@ export default function CustomPlaylist() {
                   contentFit="cover"
                 />
               ) : (
-                <View
-                  style={{
-                    width: 52,
-                    height: 52,
-                    borderRadius: 8,
-                    borderWidth: 1.5,
-                    borderStyle: 'dashed',
-                    borderColor: color.sub,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Text style={{ fontFamily: typeface, color: color.sub, fontSize: 11 }}>가고픈</Text>
-                </View>
+                <PlaceKindTile category={pl.category} size={52} />
               )}
               <View style={{ flex: 1, minWidth: 0 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
-                  <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 15.5, color: color.white }}>
-                    {pl.name}
-                  </Text>
-                  {pl.visitCount === 0 && (
-                    <Text
-                      style={{
-                        fontSize: 9.5,
-                        fontFamily: typeface, fontWeight: '700',
-                        color: color.anniv,
-                        borderWidth: 1,
-                        borderColor: color.anniv,
-                        borderRadius: 4,
-                        paddingHorizontal: 5,
-                        paddingVertical: 1,
-                      }}
-                    >
-                      가고 싶은 곳
-                    </Text>
-                  )}
-                </View>
+                <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 15.5, color: color.white }}>
+                  {pl.name}
+                </Text>
                 <Meta style={{ marginTop: 3, fontSize: 12.5 }}>{pl.category ?? '장소'}</Meta>
               </View>
               <ChevronGlyph size={22} color={color.sub} />
