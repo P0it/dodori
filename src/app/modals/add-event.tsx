@@ -31,7 +31,7 @@ import {
 import { Meta } from '@/components/Meta';
 import { DatePicker, initialMonth } from '@/components/DatePicker';
 import { TimePicker } from '@/components/TimePicker';
-import { ClockGlyph } from '@/components/glyphs';
+import { ChevronGlyph, ClockGlyph } from '@/components/glyphs';
 import { useCoupleProfiles } from '@/api/couple';
 
 /** 일정 추가/수정 (목업 21) — 주인(나/상대)·제목·날짜·시간·종일·설명 */
@@ -275,54 +275,39 @@ export default function AddEvent() {
         />
 
         <View style={{ marginTop: 20, gap: 10 }}>
-          {/* 종일이 먼저 — 이 스위치가 아래 시각 행의 유무를 정한다 */}
-          <FieldRow label="종일">
-            <Toggle on={allDay} onToggle={() => setAllDay((v) => !v)} />
-          </FieldRow>
-
           {/*
-            때 — 시작과 종료가 한 줄. 시계 아이콘이 이 줄이 '언제'라는 걸 말하므로
-            '시작'·'종료' 라벨은 두지 않는다 (화살표가 방향을 대신한다).
-            날짜·시각이 각각 제 몫의 탭 대상이라 고치고 싶은 것만 바로 누른다.
+            때 — 종일 스위치와 시작·종료가 한 카드. 시계가 이 덩어리를 '언제'로 묶으므로
+            '시작'·'종료' 라벨은 두지 않는다 (사이의 꺾쇠가 방향을 대신한다).
+            날짜 줄과 시각 줄이 각각 제 몫의 탭 대상이라 고치고 싶은 것만 바로 누른다.
           */}
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              paddingHorizontal: 14,
-              paddingVertical: 12,
-              borderRadius: 12,
-              backgroundColor: color.surface1,
-            }}
-          >
-            <ClockGlyph size={17} />
-            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
-              <WhenChip
-                text={dateLabel(startDate)}
-                on={open === 'startDate'}
-                onPress={() => setOpen((v) => (v === 'startDate' ? 'none' : 'startDate'))}
+          <View style={{ paddingHorizontal: 14, paddingVertical: 12, borderRadius: 12, backgroundColor: color.surface1 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <ClockGlyph size={18} />
+              <Text style={{ flex: 1, fontFamily: typeface, fontWeight: '500', fontSize: 14, color: color.sub }}>
+                종일
+              </Text>
+              <Toggle on={allDay} onToggle={() => setAllDay((v) => !v)} />
+            </View>
+
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 12, paddingLeft: 28 }}>
+              <WhenBlock
+                date={dateLabel(startDate)}
+                time={allDay ? null : startTime}
+                openDate={open === 'startDate'}
+                openTime={open === 'startTime'}
+                onPressDate={() => setOpen((v) => (v === 'startDate' ? 'none' : 'startDate'))}
+                onPressTime={() => setOpen((v) => (v === 'startTime' ? 'none' : 'startTime'))}
               />
-              {!allDay && (
-                <WhenChip
-                  text={startTime}
-                  on={open === 'startTime'}
-                  onPress={() => setOpen((v) => (v === 'startTime' ? 'none' : 'startTime'))}
-                />
-              )}
-              <Text style={{ marginHorizontal: 2, fontFamily: typeface, fontSize: 13, color: color.muted }}>→</Text>
-              <WhenChip
-                text={dateLabel(endDate)}
-                on={open === 'endDate'}
-                onPress={() => setOpen((v) => (v === 'endDate' ? 'none' : 'endDate'))}
+              <ChevronGlyph size={20} />
+              <WhenBlock
+                date={dateLabel(endDate)}
+                time={allDay ? null : endTime}
+                warn={!timeOk}
+                openDate={open === 'endDate'}
+                openTime={open === 'endTime'}
+                onPressDate={() => setOpen((v) => (v === 'endDate' ? 'none' : 'endDate'))}
+                onPressTime={() => setOpen((v) => (v === 'endTime' ? 'none' : 'endTime'))}
               />
-              {!allDay && (
-                <WhenChip
-                  text={endTime}
-                  on={open === 'endTime'}
-                  warn={!timeOk}
-                  onPress={() => setOpen((v) => (v === 'endTime' ? 'none' : 'endTime'))}
-                />
-              )}
             </View>
           </View>
 
@@ -437,65 +422,61 @@ function kstTime(iso: string): string {
     timeZone: 'Asia/Seoul',
   });
 }
-/** 라벨 + 컨트롤 한 줄 (종일 토글) */
-function FieldRow({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <View
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 16,
-        paddingVertical: 13,
-        borderRadius: 12,
-        backgroundColor: color.surface1,
-      }}
-    >
-      <Text style={{ flex: 1, fontFamily: typeface, fontWeight: '500', fontSize: 14, color: color.sub }}>{label}</Text>
-      {children}
-    </View>
-  );
-}
-
-/** '때' 줄 안의 조각 하나 — 날짜 또는 시각. 열려 있으면 밑줄로 어느 걸 고치는 중인지 짚어준다 */
-function WhenChip({
-  text,
-  on,
+/**
+ * 때 카드의 한 쪽 — 시작 또는 종료. 날짜가 윗줄, 시각이 아랫줄이고 각각 따로 눌린다.
+ * 종일이면 시각 줄이 없어 날짜가 그 자리를 이어받아 커진다.
+ * 지금 고치는 중인 줄은 브랜드 색으로 짚는다 (밑줄·테두리 없이 색만 — 줄이 둘이라 장식이 겹친다).
+ */
+function WhenBlock({
+  date,
+  time,
   warn,
-  onPress,
+  openDate,
+  openTime,
+  onPressDate,
+  onPressTime,
 }: {
-  text: string;
-  on: boolean;
+  date: string;
+  /** null이면 종일 — 시각 줄을 그리지 않는다 */
+  time: string | null;
   warn?: boolean;
-  onPress: () => void;
+  openDate: boolean;
+  openTime: boolean;
+  onPressDate: () => void;
+  onPressTime: () => void;
 }) {
   return (
-    <Pressable
-      onPress={onPress}
-      hitSlop={6}
-      style={({ pressed }) => ({
-        // 다른 해 날짜('2027.01.02 (토)')가 둘 다 서면 줄이 꽉 찬다 — 밀어내지 말고 줄여서 자른다
-        flexShrink: 1,
-        paddingHorizontal: 5,
-        paddingVertical: 3,
-        borderRadius: 6,
-        backgroundColor: on ? 'rgba(255,255,255,0.10)' : 'transparent',
-        borderBottomWidth: 1.5,
-        borderBottomColor: on ? color.accent : 'transparent',
-        opacity: pressed ? 0.7 : 1,
-      })}
-    >
-      <Text
-        numberOfLines={1}
-        style={{
-          fontFamily: typeface,
-          fontWeight: '700',
-          fontSize: 13.5,
-          color: warn ? color.danger : color.white,
-        }}
-      >
-        {text}
-      </Text>
-    </Pressable>
+    <View style={{ flex: 1, gap: 1 }}>
+      <Pressable onPress={onPressDate} hitSlop={4} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
+        <Text
+          numberOfLines={1}
+          style={{
+            fontFamily: typeface,
+            fontWeight: time === null ? '800' : '600',
+            fontSize: time === null ? 19 : 13,
+            color: openDate ? color.accent : time === null ? color.white : color.sub,
+          }}
+        >
+          {date}
+        </Text>
+      </Pressable>
+      {time !== null && (
+        <Pressable onPress={onPressTime} hitSlop={4} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
+          <Text
+            numberOfLines={1}
+            style={{
+              fontFamily: typeface,
+              fontWeight: '800',
+              fontSize: 21,
+              letterSpacing: -0.3,
+              color: warn ? color.danger : openTime ? color.accent : color.white,
+            }}
+          >
+            {time}
+          </Text>
+        </Pressable>
+      )}
+    </View>
   );
 }
 
