@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
 import { color, toEventColor, typeface } from '@/theme/tokens';
 import { monthCells, addMonths, monthLabel } from '@/lib/calendar';
-import { monthKey as toMonthKey, todayKST, isReleased } from '@/lib/date';
+import { monthKey as toMonthKey, todayKST } from '@/lib/date';
 import { assignLanes, daySpan, eventDayRange, spanSegments } from '@/lib/span';
 import { occurrenceInMonth } from '@/lib/anniversaries';
 import { holidayMapForMonth } from '@/lib/holidays';
@@ -82,14 +82,10 @@ export default function Calendar() {
 
     for (const [date, name] of Object.entries(holidays)) at(date).holidayLabel = name;
 
+    // released 여부로 나누지 않는다 — 예정 데이트에 사진을 올려도 커버가 안 보이던 원인이었다.
+    // 사진이 없으면 그리드가 seed 그라디언트 자켓으로 채운다.
     for (const t of tracks.data ?? []) {
-      const m = at(t.date);
-      if (isReleased(t.date)) {
-        if (t.coverThumbUrl) m.releasedThumb = t.coverThumbUrl;
-        else m.releasedNoPhoto = true;
-      } else {
-        m.upcomingTitle = t.title;
-      }
+      at(t.date).date = { id: t.id, title: t.title, thumb: t.coverThumbUrl };
     }
     for (const a of annivs.data ?? []) {
       const occ = occurrenceInMonth(a.date, a.repeatYearly, month);

@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { Image } from 'expo-image';
-import { color, eventColor, tintBg, typeface, type EventColorKey } from '@/theme/tokens';
+import { LinearGradient } from 'expo-linear-gradient';
+import { color, eventColor, typeface, type EventColorKey } from '@/theme/tokens';
+import { AlbumJacket } from '@/components/AlbumJacket';
 import type { DayCell } from '@/lib/calendar';
 import { laneCounts, rowBudget, type SpanSegment } from '@/lib/span';
 import { shortHolidayName } from '@/lib/holidays';
@@ -28,12 +30,12 @@ const BAR_BOTTOM = 4;
 
 /** 셀 하나에 표시할 마커 집합 — 화면(조합 계층)에서 만들어 내려준다 */
 export interface DayMarks {
-  /** released 트랙 썸네일 URL (§6.3 캘린더 전용 사이즈) */
-  releasedThumb?: string | null;
-  /** released인데 커버 없음 */
-  releasedNoPhoto?: boolean;
-  /** 예정 데이트(트랙) 제목 */
-  upcomingTitle?: string;
+  /**
+   * 그날의 데이트(트랙) — 칸 배경을 자켓으로 채운다. 지난 날·앞으로의 날을 가리지 않는다
+   * (예정 데이트에 사진을 올려도 안 보이던 게 이 구분 때문이었다).
+   * thumb이 없으면 라이브러리와 같은 seed 그라디언트로 채운다 — id를 seed로 써야 색이 일치한다.
+   */
+  date?: { id: string; title: string; thumb: string | null };
   annivLabel?: string;
   /** 공휴일 이름 ('설날', '대체공휴일(광복절)' 등) */
   holidayLabel?: string;
@@ -52,10 +54,9 @@ function markList(m: DayMarks): Mark[] {
   const out: Mark[] = [];
   if (m.annivLabel) out.push({ kind: 'anniv', label: m.annivLabel });
   if (m.holidayLabel) out.push({ kind: 'holiday', label: shortHolidayName(m.holidayLabel) });
-  if (m.upcomingTitle)
-    out.push({ kind: 'chip', bg: tintBg.date, fg: color.date, label: m.upcomingTitle });
-  if (m.releasedThumb) out.push({ kind: 'plain', label: '데이트' });
-  if (m.releasedNoPhoto) out.push({ kind: 'chip', bg: tintBg.date, fg: color.date, label: '데이트' });
+  // 데이트는 칩이 아니라 맨 글자 — 칸 배경이 이미 자켓이라 색 블록을 또 얹으면 사진을 가린다.
+  // 형태가 다르니 개인 일정 칩과 색이 비슷해도 헷갈리지 않는다.
+  if (m.date) out.push({ kind: 'plain', label: m.date.title });
   for (const e of m.events ?? [])
     out.push({ kind: 'chip', bg: eventColor[e.color].bg, fg: eventColor[e.color].fg, label: e.title });
   return out;
@@ -128,7 +129,7 @@ export function MonthGrid({ cells, marks, spans = [], selected, onSelectDay, dim
                 <DayCellView
                   key={cell.date}
                   cell={cell}
-                  thumb={cell.inMonth ? (marks[cell.date]?.releasedThumb ?? null) : null}
+                  date={cell.inMonth ? marks[cell.date]?.date : undefined}
                   anniv={cell.inMonth ? !!marks[cell.date]?.annivLabel : false}
                   holiday={cell.inMonth ? !!marks[cell.date]?.holidayLabel : false}
                   shown={shown}
@@ -220,7 +221,7 @@ function SpanBars({ spans }: { spans: DaySpan[] }) {
 
 function DayCellView({
   cell,
-  thumb,
+  date,
   anniv,
   holiday,
   shown,
@@ -230,7 +231,7 @@ function DayCellView({
   onPress,
 }: {
   cell: DayCell;
-  thumb: string | null;
+  date?: { id: string; title: string; thumb: string | null };
   anniv: boolean;
   holiday: boolean;
   /** 이 셀이 실제로 그릴 줄들 — 예산 밖은 잘라서 온다 */
@@ -253,25 +254,24 @@ function DayCellView({
         backgroundColor: selected ? 'rgba(255,255,255,0.10)' : 'transparent',
       }}
     >
-      {thumb && (
-        <>
-          <Image
-            source={thumb}
-            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 7 }}
-            contentFit="cover"
+      {/*
+        데이트가 있는 날은 칸 자체가 앨범이 된다 — 사진이 있으면 커버, 없으면 그라디언트 자켓.
+        예전처럼 전체를 35% 검정으로 덮지 않는다 (52pt짜리 칸에선 사진이 회색 판이 된다).
+        대신 글자가 앉는 위·아래만 스크림으로 눌러 가독성을 챙긴다.
+      */}
+      {date && (
+        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 7, overflow: 'hidden' }}>
+          {date.thumb ? (
+            <Image source={date.thumb} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+          ) : (
+            <AlbumJacket seed={date.id} />
+          )}
+          <LinearGradient
+            colors={['rgba(0,0,0,0.5)', 'rgba(0,0,0,0.12)', 'rgba(0,0,0,0.7)']}
+            locations={[0, 0.4, 1]}
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
           />
-          <View
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              borderRadius: 7,
-              backgroundColor: 'rgba(0,0,0,0.35)',
-            }}
-          />
-        </>
+        </View>
       )}
       {/* 날짜 숫자 */}
       <View
@@ -329,6 +329,23 @@ function DayCellView({
           </Text>
         )}
       </View>
+
+      {/* 선택 표시 — 배경 틴트는 자켓 위에서 안 보인다. 테두리는 레이아웃을 밀지 않게 겹쳐 그린다 */}
+      {selected && (
+        <View
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            borderRadius: 7,
+            borderWidth: 1.5,
+            borderColor: 'rgba(255,255,255,0.55)',
+          }}
+        />
+      )}
     </Pressable>
   );
 }
