@@ -31,6 +31,7 @@ import {
 import { Meta } from '@/components/Meta';
 import { DatePicker, initialMonth } from '@/components/DatePicker';
 import { TimePicker } from '@/components/TimePicker';
+import { ClockGlyph } from '@/components/glyphs';
 import { useCoupleProfiles } from '@/api/couple';
 
 /** 일정 추가/수정 (목업 21) — 주인(나/상대)·제목·날짜·시간·종일·설명 */
@@ -279,12 +280,58 @@ export default function AddEvent() {
             <Toggle on={allDay} onToggle={() => setAllDay((v) => !v)} />
           </FieldRow>
 
-          <FieldRow
-            label="시작"
-            onPress={() => setOpen((v) => (v === 'startDate' ? 'none' : 'startDate'))}
-            value={dateLabel(startDate)}
-            open={open === 'startDate'}
-          />
+          {/*
+            때 — 시작과 종료가 한 줄. 시계 아이콘이 이 줄이 '언제'라는 걸 말하므로
+            '시작'·'종료' 라벨은 두지 않는다 (화살표가 방향을 대신한다).
+            날짜·시각이 각각 제 몫의 탭 대상이라 고치고 싶은 것만 바로 누른다.
+          */}
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              paddingHorizontal: 14,
+              paddingVertical: 12,
+              borderRadius: 12,
+              backgroundColor: color.surface1,
+            }}
+          >
+            <ClockGlyph size={17} />
+            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
+              <WhenChip
+                text={dateLabel(startDate)}
+                on={open === 'startDate'}
+                onPress={() => setOpen((v) => (v === 'startDate' ? 'none' : 'startDate'))}
+              />
+              {!allDay && (
+                <WhenChip
+                  text={startTime}
+                  on={open === 'startTime'}
+                  onPress={() => setOpen((v) => (v === 'startTime' ? 'none' : 'startTime'))}
+                />
+              )}
+              <Text style={{ marginHorizontal: 2, fontFamily: typeface, fontSize: 13, color: color.muted }}>→</Text>
+              <WhenChip
+                text={dateLabel(endDate)}
+                on={open === 'endDate'}
+                onPress={() => setOpen((v) => (v === 'endDate' ? 'none' : 'endDate'))}
+              />
+              {!allDay && (
+                <WhenChip
+                  text={endTime}
+                  on={open === 'endTime'}
+                  warn={!timeOk}
+                  onPress={() => setOpen((v) => (v === 'endTime' ? 'none' : 'endTime'))}
+                />
+              )}
+            </View>
+          </View>
+
+          {multiDay && (
+            <Meta style={{ marginTop: -4, fontSize: 12, textAlign: 'center' }}>
+              {daySpan(startDate, endDate)}일간
+            </Meta>
+          )}
+
           {open === 'startDate' && (
             <DatePicker
               value={startDate}
@@ -299,13 +346,6 @@ export default function AddEvent() {
               onMonthChange={setPickerMonth}
             />
           )}
-
-          <FieldRow
-            label="종료"
-            onPress={() => setOpen((v) => (v === 'endDate' ? 'none' : 'endDate'))}
-            value={dateLabel(endDate) + (multiDay ? ` · ${daySpan(startDate, endDate)}일` : '')}
-            open={open === 'endDate'}
-          />
           {open === 'endDate' && (
             <DatePicker
               value={endDate}
@@ -318,44 +358,25 @@ export default function AddEvent() {
               onMonthChange={setPickerMonth}
             />
           )}
-
-          {!allDay && (
-            <>
-              <FieldRow
-                label="시작 시각"
-                onPress={() => setOpen((v) => (v === 'startTime' ? 'none' : 'startTime'))}
-                value={startTime}
-                open={open === 'startTime'}
-              />
-              {open === 'startTime' && (
-                <TimePicker
-                  value={startTime}
-                  onChange={(t) => {
-                    setStartTime(t);
-                    // 하루짜리면 종료를 앞질러 갈 수 없다 — 따라 밀어준다
-                    if (!multiDay && !isAfter(t, endTime)) setEndTime(addHours(t, 2));
-                  }}
-                />
+          {open === 'startTime' && (
+            <TimePicker
+              value={startTime}
+              onChange={(t) => {
+                setStartTime(t);
+                // 하루짜리면 종료를 앞질러 갈 수 없다 — 따라 밀어준다
+                if (!multiDay && !isAfter(t, endTime)) setEndTime(addHours(t, 2));
+              }}
+            />
+          )}
+          {open === 'endTime' && (
+            <View style={{ gap: 8 }}>
+              <TimePicker value={endTime} onChange={setEndTime} />
+              {!timeOk && (
+                <Meta style={{ fontSize: 12, textAlign: 'center', color: color.danger }}>
+                  종료는 시작보다 뒤여야 해요
+                </Meta>
               )}
-
-              <FieldRow
-                label="종료 시각"
-                onPress={() => setOpen((v) => (v === 'endTime' ? 'none' : 'endTime'))}
-                value={endTime}
-                warn={!timeOk}
-                open={open === 'endTime'}
-              />
-              {open === 'endTime' && (
-                <View style={{ gap: 8 }}>
-                  <TimePicker value={endTime} onChange={setEndTime} />
-                  {!timeOk && (
-                    <Meta style={{ fontSize: 12, textAlign: 'center', color: color.danger }}>
-                      종료는 시작보다 뒤여야 해요
-                    </Meta>
-                  )}
-                </View>
-              )}
-            </>
+            </View>
           )}
         </View>
 
@@ -399,9 +420,14 @@ function showError(e: unknown) {
   Alert.alert('저장 실패', e instanceof Error ? e.message : String(e));
 }
 
-/** '2026-08-10' → '2026.08.10 (월)' */
+/**
+ * '2026-08-10' → '08.10 (월)'. 한 줄에 시작·종료가 같이 서므로 올해면 연도는 뺀다
+ * (다른 해면 '2027.01.02 (토)'로 붙여 헷갈리지 않게).
+ */
 function dateLabel(d: string): string {
-  return `${d.replaceAll('-', '.')} (${weekdayKo(d)})`;
+  const sameYear = d.slice(0, 4) === todayKST().slice(0, 4);
+  const body = (sameYear ? d.slice(5) : d).replaceAll('-', '.');
+  return `${body} (${weekdayKo(d)})`;
 }
 
 function kstTime(iso: string): string {
@@ -412,62 +438,64 @@ function kstTime(iso: string): string {
     timeZone: 'Asia/Seoul',
   });
 }
-/**
- * 설정 행. `value`를 주면 눌러서 아래 피커를 여는 행이 되고,
- * `children`을 주면 그 자리에 컨트롤(종일 토글)을 그대로 놓는다.
- */
-function FieldRow({
-  label,
-  children,
-  value,
-  onPress,
-  open,
-  muted,
-  warn,
-}: {
-  label: string;
-  children?: React.ReactNode;
-  value?: string;
-  onPress?: () => void;
-  open?: boolean;
-  muted?: boolean;
-  warn?: boolean;
-}) {
-  const body = (
-    <>
-      <Text style={{ flex: 1, fontFamily: typeface, fontWeight: '500', fontSize: 14, color: color.sub }}>{label}</Text>
-      {value !== undefined ? (
-        <Text
-          style={{
-            fontFamily: typeface,
-            fontWeight: '700',
-            fontSize: 15,
-            color: warn ? color.danger : muted ? color.muted : color.white,
-          }}
-        >
-          {value}
-        </Text>
-      ) : (
-        children
-      )}
-    </>
-  );
-
-  const style = {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 13,
-    borderRadius: 12,
-    backgroundColor: color.surface1,
-    borderWidth: 1,
-    borderColor: open ? color.accent : 'transparent',
-  } as const;
-
-  if (!onPress) return <View style={style}>{body}</View>;
+/** 라벨 + 컨트롤 한 줄 (종일 토글) */
+function FieldRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [style, { opacity: pressed ? 0.85 : 1 }]}>
-      {body}
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingVertical: 13,
+        borderRadius: 12,
+        backgroundColor: color.surface1,
+      }}
+    >
+      <Text style={{ flex: 1, fontFamily: typeface, fontWeight: '500', fontSize: 14, color: color.sub }}>{label}</Text>
+      {children}
+    </View>
+  );
+}
+
+/** '때' 줄 안의 조각 하나 — 날짜 또는 시각. 열려 있으면 밑줄로 어느 걸 고치는 중인지 짚어준다 */
+function WhenChip({
+  text,
+  on,
+  warn,
+  onPress,
+}: {
+  text: string;
+  on: boolean;
+  warn?: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      hitSlop={6}
+      style={({ pressed }) => ({
+        // 다른 해 날짜('2027.01.02 (토)')가 둘 다 서면 줄이 꽉 찬다 — 밀어내지 말고 줄여서 자른다
+        flexShrink: 1,
+        paddingHorizontal: 5,
+        paddingVertical: 3,
+        borderRadius: 6,
+        backgroundColor: on ? 'rgba(255,255,255,0.10)' : 'transparent',
+        borderBottomWidth: 1.5,
+        borderBottomColor: on ? color.accent : 'transparent',
+        opacity: pressed ? 0.7 : 1,
+      })}
+    >
+      <Text
+        numberOfLines={1}
+        style={{
+          fontFamily: typeface,
+          fontWeight: '700',
+          fontSize: 13.5,
+          color: warn ? color.danger : color.white,
+        }}
+      >
+        {text}
+      </Text>
     </Pressable>
   );
 }

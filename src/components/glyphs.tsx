@@ -33,6 +33,16 @@ export function CalGlyph({ size = 24, filled, color: fg = color.white }: GlyphPr
   );
 }
 
+/** 시계 — 일정의 때(시작~종료)를 가리키는 줄 앞에 놓는다 */
+export function ClockGlyph({ size = 18, color: fg = color.sub }: GlyphProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Circle cx={12} cy={12} r={8.5} stroke={fg} strokeWidth={1.7} />
+      <Path d="M12 7.5V12l3 2" stroke={fg} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
 /** 홈 탭 글리프 — 지붕 + 몸통 */
 export function HomeGlyph({ size = 24, filled, color: fg = color.white }: GlyphProps) {
   return (
