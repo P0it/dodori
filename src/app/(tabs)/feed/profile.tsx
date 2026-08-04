@@ -136,7 +136,10 @@ export default function EditProfile() {
             <View style={{ marginTop: 10 }}>
               <DatePicker
                 value={birthday}
-                onChange={setBirthday}
+                onChange={(d) => {
+                  setBirthday(d);
+                  setPickingBirthday(false);
+                }}
                 month={birthdayMonth}
                 onMonthChange={setBirthdayMonth}
                 maxDate={todayKST()}

@@ -247,7 +247,15 @@ function AddCustomAnniv({ onClose }: { onClose: () => void }) {
         </Pressable>
         {picking && (
           <View style={{ marginTop: 10 }}>
-            <DatePicker value={date} onChange={setDate} month={pickerMonth} onMonthChange={setPickerMonth} />
+            <DatePicker
+              value={date}
+              onChange={(d) => {
+                setDate(d);
+                setPicking(false);
+              }}
+              month={pickerMonth}
+              onMonthChange={setPickerMonth}
+            />
           </View>
         )}
         <Pressable

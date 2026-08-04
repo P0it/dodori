@@ -266,7 +266,11 @@ export default function AddEvent() {
           {open === 'date' && (
             <DatePicker
               value={date}
-              onChange={setDate}
+              // 날짜는 한 번 고르면 끝 — 계속 펼쳐두면 아래 항목이 가린다
+              onChange={(d) => {
+                setDate(d);
+                setOpen('none');
+              }}
               month={pickerMonth}
               onMonthChange={setPickerMonth}
             />
