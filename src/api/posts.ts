@@ -135,7 +135,10 @@ export function useCreatePost() {
       if (photos.length) await uploadPhotos({ postId }, couple.data.coupleId, photos);
       return postId;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['posts'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['posts'] });
+      qc.invalidateQueries({ queryKey: ['photoQuota'] });
+    },
   });
 }
 
@@ -151,7 +154,10 @@ export function useDeletePost() {
           .remove(post.photos.flatMap((p) => storagePathsFor(p)));
       }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['posts'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['posts'] });
+      qc.invalidateQueries({ queryKey: ['photoQuota'] });
+    },
   });
 }
 

@@ -19,6 +19,7 @@ import { PostCropSheet } from '@/components/feed/PostCropSheet';
 import type { CanvasTransform } from '@/components/story/StoryCanvas';
 import { cropToCanvas, pickPhotos, type PickedPhoto } from '@/api/photos';
 import { useCreatePost } from '@/api/posts';
+import { usePhotoQuota } from '@/api/couple';
 import { postFrameRatio } from '@/lib/posts';
 
 /** 게시물 작성 — 사진 선택 + 캡션 */
@@ -31,8 +32,13 @@ export default function CreatePost() {
   const { width: screenW } = useWindowDimensions();
 
   const createPost = useCreatePost();
+  const quota = usePhotoQuota();
 
   const onPick = async () => {
+    if (quota.data?.full) {
+      Alert.alert('공간이 가득 찼어요', '곧 더 많은 공간을 제공할 예정이에요');
+      return;
+    }
     try {
       const picked = await pickPhotos(10);
       if (picked.length) setPhotos((prev) => [...prev, ...picked].slice(0, 10));
@@ -131,6 +137,13 @@ export default function CreatePost() {
           )}
         </View>
         <Meta>사진 {photos.length}/10 · 눌러서 구도를 잡고, ×를 누르면 빼요</Meta>
+        {quota.data && (
+          <Meta>
+            {quota.data.full
+              ? '공간이 가득 찼어요. 곧 더 많은 공간을 제공할 예정이에요'
+              : `사진 ${quota.data.used} / ${quota.data.quota}장`}
+          </Meta>
+        )}
 
         <TextInput
           value={caption}

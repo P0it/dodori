@@ -182,6 +182,7 @@ export function useCreateStory() {
       qc.invalidateQueries({ queryKey: ['stories'] });
       // 앨범은 그날 스토리 사진을 같이 보여준다 — 붙은 트랙이 있으면 상세도 갱신
       if (vars.trackId) qc.invalidateQueries({ queryKey: ['track', vars.trackId] });
+      qc.invalidateQueries({ queryKey: ['photoQuota'] });
     },
   });
 }
@@ -199,6 +200,7 @@ export function useDeleteStory() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['stories'] });
       qc.invalidateQueries({ queryKey: ['track'] });
+      qc.invalidateQueries({ queryKey: ['photoQuota'] });
     },
   });
 }

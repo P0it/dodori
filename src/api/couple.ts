@@ -197,3 +197,37 @@ export function useCompleteSetup() {
     },
   });
 }
+
+export interface PhotoQuota {
+  used: number;
+  quota: number;
+  /** 한도 도달 — 새 업로드만 막힌다. 이미 올린 사진은 그대로 보인다 */
+  full: boolean;
+}
+
+/**
+ * 커플의 사진 사용량 — 업로드 화면에서 잔량을 보여주고 한도에서 막는다.
+ * 진짜 강제는 서버(photos insert 트리거)가 하고, 여기는 미리 알려주는 역할이다.
+ */
+export function usePhotoQuota() {
+  const couple = useMyCouple();
+  const coupleId = couple.data?.coupleId;
+  return useQuery({
+    enabled: !!coupleId,
+    queryKey: ['photoQuota', coupleId],
+    queryFn: async (): Promise<PhotoQuota> => {
+      const [row, count] = await Promise.all([
+        supabase.from('couples').select('photo_quota').eq('id', coupleId!).single(),
+        supabase
+          .from('photos')
+          .select('id', { count: 'exact', head: true })
+          .eq('couple_id', coupleId!),
+      ]);
+      if (row.error) throw row.error;
+      if (count.error) throw count.error;
+      const used = count.count ?? 0;
+      const quota = row.data.photo_quota;
+      return { used, quota, full: used >= quota };
+    },
+  });
+}

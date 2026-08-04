@@ -253,6 +253,7 @@ export function useUploadPhotos(parent: PhotoParent) {
       } else {
         qc.invalidateQueries({ queryKey: ['posts'] });
       }
+      qc.invalidateQueries({ queryKey: ['photoQuota'] });
     },
   });
 }
@@ -269,6 +270,7 @@ export function useDeletePhoto(trackId: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['track', trackId] });
       qc.invalidateQueries({ queryKey: ['tracks'] });
+      qc.invalidateQueries({ queryKey: ['photoQuota'] });
     },
   });
 }
