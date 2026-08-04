@@ -421,13 +421,12 @@ function showError(e: unknown) {
 }
 
 /**
- * '2026-08-10' → '08.10 (월)'. 한 줄에 시작·종료가 같이 서므로 올해면 연도는 뺀다
- * (다른 해면 '2027.01.02 (토)'로 붙여 헷갈리지 않게).
+ * '2026-08-05' → '26.8.5(월)'. 한 줄에 날짜·시각이 넷 서므로 앞의 0과 빈칸을 다 턴다.
+ * 연도는 두 자리로 늘 붙인다 — 빼는 조건을 두는 것보다 짧고, 다른 해도 한눈에 걸린다.
  */
 function dateLabel(d: string): string {
-  const sameYear = d.slice(0, 4) === todayKST().slice(0, 4);
-  const body = (sameYear ? d.slice(5) : d).replaceAll('-', '.');
-  return `${body} (${weekdayKo(d)})`;
+  const [y, m, day] = d.split('-');
+  return `${y.slice(2)}.${Number(m)}.${Number(day)}(${weekdayKo(d)})`;
 }
 
 function kstTime(iso: string): string {
