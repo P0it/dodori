@@ -3,6 +3,7 @@ import { ActivityIndicator, Modal, Pressable, ScrollView, Text, TextInput, View 
 import { color, typeface } from '@/theme/tokens';
 import { usePlaceSearch, type SearchPlace } from '@/api/places';
 import { Meta } from '@/components/Meta';
+import { PlaceKindTile } from '@/components/PlaceKindTile';
 
 /**
  * 장소 하나 고르기 — 네이버 검색(search-places Edge Function) 결과에서 한 곳.
@@ -81,14 +82,23 @@ export function PlaceSearchSheet({
               <Pressable
                 key={p.naver_id}
                 onPress={() => onSelect(p)}
-                style={({ pressed }) => ({ paddingVertical: 12, opacity: pressed ? 0.7 : 1 })}
+                style={({ pressed }) => ({
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 10,
+                  paddingVertical: 12,
+                  opacity: pressed ? 0.7 : 1,
+                })}
               >
-                <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 15, color: color.white }}>
-                  {p.name}
-                </Text>
-                <Meta style={{ marginTop: 2, fontSize: 12 }}>
-                  {[p.category, p.address].filter(Boolean).join(' · ')}
-                </Meta>
+                <PlaceKindTile category={p.category} size={28} />
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 15, color: color.white }}>
+                    {p.name}
+                  </Text>
+                  <Meta style={{ marginTop: 2, fontSize: 12 }}>
+                    {[p.category, p.address].filter(Boolean).join(' · ')}
+                  </Meta>
+                </View>
               </Pressable>
             ))
           )}

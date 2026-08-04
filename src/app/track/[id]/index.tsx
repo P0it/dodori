@@ -35,6 +35,8 @@ import { Divider } from '@/components/Divider';
 import { Dday } from '@/components/Dday';
 import { TrackCover } from '@/components/TrackCover';
 import { Avatar } from '@/components/Avatar';
+import { PlaceKindTile } from '@/components/PlaceKindTile';
+import { CloseGlyph, GripGlyph } from '@/components/glyphs';
 
 /** 코스 한 행의 고정 높이 — 드래그 재정렬(절대배치)이 기준으로 삼는다 */
 const COURSE_ROW_H = 62;
@@ -165,12 +167,7 @@ function TrackBody({ t }: { t: TrackDetail }) {
         backgroundColor: opts.dragging ? color.surface2 : 'transparent',
       }}
     >
-      <View style={{ width: 42, alignItems: 'center' }}>
-        <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 13, color: released ? color.accent : color.white }}>
-          {p.visitTime ? p.visitTime.slice(0, 5) : `${p.sortOrder + 1}`}
-        </Text>
-      </View>
-      <View style={{ width: 1, height: 34, backgroundColor: 'rgba(255,255,255,0.1)' }} />
+      <PlaceKindTile category={p.category} />
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text numberOfLines={1} style={{ fontFamily: typeface, fontWeight: '600', fontSize: 15, color: color.white }}>
           {p.name}
@@ -179,12 +176,29 @@ function TrackBody({ t }: { t: TrackDetail }) {
           <Meta style={{ fontSize: 12 }}>{p.category ?? '장소'}</Meta>
         </View>
       </View>
+      {p.visitTime && (
+        <Text
+          style={{
+            fontFamily: typeface,
+            fontWeight: '700',
+            fontSize: 13,
+            color: released ? color.accent : color.sub,
+          }}
+        >
+          {p.visitTime.slice(0, 5)}
+        </Text>
+      )}
       {opts.draggable && (
-        <Text style={{ fontFamily: typeface, color: color.muted, fontSize: 17, paddingHorizontal: 2 }}>≡</Text>
+        <View style={{ width: 40, height: 44, alignItems: 'center', justifyContent: 'center' }}>
+          <GripGlyph />
+        </View>
       )}
       {editing && !released && (
-        <Pressable hitSlop={8} onPress={() => removePlace.mutate(p.placeId)}>
-          <Text style={{ fontFamily: typeface, color: color.muted, fontSize: 16 }}>×</Text>
+        <Pressable
+          onPress={() => removePlace.mutate(p.placeId)}
+          style={{ width: 40, height: 44, alignItems: 'center', justifyContent: 'center' }}
+        >
+          <CloseGlyph />
         </Pressable>
       )}
     </View>

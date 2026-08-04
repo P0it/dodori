@@ -340,3 +340,151 @@ export function MusicServiceIcon({
     </View>
   );
 }
+
+/* ── 장소 종류 글리프 (lib/placeKind의 PlaceKind 8종 중 7종 — etc는 PinGlyph 재사용) ── */
+
+/** 음식 — 포크·나이프 */
+export function FoodGlyph({ size = 20, color: fg = color.sub }: GlyphProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M7 3v6.5a2 2 0 0 0 2 2 2 2 0 0 0 2-2V3M9 11.5V21"
+        stroke={fg}
+        strokeWidth={1.7}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path d="M9 3v5" stroke={fg} strokeWidth={1.7} strokeLinecap="round" />
+      <Path
+        d="M17 21v-7.5m0 0c1.4 0 2.3-1 2.3-2.6V3.5c-2.3.6-3.6 2.6-3.6 5.4 0 2.1.5 4.6 1.3 4.6z"
+        stroke={fg}
+        strokeWidth={1.7}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+/** 카페 — 손잡이 달린 컵 */
+export function CafeGlyph({ size = 20, color: fg = color.sub }: GlyphProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M4.5 8h12v6.5a4.5 4.5 0 0 1-4.5 4.5H9a4.5 4.5 0 0 1-4.5-4.5V8z"
+        stroke={fg}
+        strokeWidth={1.7}
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M16.5 9.5h1.8a2.2 2.2 0 1 1 0 4.4h-1.8"
+        stroke={fg}
+        strokeWidth={1.7}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path d="M8 3v2.2M12 3v2.2" stroke={fg} strokeWidth={1.7} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+/** 술 — 칵테일 잔 */
+export function BarGlyph({ size = 20, color: fg = color.sub }: GlyphProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M3.5 4.5h17L12 13 3.5 4.5z"
+        stroke={fg}
+        strokeWidth={1.7}
+        strokeLinejoin="round"
+      />
+      <Path d="M12 13v7M8 20h8" stroke={fg} strokeWidth={1.7} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+/** 문화 — 액자 걸린 그림 */
+export function CultureGlyph({ size = 20, color: fg = color.sub }: GlyphProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Rect x={3.5} y={4.5} width={17} height={13} rx={2} stroke={fg} strokeWidth={1.7} />
+      <Path
+        d="M6 14.5 9.7 10l2.8 3 2-2.2L18 14.5"
+        stroke={fg}
+        strokeWidth={1.7}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path d="M12 17.5V21M9 21h6" stroke={fg} strokeWidth={1.7} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+/** 자연 — 나무 */
+export function NatureGlyph({ size = 20, color: fg = color.sub }: GlyphProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M12 3 5.5 12h3.2L4.5 17.5h15L15.3 12h3.2L12 3z"
+        stroke={fg}
+        strokeWidth={1.7}
+        strokeLinejoin="round"
+      />
+      <Path d="M12 17.5V21" stroke={fg} strokeWidth={1.7} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+/** 쇼핑 — 쇼핑백 */
+export function ShoppingGlyph({ size = 20, color: fg = color.sub }: GlyphProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M5 7.5h14l-1.1 12A1.5 1.5 0 0 1 16.4 21H7.6a1.5 1.5 0 0 1-1.5-1.5L5 7.5z"
+        stroke={fg}
+        strokeWidth={1.7}
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M8.8 10V6.6a3.2 3.2 0 0 1 6.4 0V10"
+        stroke={fg}
+        strokeWidth={1.7}
+        strokeLinecap="round"
+      />
+    </Svg>
+  );
+}
+
+/** 숙박 — 침대 */
+export function StayGlyph({ size = 20, color: fg = color.sub }: GlyphProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M3 19v-4.5h18V19M3 14.5V6M21 14.5v-2a2.5 2.5 0 0 0-2.5-2.5H11v4.5"
+        stroke={fg}
+        strokeWidth={1.7}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Circle cx={7} cy={11} r={2} stroke={fg} strokeWidth={1.7} />
+    </Svg>
+  );
+}
+
+/** 드래그 그립 — 코스 순서 바꾸기 힌트 */
+export function GripGlyph({ size = 20, color: fg = color.sub }: GlyphProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d="M4 8h16M4 12h16M4 16h16" stroke={fg} strokeWidth={1.8} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+/** 닫기·삭제 (×) */
+export function CloseGlyph({ size = 18, color: fg = color.sub }: GlyphProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d="M5.5 5.5l13 13M18.5 5.5l-13 13" stroke={fg} strokeWidth={1.8} strokeLinecap="round" />
+    </Svg>
+  );
+}

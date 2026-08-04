@@ -13,6 +13,7 @@ import { FilterChip } from '@/components/FilterChip';
 import { SavedHeart } from '@/components/SavedHeart';
 import { PlaylistPickerSheet } from '@/components/playlist/PlaylistPickerSheet';
 import { CheckGlyph, PlusGlyph } from '@/components/glyphs';
+import { PlaceKindTile } from '@/components/PlaceKindTile';
 
 // Supabase 에러는 Error 인스턴스가 아니라 {code, message, details, hint} 객체라 통째로 찍는다
 const describeError = (e: unknown) => {
@@ -183,6 +184,7 @@ export default function PlaceSearch() {
                     key={p.naver_id}
                     style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 11 }}
                   >
+                    <PlaceKindTile category={p.category} size={28} />
                     <View style={{ flex: 1, minWidth: 0 }}>
                       <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 15, color: color.white }}>
                         {p.name}
