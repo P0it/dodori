@@ -36,6 +36,18 @@ export function pinnablePlaces<T extends Pinnable>(places: T[]): Pinned<T>[] {
     .sort((a, b) => a.sortOrder - b.sortOrder);
 }
 
+/**
+ * 네이버 지도 검색 URL.
+ * places.link는 네이버가 준 **업체 홈페이지**라 인스타·블로그로 튄다 — 지도 링크로 쓸 수 없다.
+ * 이름으로 검색하고, 좌표가 있으면 지도를 그 지점으로 옮긴다(같은 이름의 다른 지점과 섞이지 않게).
+ */
+export function naverMapUrl(place: { name: string; lat: number | null; lng: number | null }): string {
+  const base = `https://map.naver.com/p/search/${encodeURIComponent(place.name.trim())}`;
+  const { lat, lng } = place;
+  if (lat == null || lng == null || !Number.isFinite(lat) || !Number.isFinite(lng)) return base;
+  return `${base}?c=${lng},${lat},16,0,0,0,dh`;
+}
+
 /** 핀들을 모두 담는 카메라 범위. 빈 배열이면 null */
 export function boundsOf(points: LatLng[]): MapRegion | null {
   if (points.length === 0) return null;

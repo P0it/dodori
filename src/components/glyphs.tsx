@@ -489,13 +489,15 @@ export function CloseGlyph({ size = 18, color: fg = color.sub }: GlyphProps) {
   );
 }
 
-/** 더보기(⋯) — 상단 바 우측 액션 */
-export function DotsGlyph({ size = 20, color: fg = color.sub }: GlyphProps) {
+/**
+ * 네이버 지도 마크 — 브랜드 그린 라운드 사각형 + 흰 N.
+ * hex는 네이버 고유 브랜드색이라 토큰 대상이 아니다 (musicBrand의 서비스 색과 같은 예외).
+ */
+export function NaverMapGlyph({ size = 16 }: { size?: number }) {
   return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill={fg}>
-      <Circle cx={5} cy={12} r={1.9} />
-      <Circle cx={12} cy={12} r={1.9} />
-      <Circle cx={19} cy={12} r={1.9} />
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Rect x={0} y={0} width={24} height={24} rx={5} fill="#03C75A" />
+      <Path d="M14.4 6.5h3.3v11h-3.9l-3.3-5.2v5.2H6.3v-11h3.9l3.3 5.2V6.5z" fill="#FFFFFF" />
     </Svg>
   );
 }

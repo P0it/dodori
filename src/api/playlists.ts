@@ -205,6 +205,8 @@ export interface PlaceDetailData {
   category: string | null;
   address: string | null;
   link: string | null;
+  lat: number | null;
+  lng: number | null;
   visitCount: number;
   photoThumbs: string[];
   tracks: { id: string; title: string; date: string }[];
@@ -219,7 +221,7 @@ export function usePlaceDetail(id: string | undefined) {
     queryFn: async (): Promise<PlaceDetailData> => {
       const { data: p, error } = await supabase
         .from('places')
-        .select('id, name, category, address, link')
+        .select('id, name, category, address, link, lat, lng')
         .eq('id', id!)
         .single();
       if (error) throw error;
@@ -243,6 +245,8 @@ export function usePlaceDetail(id: string | undefined) {
         category: p.category,
         address: p.address,
         link: p.link,
+        lat: p.lat,
+        lng: p.lng,
         visitCount: tracks.length,
         photoThumbs: thumbs,
         tracks: tracks.map((t) => ({ id: t.id, title: t.title, date: t.date })),

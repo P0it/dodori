@@ -10,7 +10,7 @@ import {
 import { TopBar } from '@/components/TopBar';
 import { Meta } from '@/components/Meta';
 import { PlaylistTile } from '@/components/playlist/PlaylistTile';
-import { ChevronGlyph, DotsGlyph } from '@/components/glyphs';
+import { ChevronGlyph, MoreGlyph } from '@/components/glyphs';
 import { PlaceKindTile } from '@/components/PlaceKindTile';
 
 /** 테마(커스텀) 플레이리스트 상세 (목업 P1) — 데이트가 아니라 장소를 모은다 */
@@ -47,7 +47,7 @@ export default function CustomPlaylist() {
               onPress={onDelete}
               style={{ width: 44, height: 44, alignItems: 'flex-end', justifyContent: 'center' }}
             >
-              <DotsGlyph />
+              <MoreGlyph size={22} />
             </Pressable>
           )
         }

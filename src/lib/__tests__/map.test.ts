@@ -1,4 +1,4 @@
-import { pinnablePlaces, boundsOf, type Pinnable } from '../map';
+import { pinnablePlaces, boundsOf, naverMapUrl, type Pinnable } from '../map';
 
 const place = (over: Partial<Pinnable> & { sortOrder: number }): Pinnable => ({
   lat: 37.5,
@@ -55,5 +55,25 @@ describe('boundsOf', () => {
     // 간격(0.2)보다 넓게 감싼다
     expect(r.latitudeDelta).toBeGreaterThan(0.2);
     expect(r.longitudeDelta).toBeGreaterThan(0.2);
+  });
+});
+
+describe('naverMapUrl (장소 → 네이버 지도)', () => {
+  it('좌표가 있으면 그 지점으로 지도를 옮긴다', () => {
+    expect(naverMapUrl({ name: '알베르', lat: 37.5, lng: 127.03 })).toBe(
+      'https://map.naver.com/p/search/%EC%95%8C%EB%B2%A0%EB%A5%B4?c=127.03,37.5,16,0,0,0,dh',
+    );
+  });
+
+  it('좌표가 없으면 이름 검색만', () => {
+    expect(naverMapUrl({ name: '알베르', lat: null, lng: null })).toBe(
+      'https://map.naver.com/p/search/%EC%95%8C%EB%B2%A0%EB%A5%B4',
+    );
+  });
+
+  it('이름의 공백·특수문자는 인코딩한다', () => {
+    expect(naverMapUrl({ name: ' 서울 숲 & 카페 ', lat: null, lng: null })).toBe(
+      'https://map.naver.com/p/search/%EC%84%9C%EC%9A%B8%20%EC%88%B2%20%26%20%EC%B9%B4%ED%8E%98',
+    );
   });
 });

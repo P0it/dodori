@@ -3,6 +3,8 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { color, typeface } from '@/theme/tokens';
 import { formatDday, isReleased } from '@/lib/date';
+import { naverMapUrl } from '@/lib/map';
+import { NaverMapGlyph } from '@/components/glyphs';
 import { usePlaceDetail } from '@/api/playlists';
 import { TopBar } from '@/components/TopBar';
 import { Meta } from '@/components/Meta';
@@ -43,35 +45,23 @@ export default function PlaceDetail() {
 
       <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
         <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 20, paddingTop: 10 }}>
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 5,
-              height: 30,
-              paddingHorizontal: 12,
-              borderRadius: 999,
-              backgroundColor: 'rgba(30,215,96,0.12)',
-            }}
-          >
-            <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 12.5, color: color.accent }}>
-              방문 {p?.visitCount ?? 0}회
-            </Text>
-          </View>
-          {p?.link ? (
+          {p ? (
             <Pressable
-              onPress={() => Linking.openURL(p.link!)}
-              style={{
+              onPress={() => Linking.openURL(naverMapUrl(p))}
+              style={({ pressed }) => ({
                 flexDirection: 'row',
                 alignItems: 'center',
-                height: 30,
-                paddingHorizontal: 12,
+                gap: 7,
+                height: 34,
+                paddingHorizontal: 14,
                 borderRadius: 999,
                 backgroundColor: color.surface2,
-              }}
+                opacity: pressed ? 0.7 : 1,
+              })}
             >
-              <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 12.5, color: color.sub }}>
-                네이버에서 보기
+              <NaverMapGlyph />
+              <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 13, color: color.white }}>
+                네이버 지도에서 보기
               </Text>
             </Pressable>
           ) : null}
