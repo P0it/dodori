@@ -10,7 +10,7 @@ import {
 import { Image } from 'expo-image';
 import { color, radius, space, typeface } from '@/theme/tokens';
 import { formatRelative } from '@/lib/date';
-import { REACTIONS } from '@/lib/posts';
+import { postFrameRatio, REACTIONS } from '@/lib/posts';
 import { Avatar } from '@/components/Avatar';
 import { Meta } from '@/components/Meta';
 import { CommentGlyph, HeartGlyph, MoreGlyph } from '@/components/glyphs';
@@ -51,8 +51,7 @@ export function PostCard({
     setPage(Math.round(e.nativeEvent.contentOffset.x / width));
 
   const first = post.photos[0];
-  const ratio = first?.width && first?.height ? first.height / first.width : 1;
-  const carouselH = Math.round(width * Math.min(1.25, Math.max(0.5625, ratio)));
+  const carouselH = Math.round(width * postFrameRatio(first?.width, first?.height));
 
   const likedBy = post.reactions.find((r) => r.emoji === HEART)?.userIds ?? [];
   const iLiked = likedBy.includes(myUid);
