@@ -215,23 +215,45 @@ ratio = clamp(height / width, 0.5625, 1.25)
 
 CLAUDE.md 의존성 방향(`app/ → components/ → api/·lib/ → theme/·types/`)을 따른다.
 
+### 크롭은 새로 만들지 않는다 — 스토리 편집기를 재사용한다
+
+조사 결과 핀치줌·팬·경계 보정·원본 크롭이 **이미 전부 구현돼 있다.** 스토리 편집기용으로
+만든 것이지만 스토리 전용 로직이 없다.
+
+| 기존 자산 | 내용 |
+|---|---|
+| `src/lib/stories.ts` | `coverScale` · `clampPan` · `cropRect` · `CANVAS_ZOOM_MAX` — 순수 함수, `stories.test.ts`에 테스트 있음 |
+| `src/components/story/StoryCanvas.tsx` | `Gesture.Pinch` + `Gesture.Pan` + 더블탭 리셋. props-only(`uri`·`photoWidth`·`photoHeight`·`width`·`height`·`minScale`·`onChange`)라 스토리 밖에서도 그대로 쓸 수 있다 |
+| `src/api/photos.ts` `cropToCanvas()` | `CanvasTransform`(scale·tx·ty) → `ImageManipulator.crop` 적용 |
+
+게시물 크롭은 이걸 **프레임 크기만 바꿔** 부르면 된다. 스토리는 9:16 고정 프레임에
+`minScale < 1`(축소 허용, 뒤에 흐린 배경)이고, 게시물은 클램프된 프레임에 `minScale = 1`
+(항상 꽉 채움, 여백 없음)이라는 차이뿐이다.
+
+### 파일
+
 | 파일 | 역할 |
 |---|---|
-| `src/lib/crop.ts` | **순수 함수.** 프레임 비율 클램프, 제스처 상태(scale·tx·ty) → 원본 픽셀 crop rect 변환, 경계 보정. React·RN·Supabase import 없음 |
-| `src/lib/__tests__/crop.test.ts` | 단위 테스트 — 비율 클램프, 중앙 기본값, 줌·팬 변환, rect가 이미지 경계를 넘지 않음 |
-| `src/components/CropFrame.tsx` | **props-only.** `uri`·`width`·`height`를 받고 `onChange(rect)` 방출. 네트워크·전역상태 없음 |
-| `src/app/modals/crop-photo.tsx` | 조합만 — 훅 호출 + 컴포넌트 배치 |
+| `src/lib/posts.ts` | **추가.** `postFrameRatio(w, h)` — 프레임 비율 클램프(순수 함수). 지금 `PostCard.tsx:55`에 인라인으로 박혀 있는 식을 꺼내 업로드와 표시가 같은 함수를 쓰게 한다 |
+| `src/lib/__tests__/posts.test.ts` | `postFrameRatio` 단위 테스트 |
+| `src/app/modals/crop-photo.tsx` | **신규.** 조합만 — `StoryCanvas`를 클램프된 프레임으로 띄우고 `CanvasTransform`을 돌려준다 |
+| `src/app/modals/create-post.tsx` | 썸네일 탭 → 크롭 모달, 잔량 표시 |
+| `src/components/feed/PostCard.tsx` | 인라인 클램프 식을 `postFrameRatio`로 교체 |
 | `src/api/photos.ts` | 렌디션 생성·업로드, 서명 URL 규칙, 삭제 시 렌디션 동반 제거 |
+| `src/api/posts.ts` · `src/api/stories.ts` | 삭제 시 렌디션 동반 제거 |
+| `src/api/tracks.ts` | `'calendar'` → `'grid'` |
+| `src/api/couple.ts` | 쿼터 잔량 조회 훅 |
 | `supabase/migrations/2026____` | `photos.renditions`, `photos.couple_id`, `couples.plan`·`photo_quota`, 쿼터 트리거 |
 
-새 의존성은 없다. `react-native-gesture-handler`(2.32) · `react-native-reanimated`(4.5) ·
-`expo-image-manipulator`(57.0)가 이미 설치돼 있다.
+**새 의존성은 없다.** `react-native-gesture-handler`(2.32) · `react-native-reanimated`(4.5) ·
+`expo-image-manipulator`(57.0)가 이미 설치돼 있고 스토리 편집기가 이미 쓰고 있다.
 
 ## 5. 검증 목표
 
 | 목표 | 검증 방법 |
 |---|---|
-| 크롭 좌표 변환이 정확하다 | `npm test` — `crop.test.ts` 통과 |
+| 프레임 비율 클램프가 정확하다 | `npm test` — `posts.test.ts`의 `postFrameRatio` 통과 |
+| 업로드 프레임과 표시 프레임이 같다 | `PostCard.tsx`와 크롭 모달이 같은 `postFrameRatio`를 호출 |
 | 서버 이미지 변환을 쓰지 않는다 | `src/`에서 `transform:` 사용처 0 (기존 사진 폴백 분기 제외) |
 | 사진 삭제 시 고아 파일이 안 남는다 | 사진 업로드 → 삭제 후 스토리지에 `_360` 잔존 없음 |
 | 쿼터가 강제된다 | 100장 도달 후 insert가 예외로 거부됨 |
