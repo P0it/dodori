@@ -26,6 +26,7 @@
     },
     "web": {
       "name": "dodori",
+      "shortName": "dodori",
       "output": "single",
       "favicon": "./assets/images/favicon.png"
     },
