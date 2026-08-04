@@ -141,14 +141,21 @@ export function AlbumCarousel({
 
       {/* 제목은 가운데 카드 것만 — 카드가 겹쳐 있어 카드마다 달 수 없다.
           빈 슬롯이 가운데일 때도 같은 자리를 채운다(비우면 아래 내용이 들썩인다) */}
-      <View style={{ alignItems: 'center', marginTop: 2, paddingHorizontal: 16 }}>
+      <View style={{ alignItems: 'center', marginTop: 4, paddingHorizontal: 16 }}>
+        {/* 이 탭의 주인공 — 섹션 헤더(19)보다 커야 자켓에서 이어진 무게가 끊기지 않는다 */}
         <Text
           numberOfLines={1}
-          style={{ fontFamily: typeface, fontWeight: '700', fontSize: 15, color: color.white }}
+          style={{
+            fontFamily: typeface,
+            fontWeight: '800',
+            fontSize: 21,
+            letterSpacing: -0.4,
+            color: color.white,
+          }}
         >
           {current ? current.title : '새 데이트'}
         </Text>
-        <Text style={{ marginTop: 2, fontFamily: typeface, fontSize: 12, color: color.muted }}>
+        <Text style={{ marginTop: 3, fontFamily: typeface, fontWeight: '500', fontSize: 13, color: color.muted }}>
           {current ? current.date.slice(5).replace('-', '.') : '탭해서 만들기'}
         </Text>
       </View>
