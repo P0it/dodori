@@ -1,13 +1,25 @@
 import { useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { color, radius, space, typeface } from '@/theme/tokens';
 import { TopBar } from '@/components/TopBar';
 import { Meta } from '@/components/Meta';
 import { PlusGlyph } from '@/components/glyphs';
-import { pickPhotos, type PickedPhoto } from '@/api/photos';
+import { PostCropSheet } from '@/components/feed/PostCropSheet';
+import type { CanvasTransform } from '@/components/story/StoryCanvas';
+import { cropToCanvas, pickPhotos, type PickedPhoto } from '@/api/photos';
 import { useCreatePost } from '@/api/posts';
+import { postFrameRatio } from '@/lib/posts';
 
 /** 게시물 작성 — 사진 선택 + 캡션 */
 export default function CreatePost() {
@@ -15,6 +27,8 @@ export default function CreatePost() {
   const [photos, setPhotos] = useState<PickedPhoto[]>([]);
   const [caption, setCaption] = useState('');
   const [saving, setSaving] = useState(false);
+  const [cropping, setCropping] = useState<PickedPhoto | null>(null);
+  const { width: screenW } = useWindowDimensions();
 
   const createPost = useCreatePost();
 
@@ -24,6 +38,25 @@ export default function CreatePost() {
       if (picked.length) setPhotos((prev) => [...prev, ...picked].slice(0, 10));
     } catch (e) {
       Alert.alert('사진 선택 실패', e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  /** 캔버스 크기는 PostCropSheet이 쓴 값과 같아야 크롭 좌표가 맞는다 */
+  const applyCrop = async (t: CanvasTransform) => {
+    const target = cropping;
+    setCropping(null);
+    if (!target) return;
+    try {
+      const cropped = await cropToCanvas(target, {
+        canvasWidth: screenW,
+        canvasHeight: Math.round(screenW * postFrameRatio(target.width, target.height)),
+        scale: t.scale,
+        tx: t.tx,
+        ty: t.ty,
+      });
+      setPhotos((prev) => prev.map((p) => (p.uri === target.uri ? cropped : p)));
+    } catch (e) {
+      Alert.alert('자르기 실패', e instanceof Error ? e.message : String(e));
     }
   };
 
@@ -49,11 +82,13 @@ export default function CreatePost() {
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space[2] }}>
           {photos.map((p) => (
             <View key={p.uri}>
-              <Image
-                source={{ uri: p.uri }}
-                style={{ width: 88, height: 88, borderRadius: radius.coverSm }}
-                contentFit="cover"
-              />
+              <Pressable onPress={() => setCropping(p)}>
+                <Image
+                  source={{ uri: p.uri }}
+                  style={{ width: 88, height: 88, borderRadius: radius.coverSm }}
+                  contentFit="cover"
+                />
+              </Pressable>
               <Pressable
                 onPress={() => setPhotos((prev) => prev.filter((x) => x.uri !== p.uri))}
                 hitSlop={8}
@@ -95,7 +130,7 @@ export default function CreatePost() {
             </Pressable>
           )}
         </View>
-        <Meta>사진 {photos.length}/10 · ×를 누르면 빼요</Meta>
+        <Meta>사진 {photos.length}/10 · 눌러서 구도를 잡고, ×를 누르면 빼요</Meta>
 
         <TextInput
           value={caption}
@@ -138,6 +173,8 @@ export default function CreatePost() {
           )}
         </Pressable>
       </ScrollView>
+
+      <PostCropSheet photo={cropping} onCancel={() => setCropping(null)} onConfirm={applyCrop} />
     </View>
   );
 }
