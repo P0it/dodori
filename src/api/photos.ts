@@ -60,6 +60,49 @@ export async function signedThumbUrl(
   return data.signedUrl;
 }
 
+/**
+ * 여러 장의 서명 URL을 한 번에 — 화면 첫 진입이 느린 진짜 원인이 여기 있었다.
+ *
+ * signedThumbUrl은 사진 한 장당 요청 1건이라, 게시물 10개×사진 3장이면 40건이 다 끝나야
+ * 쿼리가 resolve된다(그동안 화면은 빈 상태). createSignedUrls는 경로 목록을 통째로 받아
+ * **요청 1건**으로 끝낸다.
+ *
+ * 다만 복수 API에는 transform 옵션이 없다 — 그래서 옛 사진(renditions=false)만 낱개로 남는다.
+ * 신규 업로드는 전부 renditions=true라 이 갈래는 시간이 지나면 비어 간다.
+ *
+ * 반환은 storagePath -> 서명 URL. 서명에 실패한 항목은 키가 없다(호출부에서 null 처리).
+ */
+export async function signedThumbUrls(
+  photos: { storagePath: string; renditions: boolean }[],
+  kind: RenditionKind,
+): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  const baked = photos.filter((p) => p.renditions);
+  const legacy = photos.filter((p) => !p.renditions);
+
+  if (baked.length) {
+    // 같은 사진이 여러 번 들어와도 서명은 한 번만
+    const byRendition = new Map<string, string>();
+    for (const p of baked) byRendition.set(renditionPath(p.storagePath, kind), p.storagePath);
+    const { data, error } = await supabase.storage
+      .from('photos')
+      .createSignedUrls([...byRendition.keys()], 60 * 60);
+    if (error) throw error;
+    for (const item of data) {
+      const origin = item.path ? byRendition.get(item.path) : undefined;
+      if (origin && item.signedUrl) out.set(origin, item.signedUrl);
+    }
+  }
+
+  await Promise.all(
+    legacy.map(async (p) => {
+      const url = await signedThumbUrl(p.storagePath, kind, false);
+      out.set(p.storagePath, url);
+    }),
+  );
+  return out;
+}
+
 export interface PickedPhoto {
   uri: string;
   width: number;

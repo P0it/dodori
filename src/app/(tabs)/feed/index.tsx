@@ -34,7 +34,13 @@ export default function Studio() {
           />
         }
         ListHeaderComponent={<AccountHeader />}
-        ListEmptyComponent={<EmptyPosts onPress={() => router.push('/modals/create-post')} />}
+        // 로딩 중에는 빈 화면을 보여주지 않는다 — "첫 피드를 올려보세요"가 떴다가
+        // 1~2초 뒤 목록으로 바뀌면 아무것도 없다가 생긴 것처럼 보인다
+        ListEmptyComponent={
+          posts.isPending ? null : (
+            <EmptyPosts onPress={() => router.push('/modals/create-post')} />
+          )
+        }
         renderItem={({ item: p }) => (
           <PostGridCell
             thumbUrl={p.gridThumbUrl}

@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from './supabase';
 import { useMyCouple } from './couple';
 import {
-  signedThumbUrl,
+  signedThumbUrls,
   storagePathsFor,
   uploadPhotos,
   type PickedPhoto,
@@ -78,7 +78,12 @@ type StoryRow = {
   story_comments: { id: string; author_id: string; body: string; created_at: string }[];
 };
 
-async function toStory(row: StoryRow): Promise<Story> {
+/** 서명 URL은 배치로 미리 받아 두고 여기서는 조회만 한다 (api/photos.ts signedThumbUrls) */
+function toStory(
+  row: StoryRow,
+  feedUrls: Map<string, string>,
+  gridUrls: Map<string, string>,
+): Story {
   const byEmoji = new Map<string, string[]>();
   for (const r of row.story_reactions ?? []) {
     byEmoji.set(r.emoji, [...(byEmoji.get(r.emoji) ?? []), r.user_id]);
@@ -98,8 +103,8 @@ async function toStory(row: StoryRow): Promise<Story> {
           id: p.id,
           storagePath: p.storage_path,
           renditions: p.renditions,
-          thumbUrl: await signedThumbUrl(p.storage_path, 'feed', p.renditions),
-          gridThumbUrl: await signedThumbUrl(p.storage_path, 'grid', p.renditions),
+          thumbUrl: feedUrls.get(p.storage_path) ?? '',
+          gridThumbUrl: gridUrls.get(p.storage_path) ?? '',
           width: p.width,
           height: p.height,
         }
@@ -132,7 +137,15 @@ export function useStories() {
         .select(SELECT)
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return Promise.all((data as StoryRow[]).map(toStory));
+      const rows = data as StoryRow[];
+      const all = rows.flatMap((r) =>
+        (r.photos ?? []).map((ph) => ({ storagePath: ph.storage_path, renditions: ph.renditions })),
+      );
+      const [feedUrls, gridUrls] = await Promise.all([
+        signedThumbUrls(all, 'feed'),
+        signedThumbUrls(all, 'grid'),
+      ]);
+      return rows.map((r) => toStory(r, feedUrls, gridUrls));
     },
   });
 }

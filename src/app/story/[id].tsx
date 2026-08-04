@@ -132,6 +132,12 @@ export default function StoryViewer() {
 
   const current = list[index];
 
+  // 다음 칸 사진을 미리 받아 둔다 — 넘긴 뒤에 받기 시작하면 그 몇 백 ms가 빈 화면이 된다
+  useEffect(() => {
+    const next = list[index + 1]?.photo?.thumbUrl;
+    if (next) Image.prefetch(next);
+  }, [list, index]);
+
   // 칸이 바뀌면 처음부터 — 멈췄다 푸는 것과 구분해야 이어보기가 성립한다
   useEffect(() => {
     elapsed.current = 0;
@@ -232,7 +238,9 @@ export default function StoryViewer() {
           onLayout={(e) => setFrame(e.nativeEvent.layout)}
         >
           {current.photo && (
+            // key가 없으면 컴포넌트가 재사용돼 새 사진을 받는 동안 '이전 스토리 사진'이 그대로 남는다
             <Image
+              key={current.photo.id}
               source={current.photo.thumbUrl}
               style={{ width: '100%', height: '100%' }}
               contentFit="contain"

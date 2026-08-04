@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from './supabase';
 import { useMyCouple } from './couple';
-import { signedThumbUrl, storagePathsFor, uploadPhotos, type PickedPhoto } from './photos';
+import { signedThumbUrls, storagePathsFor, uploadPhotos, type PickedPhoto } from './photos';
 
 export interface PostPhoto {
   id: string;
@@ -62,7 +62,11 @@ type PostRow = {
   }[];
 };
 
-async function toPost(row: PostRow): Promise<Post> {
+/**
+ * 서명 URL은 미리 배치로 받아 두고 여기서는 조회만 한다 — 행마다 낱개로 서명하면
+ * 사진 수만큼 왕복이 생겨 첫 진입이 1~2초씩 밀린다 (api/photos.ts signedThumbUrls)
+ */
+function toPost(row: PostRow, feedUrls: Map<string, string>, gridUrls: Map<string, string>): Post {
   const byEmoji = new Map<string, string[]>();
   for (const r of row.post_reactions ?? []) {
     byEmoji.set(r.emoji, [...(byEmoji.get(r.emoji) ?? []), r.user_id]);
@@ -73,19 +77,15 @@ async function toPost(row: PostRow): Promise<Post> {
     authorId: row.author_id,
     caption: row.caption,
     createdAt: row.created_at,
-    photos: await Promise.all(
-      sortedPhotos.map(async (p) => ({
-        id: p.id,
-        storagePath: p.storage_path,
-        renditions: p.renditions,
-        thumbUrl: await signedThumbUrl(p.storage_path, 'feed', p.renditions),
-        width: p.width,
-        height: p.height,
-      })),
-    ),
-    gridThumbUrl: sortedPhotos[0]
-      ? await signedThumbUrl(sortedPhotos[0].storage_path, 'grid', sortedPhotos[0].renditions)
-      : null,
+    photos: sortedPhotos.map((p) => ({
+      id: p.id,
+      storagePath: p.storage_path,
+      renditions: p.renditions,
+      thumbUrl: feedUrls.get(p.storage_path) ?? '',
+      width: p.width,
+      height: p.height,
+    })),
+    gridThumbUrl: sortedPhotos[0] ? (gridUrls.get(sortedPhotos[0].storage_path) ?? null) : null,
     reactions: [...byEmoji.entries()].map(([emoji, userIds]) => ({ emoji, userIds })),
     comments: (row.post_comments ?? [])
       .map((c) => ({
@@ -111,7 +111,16 @@ export function usePosts() {
         .select(SELECT)
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return Promise.all((data as PostRow[]).map(toPost));
+      const rows = data as PostRow[];
+      const all = rows.flatMap((r) =>
+        (r.photos ?? []).map((p) => ({ storagePath: p.storage_path, renditions: p.renditions })),
+      );
+      // 그리드는 각 게시물의 첫 장만 쓰지만, 어차피 요청 1건이라 통째로 받는 게 더 싸다
+      const [feedUrls, gridUrls] = await Promise.all([
+        signedThumbUrls(all, 'feed'),
+        signedThumbUrls(all, 'grid'),
+      ]);
+      return rows.map((r) => toPost(r, feedUrls, gridUrls));
     },
   });
 }
