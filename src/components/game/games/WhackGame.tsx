@@ -20,6 +20,8 @@ const HOP_MS = 600;
 /** 3x3 그리드에서 한 칸만 활성. 그 칸을 누르면 +1. */
 export default function WhackGame({ onFinish }: GameProps) {
   const [active, setActive] = useState(() => Math.floor(Math.random() * CELLS));
+  // 이번에 나온 두더지를 이미 잡았나 — 한 마리는 한 번만 점수가 된다
+  const [struck, setStruck] = useState(false);
   const [hits, setHits] = useState(0);
   const [left, setLeft] = useState(DURATION);
   const done = useRef(false);
@@ -30,6 +32,7 @@ export default function WhackGame({ onFinish }: GameProps) {
         const n = Math.floor(Math.random() * CELLS);
         return n === prev ? (n + 1) % CELLS : n; // 같은 칸에 연속으로 나오지 않게
       });
+      setStruck(false);
     }, HOP_MS);
     const tick = setInterval(() => setLeft((l) => Math.max(0, l - 100)), 100);
     return () => {
@@ -61,9 +64,12 @@ export default function WhackGame({ onFinish }: GameProps) {
         {Array.from({ length: CELLS }, (_, i) => (
           <Hole
             key={i}
-            active={i === active}
+            state={i !== active ? 'down' : struck ? 'struck' : 'up'}
             onHit={() => {
-              if (i === active && left > 0) setHits((h) => h + 1);
+              if (left > 0) {
+                setStruck(true);
+                setHits((h) => h + 1);
+              }
             }}
           />
         ))}
@@ -73,12 +79,18 @@ export default function WhackGame({ onFinish }: GameProps) {
 }
 
 /** 한 칸 — 두더지가 튀어나올 때 스프링으로 솟고, 맞으면 한 번 움츠렸다 사라진다 */
-function Hole({ active, onHit }: { active: boolean; onHit: () => void }) {
+function Hole({ state, onHit }: { state: 'up' | 'struck' | 'down'; onHit: () => void }) {
   const pop = useSharedValue(0);
 
   useEffect(() => {
-    pop.value = active ? withSpring(1, { damping: 11, stiffness: 260 }) : withTiming(0, { duration: 110 });
-  }, [active, pop]);
+    pop.value =
+      state === 'up'
+        ? withSpring(1, { damping: 11, stiffness: 260 })
+        : state === 'struck'
+          ? // 맞은 순간 즉시 움츠러들게 — 다음 칸으로 넘어가기 전에 반응이 보인다
+            withSequence(withTiming(1.15, { duration: 60 }), withTiming(0, { duration: 90 }))
+          : withTiming(0, { duration: 110 });
+  }, [state, pop]);
 
   const mole = useAnimatedStyle(() => ({
     transform: [{ scale: 0.4 + pop.value * 0.6 }],
@@ -91,9 +103,8 @@ function Hole({ active, onHit }: { active: boolean; onHit: () => void }) {
       // 떼기 전에 옮겨간 탭이 버려진다. ScrollView 안이라 손가락이 조금만 밀려도
       // ScrollView가 responder를 가져가 onPress 자체가 취소된다 — 닿는 순간 판정한다
       onPressIn={() => {
-        if (!active) return;
-        // 맞은 순간 즉시 움츠러들게 — 다음 칸으로 넘어가기 전에 반응이 보인다
-        pop.value = withSequence(withTiming(1.15, { duration: 60 }), withTiming(0, { duration: 90 }));
+        // 솟아 있는 두더지만 — 이미 맞은 두더지('struck')는 두 번 세지 않는다
+        if (state !== 'up') return;
         onHit();
       }}
       style={{
