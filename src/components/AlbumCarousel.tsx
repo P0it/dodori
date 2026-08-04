@@ -142,9 +142,9 @@ export function AlbumCarousel({
                       left: 0,
                       right: 0,
                       bottom: 0,
-                      paddingHorizontal: 13,
-                      paddingTop: 30,
-                      paddingBottom: 12,
+                      paddingHorizontal: 14,
+                      paddingTop: 32,
+                      paddingBottom: 13,
                     }}
                   >
                     <Text
@@ -152,8 +152,8 @@ export function AlbumCarousel({
                       style={{
                         fontFamily: typeface,
                         fontWeight: '800',
-                        fontSize: 18,
-                        letterSpacing: -0.4,
+                        fontSize: 22,
+                        letterSpacing: -0.5,
                         color: color.white,
                       }}
                     >
@@ -161,11 +161,11 @@ export function AlbumCarousel({
                     </Text>
                     <Text
                       style={{
-                        marginTop: 2,
+                        marginTop: 3,
                         fontFamily: typeface,
                         fontWeight: '600',
-                        fontSize: 12,
-                        color: 'rgba(255,255,255,0.76)',
+                        fontSize: 14,
+                        color: 'rgba(255,255,255,0.8)',
                       }}
                     >
                       {a.date.slice(5).replace('-', '.')} ({weekdayKo(a.date)})

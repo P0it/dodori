@@ -85,8 +85,9 @@ export function useAllTracks() {
             id: t.id,
             title: t.title,
             date: t.date,
+            // 캐러셀 자켓이 화면 폭의 2/3까지 커져서 grid(360)로는 확대돼 보인다 — 커버만 feed(1080)
             coverThumbUrl: cover
-              ? await signedThumbUrl(cover.storage_path, 'grid', cover.renditions)
+              ? await signedThumbUrl(cover.storage_path, 'feed', cover.renditions)
               : null,
             photoCount: t.photos?.length ?? 0,
             noteCount: t.notes?.length ?? 0,
@@ -155,11 +156,26 @@ export interface TrackDetail {
   title: string;
   date: string;
   coverPhotoId: string | null;
+  /**
+   * 상세 히어로용 커버 — 화면 폭을 통째로 채우므로 grid(360)가 아니라 feed(1080)로 서명한다.
+   * 지정 커버가 없고 사진이 딱 한 장일 때도 여기서 채운다 (그 한 장이 곧 커버라서).
+   * 사진 2장 이상·커버 미지정은 null로 두고 콜라주 폴백(resolveCover)에 맡긴다 — 칸이 1/4이라 grid로 충분.
+   */
   coverThumbUrl: string | null;
   createdBy: string;
   photos: TrackPhoto[]; // taken_at(실패 시 created_at) 정렬 (§7.3)
   places: TrackPlace[];
   notes: TrackNote[];
+}
+
+/** TrackDetail.coverThumbUrl 규칙 — 위 주석 참고 */
+async function heroCoverUrl(
+  cover: { storage_path: string; renditions: boolean } | null,
+  photos: { storagePath: string; renditions: boolean }[],
+): Promise<string | null> {
+  if (cover) return signedThumbUrl(cover.storage_path, 'feed', cover.renditions);
+  if (photos.length === 1) return signedThumbUrl(photos[0].storagePath, 'feed', photos[0].renditions);
+  return null;
 }
 
 export function useTrack(id: string | undefined) {
@@ -213,9 +229,7 @@ export function useTrack(id: string | undefined) {
         title: t.title,
         date: t.date,
         coverPhotoId: t.cover_photo_id,
-        coverThumbUrl: t.cover
-          ? await signedThumbUrl(t.cover.storage_path, 'grid', t.cover.renditions)
-          : null,
+        coverThumbUrl: await heroCoverUrl(t.cover, photos),
         createdBy: t.created_by,
         photos,
         places: (t.track_places ?? [])
