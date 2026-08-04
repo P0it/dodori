@@ -6,11 +6,13 @@ import {
   ScrollView,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
-import { color, typeface } from '@/theme/tokens';
+import { LinearGradient } from 'expo-linear-gradient';
+import { color, heroScrim, HERO_SCRIM_STOPS, tintBg, typeface } from '@/theme/tokens';
 import { isReleased, formatDday, weekdayKo } from '@/lib/date';
 import { pinnablePlaces } from '@/lib/map';
 import Svg, { Path } from 'react-native-svg';
@@ -75,6 +77,9 @@ export default function TrackScreen() {
 function TrackBody({ t }: { t: TrackDetail }) {
   const router = useRouter();
   const released = isReleased(t.date);
+  const { width: screenW } = useWindowDimensions();
+  // 히어로 높이 — 정사각에 가깝게 두되 큰 화면에서 한 화면을 다 먹지 않게 상한을 둔다
+  const heroH = Math.min(Math.round(screenW * 0.94), 380);
   const session = useSession();
   const uid = session.data?.user.id;
   const profiles = useCoupleProfiles();
@@ -332,10 +337,113 @@ function TrackBody({ t }: { t: TrackDetail }) {
     </View>
   );
 
+  // 히어로 — 커버가 화면 폭을 채우고 그 위에 제목이 얹힌다 (커버·제목이 한 덩어리로 읽히게).
+  // 커버 탭 → 사진 선택 → 커버 지정. 수정 모드에서만 눌린다.
+  const hero = (
+    <Pressable
+      onPress={onSetCover}
+      disabled={!editing || setCover.isPending}
+      style={{ width: screenW, height: heroH }}
+    >
+      <TrackCover
+        coverThumbUrl={t.coverThumbUrl}
+        photoThumbUrls={photoThumbUrls}
+        seed={t.id}
+        width={screenW}
+        height={heroH}
+        radius={0}
+        glow={false}
+      />
+      {/* 위는 상단바 아이콘이 읽히게, 아래는 본문 배경에 잠기게 */}
+      <LinearGradient
+        pointerEvents="none"
+        colors={[...heroScrim]}
+        locations={[...HERO_SCRIM_STOPS]}
+        style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}
+      />
+
+      <View pointerEvents="box-none" style={{ position: 'absolute', left: 20, right: 20, bottom: 18 }}>
+        {!released && (
+          <View style={{ alignSelf: 'flex-start', marginBottom: 10 }}>
+            <Dday>{formatDday(t.date)}</Dday>
+          </View>
+        )}
+        {editing ? (
+          <TextInput
+            value={titleDraft}
+            onChangeText={setTitleDraft}
+            onSubmitEditing={save}
+            returnKeyType="done"
+            placeholder="앨범 제목"
+            placeholderTextColor={color.muted}
+            style={{
+              fontFamily: typeface,
+              fontWeight: '800',
+              fontSize: 30,
+              color: color.white,
+              borderBottomWidth: 1,
+              borderBottomColor: color.surface3,
+              paddingBottom: 4,
+            }}
+          />
+        ) : (
+          <Text
+            numberOfLines={2}
+            style={{ fontFamily: typeface, fontWeight: '800', fontSize: 30, letterSpacing: -0.8, color: color.white }}
+          >
+            {t.title}
+          </Text>
+        )}
+        <Meta style={{ marginTop: 6 }}>
+          {t.date.replaceAll('-', '.')} ({weekdayKo(t.date)}) · 코스 {t.places.length}곳 · 사진 {t.photos.length}
+        </Meta>
+      </View>
+
+      {/* 탭 가능 힌트 배지 — 수정 모드에서만 */}
+      {editing && (
+        <View
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            right: 16,
+            bottom: 16,
+            width: 30,
+            height: 30,
+            borderRadius: 15,
+            backgroundColor: 'rgba(0,0,0,0.55)',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Text style={{ fontFamily: typeface, fontSize: 14, color: color.white }}>✎</Text>
+        </View>
+      )}
+      {setCover.isPending && (
+        <View
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.45)',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <ActivityIndicator color={color.accent} />
+        </View>
+      )}
+    </Pressable>
+  );
+
   return (
     <View style={{ flex: 1, backgroundColor: color.bg }}>
+      {/* 상단바는 히어로 위에 떠 있다 — 제목은 히어로가 크게 들고 있으므로 수정 모드에서만 단다 */}
+      <View style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 }}>
       <TopBar
-        title={editing ? '앨범 수정' : released ? t.title : '계획 중인 데이트'}
+        title={editing ? '앨범 수정' : ''}
         left={
           editing ? (
             <Pressable hitSlop={8} onPress={() => setEditing(false)}>
@@ -358,98 +466,9 @@ function TrackBody({ t }: { t: TrackDetail }) {
           </Pressable>
         }
       />
+      </View>
       <ScrollView contentContainerStyle={{ paddingBottom: 40 }} scrollEnabled={!reordering}>
-        {/* 헤더: 커버 + 제목 + 메타 */}
-        <View style={{ alignItems: 'center', paddingHorizontal: 24, paddingTop: 6 }}>
-          {/* 커버 탭 → 사진 선택 → 커버 지정. 수정 모드에서만 눌린다 */}
-          <Pressable onPress={onSetCover} disabled={!editing || setCover.isPending}>
-            <TrackCover coverThumbUrl={t.coverThumbUrl} photoThumbUrls={photoThumbUrls} size={168} />
-            {/* 경계는 커버 자체의 hairline이 잡는다 — 여기선 D-Day 배지만 얹는다 */}
-            {!released && (
-              <View
-                pointerEvents="none"
-                style={{
-                  position: 'absolute',
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  alignItems: 'center',
-                  paddingBottom: 12,
-                }}
-              >
-                <Dday>{formatDday(t.date)}</Dday>
-              </View>
-            )}
-            {/* 탭 가능 힌트 배지 — 수정 모드에서만 */}
-            {editing && (
-              <View
-                pointerEvents="none"
-                style={{
-                  position: 'absolute',
-                  right: 6,
-                  bottom: 6,
-                  width: 26,
-                  height: 26,
-                  borderRadius: 13,
-                  backgroundColor: 'rgba(0,0,0,0.55)',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Text style={{ fontFamily: typeface, fontSize: 13, color: color.white }}>✎</Text>
-              </View>
-            )}
-            {setCover.isPending && (
-              <View
-                pointerEvents="none"
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  borderRadius: 6,
-                  backgroundColor: 'rgba(0,0,0,0.45)',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <ActivityIndicator color={color.accent} />
-              </View>
-            )}
-          </Pressable>
-          {editing ? (
-            <TextInput
-              value={titleDraft}
-              onChangeText={setTitleDraft}
-              onSubmitEditing={save}
-              returnKeyType="done"
-              placeholder="앨범 제목"
-              placeholderTextColor={color.muted}
-              style={{
-                marginTop: 16,
-                fontFamily: typeface, fontWeight: '800',
-                fontSize: 25,
-                color: color.white,
-                textAlign: 'center',
-                borderBottomWidth: 1,
-                borderBottomColor: color.surface3,
-                paddingBottom: 4,
-                minWidth: 180,
-              }}
-            />
-          ) : (
-            <Text
-              style={{ marginTop: 16, fontFamily: typeface, fontWeight: '800', fontSize: 25, letterSpacing: -0.5, color: color.white }}
-            >
-              {t.title}
-            </Text>
-          )}
-          <Meta style={{ marginTop: 6 }}>
-            {t.date.replaceAll('-', '.')} ({weekdayKo(t.date)})
-            {released ? '' : ` · ${formatDday(t.date)}`}
-          </Meta>
-        </View>
+        {hero}
 
         {/*
           코스·사진을 탭으로 나눈다 — 둘 다 길면 하나가 다른 하나 밑에 묻히기 때문.
@@ -457,7 +476,7 @@ function TrackBody({ t }: { t: TrackDetail }) {
         */}
         {photoArchive ? (
           <>
-            <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 20, paddingTop: 20 }}>
+            <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 20, paddingTop: 6 }}>
               <TrackTab label="코스" active={tab === 'course'} onPress={() => setTab('course')} />
               <TrackTab label="사진" active={tab === 'photos'} onPress={() => setTab('photos')} />
             </View>
@@ -564,7 +583,7 @@ function TrackBody({ t }: { t: TrackDetail }) {
   );
 }
 
-/** 코스·사진 세그먼트 탭 — 활성 쪽만 채워진 pill */
+/** 코스·사진 세그먼트 탭 — 활성 쪽은 핑크로 채운 pill (surface2 채움만으로는 어느 쪽인지 잘 안 읽힌다) */
 function TrackTab({
   label,
   active,
@@ -583,7 +602,9 @@ function TrackTab({
         borderRadius: 999,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: active ? color.surface2 : 'transparent',
+        backgroundColor: active ? tintBg.pink : 'transparent',
+        borderWidth: 1,
+        borderColor: active ? color.pink : 'transparent',
       }}
     >
       <Text
@@ -591,7 +612,7 @@ function TrackTab({
           fontFamily: typeface,
           fontWeight: '700',
           fontSize: 14,
-          color: active ? color.white : color.muted,
+          color: active ? color.pink : color.muted,
         }}
       >
         {label}

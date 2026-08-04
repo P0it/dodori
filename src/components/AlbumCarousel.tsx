@@ -9,8 +9,9 @@ import {
   type NativeSyntheticEvent,
 } from 'react-native';
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { color, typeface } from '@/theme/tokens';
-import { formatDday, isReleased } from '@/lib/date';
+import { formatDday, isReleased, weekdayKo } from '@/lib/date';
 import { AlbumJacket } from '@/components/AlbumJacket';
 import { Dday } from '@/components/Dday';
 
@@ -21,7 +22,8 @@ export type CarouselAlbum = {
   coverThumbUrl: string | null;
 };
 
-const CARD = 176;
+/** 카드 최대 폭 — 좁은 기기에선 화면 비율로 줄인다 */
+const MAX_CARD = 250;
 /** 캐러셀 좌우 여백 — 이웃 카드가 이 안쪽에 머문다 */
 const GUTTER = 20;
 /** 이웃이 가운데 뒤로 파고들 최소 폭 */
@@ -30,7 +32,8 @@ const MIN_OVERLAP = 34;
 /**
  * 앨범 캐러셀 — 가운데가 현재, 왼쪽이 지난 데이트·오른쪽이 앞으로의 데이트.
  * 이웃은 뒤로 겹쳐 들어가며 작고 연하게 깔린다. 스크롤하면 STEP 단위로 스냅되고
- * 가운데 온 앨범이 활성으로 바뀐다. 사진 없는 앨범은 생성 자켓으로 채운다.
+ * 가운데 온 앨범이 활성으로 바뀐다. 사진 없는 앨범은 그라디언트 자켓으로 채운다.
+ * 제목·날짜는 카드 아래가 아니라 자켓 바닥에 얹는다 (자켓 = 하나의 완결된 그림).
  */
 export function AlbumCarousel({
   albums,
@@ -48,10 +51,11 @@ export function AlbumCarousel({
   const [active, setActive] = useState(focusIndex);
   // 앨범들 뒤에 "새 데이트" 빈 슬롯 한 장 — 마지막 칸은 앨범이 아니다
   const total = albums.length + 1;
-  const side = Math.max(0, (screen - CARD) / 2);
+  const card = Math.min(MAX_CARD, Math.round(screen * 0.64));
+  const side = Math.max(0, (screen - card) / 2);
   // 이웃 카드의 바깥 가장자리가 GUTTER 안쪽에 오도록 보폭을 잡는다 (화면 밖으로 나가지 않게)
-  const step = Math.min(CARD - MIN_OVERLAP, Math.max(CARD * 0.5, side - GUTTER));
-  const overlap = CARD - step;
+  const step = Math.min(card - MIN_OVERLAP, Math.max(card * 0.5, side - GUTTER));
+  const overlap = card - step;
 
   // 마운트·포커스 변경 시 해당 앨범을 가운데로
   const centerX = focusIndex * step;
@@ -65,11 +69,9 @@ export function AlbumCarousel({
     if (i !== active && i >= 0 && i < total) setActive(i);
   };
 
-  const current = albums[active];
-
   return (
     <View>
-      {/* contentContainerStyle 세로 여백을 넉넉히 — 활성 카드 글로우가 스크롤뷰 경계(제목 영역)에서 잘리지 않게 */}
+      {/* contentContainerStyle 세로 여백을 넉넉히 — 활성 카드 글로우가 스크롤뷰 경계에서 잘리지 않게 */}
       <ScrollView
         ref={ref}
         horizontal
@@ -81,7 +83,7 @@ export function AlbumCarousel({
         // 위 effect의 scrollTo는 콘텐츠가 아직 안 깔린 프레임에 나가면 0으로 잘린다
         // (마운트 직후·앨범 추가 직후). 실제 콘텐츠 폭이 잡힐 때 한 번 더 가운데로 보낸다.
         onContentSizeChange={() => ref.current?.scrollTo({ x: centerX, animated: false })}
-        contentContainerStyle={{ paddingHorizontal: side, paddingVertical: 42 }}
+        contentContainerStyle={{ paddingHorizontal: side, paddingVertical: 40 }}
       >
         {albums.map((a, i) => {
           const dist = Math.abs(i - active);
@@ -92,8 +94,8 @@ export function AlbumCarousel({
               key={a.id}
               onPress={() => onPress(a.id)}
               style={{
-                width: CARD,
-                height: CARD,
+                width: card,
+                height: card,
                 marginRight: -overlap,
                 // 가운데가 맨 위, 멀어질수록 뒤로
                 zIndex: total - dist,
@@ -118,14 +120,57 @@ export function AlbumCarousel({
                   {a.coverThumbUrl ? (
                     <Image source={a.coverThumbUrl} style={{ width: '100%', height: '100%' }} contentFit="cover" />
                   ) : (
-                    <AlbumJacket seed={a.id} date={a.date} title={a.title} size={CARD} />
+                    <AlbumJacket seed={a.id} />
                   )}
-                  {/* 제목·날짜가 위쪽을 쓰므로 D-day는 아래로 */}
-                  {upcoming && isActive && (
-                    <View style={{ position: 'absolute', left: 8, bottom: 8 }}>
+
+                  {/* 제목이 바닥을 쓰므로 D-day는 위로 */}
+                  {upcoming && (
+                    <View style={{ position: 'absolute', left: 10, top: 10 }}>
                       <Dday tone="accent">{formatDday(a.date)}</Dday>
                     </View>
                   )}
+
+                  {/*
+                    제목 판 — 반투명 면을 넓게 깔지 않는다. 아래로 갈수록 짙어지는 스크림만 두고
+                    글자가 앉는 마지막 한 뼘에서만 불투명해진다.
+                  */}
+                  <LinearGradient
+                    colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,0.82)']}
+                    locations={[0, 0.45, 1]}
+                    style={{
+                      position: 'absolute',
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      paddingHorizontal: 13,
+                      paddingTop: 30,
+                      paddingBottom: 12,
+                    }}
+                  >
+                    <Text
+                      numberOfLines={1}
+                      style={{
+                        fontFamily: typeface,
+                        fontWeight: '800',
+                        fontSize: 18,
+                        letterSpacing: -0.4,
+                        color: color.white,
+                      }}
+                    >
+                      {a.title}
+                    </Text>
+                    <Text
+                      style={{
+                        marginTop: 2,
+                        fontFamily: typeface,
+                        fontWeight: '600',
+                        fontSize: 12,
+                        color: 'rgba(255,255,255,0.76)',
+                      }}
+                    >
+                      {a.date.slice(5).replace('-', '.')} ({weekdayKo(a.date)})
+                    </Text>
+                  </LinearGradient>
                 </View>
               </View>
             </Pressable>
@@ -133,44 +178,20 @@ export function AlbumCarousel({
         })}
 
         {/* 꼬리의 빈 앨범 — "한 장 더 꽂는다". 활성 글로우는 주지 않는다(앨범이 아니므로) */}
-        <NewAlbumSlot
-          dist={Math.abs(albums.length - active)}
-          onPress={onCreate}
-        />
+        <NewAlbumSlot size={card} dist={Math.abs(albums.length - active)} onPress={onCreate} />
       </ScrollView>
-
-      {/* 제목은 가운데 카드 것만 — 카드가 겹쳐 있어 카드마다 달 수 없다.
-          빈 슬롯이 가운데일 때도 같은 자리를 채운다(비우면 아래 내용이 들썩인다) */}
-      <View style={{ alignItems: 'center', marginTop: 4, paddingHorizontal: 16 }}>
-        {/* 이 탭의 주인공 — 섹션 헤더(19)보다 커야 자켓에서 이어진 무게가 끊기지 않는다 */}
-        <Text
-          numberOfLines={1}
-          style={{
-            fontFamily: typeface,
-            fontWeight: '800',
-            fontSize: 21,
-            letterSpacing: -0.4,
-            color: color.white,
-          }}
-        >
-          {current ? current.title : '새 데이트'}
-        </Text>
-        <Text style={{ marginTop: 3, fontFamily: typeface, fontWeight: '500', fontSize: 13, color: color.muted }}>
-          {current ? current.date.slice(5).replace('-', '.') : '탭해서 만들기'}
-        </Text>
-      </View>
     </View>
   );
 }
 
 /** 캐러셀 꼬리의 빈 앨범 — 실제 앨범과 같은 규격에 점선 테두리만 두른다 */
-function NewAlbumSlot({ dist, onPress }: { dist: number; onPress: () => void }) {
+function NewAlbumSlot({ size, dist, onPress }: { size: number; dist: number; onPress: () => void }) {
   return (
     <Pressable
       onPress={onPress}
       style={{
-        width: CARD,
-        height: CARD,
+        width: size,
+        height: size,
         zIndex: 0,
         opacity: dist === 0 ? 1 : Math.max(0.25, 0.5 - (dist - 1) * 0.12),
         transform: [{ scale: dist === 0 ? 1 : Math.max(0.76, 0.86 - (dist - 1) * 0.05) }],
@@ -187,9 +208,11 @@ function NewAlbumSlot({ dist, onPress }: { dist: number; onPress: () => void }) 
           borderColor: color.hairline,
           alignItems: 'center',
           justifyContent: 'center',
+          gap: 6,
         }}
       >
-        <Text style={{ fontFamily: typeface, fontSize: 34, fontWeight: '300', color: color.sub }}>+</Text>
+        <Text style={{ fontFamily: typeface, fontSize: 36, fontWeight: '300', color: color.sub }}>+</Text>
+        <Text style={{ fontFamily: typeface, fontSize: 13, fontWeight: '600', color: color.sub }}>새 데이트</Text>
       </View>
     </Pressable>
   );

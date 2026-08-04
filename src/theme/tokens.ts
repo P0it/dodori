@@ -36,6 +36,11 @@ export const color = {
   /** 요일 표시 — 토요일 파랑 / 일요일 빨강 (일요일은 공휴일과 같은 적색 계열) */
   saturday: '#8FB4FF',
   sunday: '#FF5C5C',
+  /**
+   * 핑크 강조 — 앨범 상세의 코스·사진 탭 활성 표시. accent(그린)는 화면의 다른 강조와 섞여
+   * "지금 보는 탭"이 안 읽혀서 분리했다. 사람을 뜻하지 않는다.
+   */
+  pink: '#E8688F',
 } as const;
 
 /** 칩·pill 반투명 배경 — 종류(기념일·데이트)를 뜻한다 */
@@ -43,6 +48,7 @@ export const tintBg = {
   accent: 'rgba(30,215,96,0.15)',
   anniv: 'rgba(232,184,75,0.16)',
   date: 'rgba(34,211,238,0.16)',
+  pink: 'rgba(232,104,143,0.16)',
 } as const;
 
 /**
@@ -116,21 +122,32 @@ export const coverPalette: readonly (readonly [string, string])[] = [
 ] as const;
 
 /**
- * 생성 자켓(LP) 톤 — 팔레트 6색으로 고르면 앨범 3개만 만들어도 색이 겹친다.
- * seed 해시를 24단계 hue로 흩어 슬리브·라벨 색을 만든다 (같은 앨범 = 항상 같은 색).
+ * 생성 자켓 톤 — 팔레트 6색으로 고르면 앨범 3개만 만들어도 색이 겹친다.
+ * seed 해시를 24단계 hue로 흩어 대각 3색 그라디언트를 만든다 (같은 앨범 = 항상 같은 색).
+ * 세 정거장이 hue를 조금씩 밀고 가서 2색 사선보다 면에 빛이 돈다.
  */
 export const COVER_HUE_STEPS = 24;
 
 export function coverTones(hueIndex: number) {
   const h = Math.round((hueIndex * 360) / COVER_HUE_STEPS);
   return {
-    sleeveTop: `hsl(${h}, 40%, 17%)`,
-    sleeveBottom: `hsl(${h}, 32%, 6%)`,
-    /** LP 라벨 — 자켓에서 유일하게 밝은 면 */
-    label: `hsl(${h}, 60%, 62%)`,
-    vinyl: `hsl(${h}, 16%, 6%)`,
+    from: `hsl(${h}, 68%, 52%)`,
+    mid: `hsl(${(h + 42) % 360}, 58%, 32%)`,
+    to: `hsl(${(h + 84) % 360}, 46%, 13%)`,
   };
 }
+
+/**
+ * 히어로 커버 위 스크림 — 위는 상단바 아이콘이 읽히게, 아래는 본문 배경(color.bg)에 잠기게.
+ * 값은 color.bg(#121212)의 알파 변주다 — bg를 바꾸면 여기도 같이 바꾼다.
+ */
+export const heroScrim = [
+  'rgba(18,18,18,0.55)',
+  'rgba(18,18,18,0)',
+  'rgba(18,18,18,0.72)',
+  '#121212',
+] as const;
+export const HERO_SCRIM_STOPS = [0, 0.3, 0.78, 1] as const;
 
 export const radius = {
   mini: 3,
