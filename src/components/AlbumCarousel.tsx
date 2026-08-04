@@ -123,10 +123,12 @@ export function AlbumCarousel({
                     <AlbumJacket seed={a.id} />
                   )}
 
-                  {/* 제목이 바닥을 쓰므로 D-day는 위로 */}
+                  {/* 제목이 바닥을 쓰므로 D-day는 위로. 커버 사진 위라 solid */}
                   {upcoming && (
                     <View style={{ position: 'absolute', left: 10, top: 10 }}>
-                      <Dday tone="accent">{formatDday(a.date)}</Dday>
+                      <Dday tone="accent" solid>
+                        {formatDday(a.date)}
+                      </Dday>
                     </View>
                   )}
 

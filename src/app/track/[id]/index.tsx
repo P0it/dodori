@@ -365,7 +365,7 @@ function TrackBody({ t }: { t: TrackDetail }) {
       <View pointerEvents="box-none" style={{ position: 'absolute', left: 20, right: 20, bottom: 18 }}>
         {!released && (
           <View style={{ alignSelf: 'flex-start', marginBottom: 10 }}>
-            <Dday>{formatDday(t.date)}</Dday>
+            <Dday solid>{formatDday(t.date)}</Dday>
           </View>
         )}
         {editing ? (
