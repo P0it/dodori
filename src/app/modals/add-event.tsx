@@ -19,7 +19,8 @@ import {
   typeface,
   type EventColorKey,
 } from '@/theme/tokens';
-import { isISODate, todayKST, toKSTDate } from '@/lib/date';
+import { isISODate, todayKST, toKSTDate, weekdayKo } from '@/lib/date';
+import { addHours, isAfter, isHHmm } from '@/lib/time';
 import {
   useCreateEvent,
   useDeleteEvent,
@@ -27,6 +28,8 @@ import {
   useUpdateEvent,
 } from '@/api/events';
 import { Meta } from '@/components/Meta';
+import { DatePicker, initialMonth } from '@/components/DatePicker';
+import { TimePicker } from '@/components/TimePicker';
 import { useCoupleProfiles } from '@/api/couple';
 
 /** 일정 추가/수정 (목업 21) — 주인(나/상대)·제목·날짜·시간·종일·설명 */
@@ -43,6 +46,9 @@ export default function AddEvent() {
   const [description, setDescription] = useState('');
   const [ownerId, setOwnerId] = useState('');
   const [eventColorKey, setEventColorKey] = useState<EventColorKey>(DEFAULT_EVENT_COLOR);
+  /** 어떤 피커가 펼쳐져 있나 — 한 번에 하나만 */
+  const [open, setOpen] = useState<'none' | 'date' | 'start' | 'end'>('none');
+  const [pickerMonth, setPickerMonth] = useState(() => initialMonth(params.date ?? todayKST()));
 
   // 수정 모드: 기존 값 로드 (해당 월 캐시에서)
   const monthEvents = useMonthEvents(date.slice(0, 7));
@@ -51,7 +57,9 @@ export default function AddEvent() {
     const e = monthEvents.data?.find((ev) => ev.id === editingId);
     if (!e || !e.starts_at) return;
     setTitle(e.title ?? '');
-    setDate(toKSTDate(new Date(e.starts_at)));
+    const d = toKSTDate(new Date(e.starts_at));
+    setDate(d);
+    setPickerMonth(initialMonth(d));
     setAllDay(!!e.all_day);
     setDescription(e.description ?? '');
     setStartTime(kstTime(e.starts_at));
@@ -74,7 +82,10 @@ export default function AddEvent() {
     if (meId) setOwnerId(meId);
   }, [editingId, ownerId, profiles.data]);
 
-  const valid = title.trim().length > 0 && isISODate(date) && !!ownerId && (allDay || isTime(startTime));
+  // 종료는 선택이지만, 넣었다면 시작보다 뒤여야 한다 — 일정은 날짜를 넘기지 않는다
+  const endOk = !endTime || isAfter(startTime, endTime);
+  const valid =
+    title.trim().length > 0 && isISODate(date) && !!ownerId && (allDay || (isHHmm(startTime) && endOk));
 
   const save = () => {
     if (!valid || busy) return;
@@ -82,7 +93,7 @@ export default function AddEvent() {
       title: title.trim(),
       ownerId,
       startsAt: allDay ? `${date}T00:00:00+09:00` : `${date}T${startTime}:00+09:00`,
-      endsAt: !allDay && isTime(endTime) ? `${date}T${endTime}:00+09:00` : null,
+      endsAt: !allDay && isHHmm(endTime) ? `${date}T${endTime}:00+09:00` : null,
       allDay,
       description: description.trim() || null,
       color: eventColorKey,
@@ -246,18 +257,73 @@ export default function AddEvent() {
         />
 
         <View style={{ marginTop: 20, gap: 10 }}>
-          <FieldRow label="날짜">
-            <SmallInput value={date} onChange={setDate} placeholder="2026-07-09" width={130} date />
-          </FieldRow>
-          {!allDay && (
-            <FieldRow label="시간">
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <SmallInput value={startTime} onChange={setStartTime} placeholder="19:00" time />
-                <Text style={{ fontFamily: typeface, color: color.muted }}>–</Text>
-                <SmallInput value={endTime} onChange={setEndTime} placeholder="(선택)" time />
-              </View>
-            </FieldRow>
+          <FieldRow
+            label="날짜"
+            onPress={() => setOpen((v) => (v === 'date' ? 'none' : 'date'))}
+            value={`${date.replaceAll('-', '.')} (${weekdayKo(date)})`}
+            open={open === 'date'}
+          />
+          {open === 'date' && (
+            <DatePicker
+              value={date}
+              onChange={setDate}
+              month={pickerMonth}
+              onMonthChange={setPickerMonth}
+            />
           )}
+
+          {!allDay && (
+            <>
+              <FieldRow
+                label="시작"
+                onPress={() => setOpen((v) => (v === 'start' ? 'none' : 'start'))}
+                value={startTime}
+                open={open === 'start'}
+              />
+              {open === 'start' && (
+                <TimePicker
+                  value={startTime}
+                  onChange={(t) => {
+                    setStartTime(t);
+                    // 종료가 비어 있으면 +2시간을 깔아준다 — 대부분의 데이트가 그쯤이고, 바로 고쳐 쓸 수 있다
+                    if (!endTime) setEndTime(addHours(t, 2));
+                  }}
+                />
+              )}
+
+              <FieldRow
+                label="종료"
+                onPress={() => {
+                  // 비어 있는 채로 열면 휠에 보이는 값(시작+2시간)을 바로 값으로 삼는다 —
+                  // 굴리지 않고 닫으면 '없음'으로 남는 게 함정이었다. 없애려면 아래 버튼으로.
+                  if (open !== 'end' && !endTime) setEndTime(addHours(startTime, 2));
+                  setOpen((v) => (v === 'end' ? 'none' : 'end'));
+                }}
+                value={endTime || '없음'}
+                muted={!endTime}
+                warn={!endOk}
+                open={open === 'end'}
+              />
+              {open === 'end' && (
+                <View style={{ gap: 8 }}>
+                  <TimePicker value={endTime || addHours(startTime, 2)} onChange={setEndTime} />
+                  {!!endTime && (
+                    <Pressable onPress={() => setEndTime('')} style={{ alignSelf: 'center' }} hitSlop={8}>
+                      <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 13, color: color.sub }}>
+                        종료 시각 없애기
+                      </Text>
+                    </Pressable>
+                  )}
+                  {!endOk && (
+                    <Meta style={{ fontSize: 12, textAlign: 'center', color: color.danger }}>
+                      종료는 시작보다 뒤여야 해요
+                    </Meta>
+                  )}
+                </View>
+              )}
+            </>
+          )}
+
           <FieldRow label="종일">
             <Toggle on={allDay} onToggle={() => setAllDay((v) => !v)} />
           </FieldRow>
@@ -311,69 +377,63 @@ function kstTime(iso: string): string {
     timeZone: 'Asia/Seoul',
   });
 }
-const isTime = (s: string) => /^([01]\d|2[0-3]):[0-5]\d$/.test(s);
-
-function FieldRow({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <View
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 16,
-        paddingVertical: 13,
-        borderRadius: 12,
-        backgroundColor: color.surface1,
-      }}
-    >
-      <Text style={{ flex: 1, fontFamily: typeface, fontWeight: '500', fontSize: 14, color: color.sub }}>{label}</Text>
-      {children}
-    </View>
-  );
-}
-
-function SmallInput({
+/**
+ * 설정 행. `value`를 주면 눌러서 아래 피커를 여는 행이 되고,
+ * `children`을 주면 그 자리에 컨트롤(종일 토글)을 그대로 놓는다.
+ */
+function FieldRow({
+  label,
+  children,
   value,
-  onChange,
-  placeholder,
-  width = 76,
-  time,
-  date,
+  onPress,
+  open,
+  muted,
+  warn,
 }: {
-  value: string;
-  onChange: (v: string) => void;
-  placeholder: string;
-  width?: number;
-  time?: boolean;
-  date?: boolean;
+  label: string;
+  children?: React.ReactNode;
+  value?: string;
+  onPress?: () => void;
+  open?: boolean;
+  muted?: boolean;
+  warn?: boolean;
 }) {
-  const handle = (t: string) => {
-    const digits = t.replace(/\D/g, '');
-    if (time) {
-      const dd = digits.slice(0, 4);
-      onChange(dd.length > 2 ? `${dd.slice(0, 2)}:${dd.slice(2)}` : dd);
-    } else if (date) {
-      const dd = digits.slice(0, 8);
-      if (dd.length > 6) onChange(`${dd.slice(0, 4)}-${dd.slice(4, 6)}-${dd.slice(6)}`);
-      else if (dd.length > 4) onChange(`${dd.slice(0, 4)}-${dd.slice(4)}`);
-      else onChange(dd);
-    } else onChange(t);
-  };
+  const body = (
+    <>
+      <Text style={{ flex: 1, fontFamily: typeface, fontWeight: '500', fontSize: 14, color: color.sub }}>{label}</Text>
+      {value !== undefined ? (
+        <Text
+          style={{
+            fontFamily: typeface,
+            fontWeight: '700',
+            fontSize: 15,
+            color: warn ? color.danger : muted ? color.muted : color.white,
+          }}
+        >
+          {value}
+        </Text>
+      ) : (
+        children
+      )}
+    </>
+  );
+
+  const style = {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 13,
+    borderRadius: 12,
+    backgroundColor: color.surface1,
+    borderWidth: 1,
+    borderColor: open ? color.accent : 'transparent',
+  } as const;
+
+  if (!onPress) return <View style={style}>{body}</View>;
   return (
-    <TextInput
-      value={value}
-      onChangeText={handle}
-      placeholder={placeholder}
-      placeholderTextColor={color.muted}
-      keyboardType="number-pad"
-      style={{
-        width,
-        textAlign: 'center',
-        fontFamily: typeface, fontWeight: '700',
-        fontSize: 15,
-        color: color.white,
-        paddingVertical: 4,
-      }}
-    />
+    <Pressable onPress={onPress} style={({ pressed }) => [style, { opacity: pressed ? 0.85 : 1 }]}>
+      {body}
+    </Pressable>
   );
 }
 

@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { color, typeface } from '@/theme/tokens';
-import { formatDday, isISODate, todayKST } from '@/lib/date';
+import { formatDday, isISODate, todayKST, weekdayKo } from '@/lib/date';
 import { useAnniversaries, type AnnivItem } from '@/api/anniversaries';
 import { useMyCouple } from '@/api/couple';
 import { supabase } from '@/api/supabase';
@@ -20,6 +20,7 @@ import { Meta } from '@/components/Meta';
 import { Eyebrow } from '@/components/Eyebrow';
 import { Divider } from '@/components/Divider';
 import { Dday } from '@/components/Dday';
+import { DatePicker, initialMonth } from '@/components/DatePicker';
 import { AnnivCover } from '@/components/AnnivCover';
 
 /** 기념일 관리 (목업 26) + 커스텀 기념일 추가 (목업 24) */
@@ -143,7 +144,9 @@ export default function AnnivManage() {
 /** 커스텀 기념일 추가 시트 (목업 24) */
 function AddCustomAnniv({ onClose }: { onClose: () => void }) {
   const [label, setLabel] = useState('');
-  const [date, setDate] = useState('');
+  const [date, setDate] = useState(todayKST());
+  const [pickerMonth, setPickerMonth] = useState(() => initialMonth(todayKST()));
+  const [picking, setPicking] = useState(false);
   const [repeat, setRepeat] = useState(true);
   const couple = useMyCouple();
   const qc = useQueryClient();
@@ -204,6 +207,8 @@ function AddCustomAnniv({ onClose }: { onClose: () => void }) {
           </Pressable>
         </View>
 
+        {/* 날짜 피커를 펼치면 시트가 화면을 넘을 수 있다 — 취소·저장은 위에 붙여두고 내용만 굴린다 */}
+        <ScrollView style={{ maxHeight: 460 }} keyboardShouldPersistTaps="handled">
         <TextInput
           value={label}
           onChangeText={setLabel}
@@ -220,8 +225,9 @@ function AddCustomAnniv({ onClose }: { onClose: () => void }) {
             borderBottomColor: color.surface3,
           }}
         />
-        <View
-          style={{
+        <Pressable
+          onPress={() => setPicking((v) => !v)}
+          style={({ pressed }) => ({
             flexDirection: 'row',
             alignItems: 'center',
             marginTop: 16,
@@ -229,23 +235,21 @@ function AddCustomAnniv({ onClose }: { onClose: () => void }) {
             paddingVertical: 13,
             borderRadius: 12,
             backgroundColor: color.surface1,
-          }}
+            borderWidth: 1,
+            borderColor: picking ? color.anniv : 'transparent',
+            opacity: pressed ? 0.85 : 1,
+          })}
         >
           <Text style={{ flex: 1, fontFamily: typeface, fontWeight: '500', fontSize: 14, color: color.sub }}>날짜</Text>
-          <TextInput
-            value={date}
-            onChangeText={(t) => {
-              const d = t.replace(/\D/g, '').slice(0, 8);
-              if (d.length > 6) setDate(`${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6)}`);
-              else if (d.length > 4) setDate(`${d.slice(0, 4)}-${d.slice(4)}`);
-              else setDate(d);
-            }}
-            keyboardType="number-pad"
-            placeholder="2026-05-24"
-            placeholderTextColor={color.muted}
-            style={{ width: 130, textAlign: 'center', fontFamily: typeface, fontWeight: '700', fontSize: 15, color: color.white }}
-          />
-        </View>
+          <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 15, color: color.white }}>
+            {date.replaceAll('-', '.')} ({weekdayKo(date)})
+          </Text>
+        </Pressable>
+        {picking && (
+          <View style={{ marginTop: 10 }}>
+            <DatePicker value={date} onChange={setDate} month={pickerMonth} onMonthChange={setPickerMonth} />
+          </View>
+        )}
         <Pressable
           onPress={() => setRepeat((v) => !v)}
           style={{
@@ -283,6 +287,7 @@ function AddCustomAnniv({ onClose }: { onClose: () => void }) {
         <Meta style={{ fontSize: 12, lineHeight: 18, marginTop: 14, color: '#e5c98a' }}>
           저장하면 기념일 목록에 추가되고 캘린더에 표시돼요.
         </Meta>
+        </ScrollView>
       </View>
     </Modal>
   );
