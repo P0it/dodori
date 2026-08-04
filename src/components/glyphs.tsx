@@ -1,6 +1,6 @@
 import { View } from 'react-native';
 import { Image } from 'expo-image';
-import Svg, { Circle, G, Path, Rect } from 'react-native-svg';
+import Svg, { Circle, Defs, G, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 import { color } from '@/theme/tokens';
 import { MUSIC_BRAND_LOGO } from '@/lib/musicBrand';
 import type { LinkKind } from '@/lib/link';
@@ -491,14 +491,27 @@ export function CloseGlyph({ size = 18, color: fg = color.sub }: GlyphProps) {
 }
 
 /**
- * 네이버 지도 마크 — 브랜드 그린 라운드 사각형 + 흰 N.
+ * 네이버 지도 마크 — 앱 아이콘 모양(파랑→초록 그라디언트 핀 + 흰 N).
+ * 네이버 브랜드 마크(초록 사각형 N)와는 다른 마크다 — 지도로 가는 버튼이니 지도 쪽을 쓴다.
  * hex는 네이버 고유 브랜드색이라 토큰 대상이 아니다 (musicBrand의 서비스 색과 같은 예외).
  */
 export function NaverMapGlyph({ size = 16 }: { size?: number }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24">
-      <Rect x={0} y={0} width={24} height={24} rx={5} fill="#03C75A" />
-      <Path d="M14.4 6.5h3.3v11h-3.9l-3.3-5.2v5.2H6.3v-11h3.9l3.3 5.2V6.5z" fill="#FFFFFF" />
+      <Defs>
+        <LinearGradient id="naverMap" x1="0.35" y1="0" x2="0.15" y2="1">
+          <Stop offset="0" stopColor="#1C7DFF" />
+          <Stop offset="0.55" stopColor="#00B7DE" />
+          <Stop offset="1" stopColor="#00E026" />
+        </LinearGradient>
+      </Defs>
+      <Path
+        d="M12 1.6c-5.08 0-8.9 3.86-8.9 8.7 0 3.3 2.06 6.9 6.16 11.36a3.7 3.7 0 0 0 5.48 0c4.1-4.46 6.16-8.06 6.16-11.36 0-4.84-3.82-8.7-8.9-8.7z"
+        fill="url(#naverMap)"
+      />
+      <G transform="translate(4.56 2.6) scale(0.62)">
+        <Path d="M14.4 6.5h3.3v11h-3.9l-3.3-5.2v5.2H6.3v-11h3.9l3.3 5.2V6.5z" fill="#FFFFFF" />
+      </G>
     </Svg>
   );
 }
