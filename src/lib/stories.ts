@@ -177,12 +177,8 @@ export const CANVAS_ZOOM_MAX = 4;
  * cover 배율 대비 최소 축소. contain(사진 전체가 보이는 지점)보다 더 줄여
  * 사방에 여백을 두는 구도까지 허용한다 — 그 여백은 인스타처럼 같은 사진의 흐린 배경으로 채운다.
  * 더 내려가면 사진이 알아볼 수 없이 작아진다.
- *
- * 웹에는 이 구간이 없다(`CANVAS_ZOOM_MIN_WEB`) — 화면을 이미지로 굽는 건 네이티브 전용이라
- * 웹에서는 여백 있는 구도를 저장할 방법이 없다.
  */
 export const CANVAS_ZOOM_MIN = 0.25;
-export const CANVAS_ZOOM_MIN_WEB = 1;
 
 /**
  * 캔버스를 빈틈없이 덮는 최소 배율.

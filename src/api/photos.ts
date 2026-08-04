@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as Crypto from 'expo-crypto';
-import { cropRect } from '@/lib/stories';
+import { coverScale, cropRect } from '@/lib/stories';
 import { supabase } from './supabase';
 import { useMyCouple } from './couple';
 
@@ -175,6 +175,76 @@ export async function cropToCanvas(
     compress: 0.9,
   });
   return { uri: out.uri, width: out.width, height: out.height, takenAt: photo.takenAt };
+}
+
+/**
+ * 스토리 편집 화면에서 사진 뒤에 까는 흐린 배경.
+ * 화면에 그리는 쪽과 구워내는 쪽이 **같은 값**을 봐야 편집 화면과 결과가 어긋나지 않는다.
+ */
+export const STORY_BACKDROP = { blurRadius: 28, scrim: 'rgba(0,0,0,0.32)' } as const;
+
+function drawCentered(
+  ctx: CanvasRenderingContext2D,
+  img: CanvasImageSource,
+  cx: number,
+  cy: number,
+  w: number,
+  h: number,
+) {
+  ctx.drawImage(img, cx - w / 2, cy - h / 2, w, h);
+}
+
+/**
+ * 웹용 굽기 — 네이티브의 `captureRef`에 해당한다.
+ *
+ * 편집 화면과 같은 순서(흐린 배경 → 스크림 → 사진)로 `<canvas>`에 직접 그려 한 장으로 만든다.
+ * 사진을 cover 밑으로 줄인 구도는 잘라내기로 표현할 수 없어서(잘라낸 조각에는 여백도 블러도 없다)
+ * 웹에도 굽는 길이 필요하다.
+ */
+export async function composeStoryCanvas(
+  photo: PickedPhoto,
+  crop: { canvasWidth: number; canvasHeight: number; scale: number; tx: number; ty: number },
+): Promise<PickedPhoto> {
+  const { canvasWidth: w, canvasHeight: h } = crop;
+  const dpr = Math.min(3, globalThis.devicePixelRatio || 2);
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(w * dpr);
+  canvas.height = Math.round(h * dpr);
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return photo;
+
+  const img = new window.Image();
+  img.src = photo.uri;
+  await img.decode();
+
+  ctx.scale(dpr, dpr);
+  const cover = coverScale(photo.width, photo.height, w, h);
+
+  // 1) 흐린 배경. 블러는 가장자리 밖까지 번지므로 넉넉히 키워 그린다 —
+  //    딱 맞게 그리면 네 변에 옅은 띠가 남는다
+  const bleed = cover * 1.25;
+  ctx.filter = `blur(${STORY_BACKDROP.blurRadius}px)`;
+  drawCentered(ctx, img, w / 2, h / 2, photo.width * bleed, photo.height * bleed);
+  ctx.filter = 'none';
+
+  // 2) 스크림 — 배경이 사진보다 튀지 않게
+  ctx.fillStyle = STORY_BACKDROP.scrim;
+  ctx.fillRect(0, 0, w, h);
+
+  // 3) 사진 — 편집 화면의 변환값 그대로. 배율은 cover 대비, 중심은 캔버스 중심 + 이동량
+  const s = cover * crop.scale;
+  drawCentered(ctx, img, w / 2 + crop.tx, h / 2 + crop.ty, photo.width * s, photo.height * s);
+
+  const blob = await new Promise<Blob | null>((resolve) =>
+    canvas.toBlob(resolve, 'image/jpeg', 0.92),
+  );
+  if (!blob) return photo;
+  return {
+    uri: URL.createObjectURL(blob),
+    width: canvas.width,
+    height: canvas.height,
+    takenAt: photo.takenAt,
+  };
 }
 
 /** 사진의 부모 — 트랙(데이트)·post(게시물)·story(스토리). photos 테이블은 셋 중 하나만 가진다 */

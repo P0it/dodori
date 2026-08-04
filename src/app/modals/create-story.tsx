@@ -26,7 +26,6 @@ import {
 } from '@/theme/tokens';
 import {
   CANVAS_ZOOM_MIN,
-  CANVAS_ZOOM_MIN_WEB,
   createTextOverlay,
   OVERLAY_MAX,
   OVERLAY_SIZE_DEFAULT,
@@ -35,20 +34,19 @@ import {
 import { StoryCanvas, type CanvasTransform } from '@/components/story/StoryCanvas';
 import { StoryTextEditor } from '@/components/story/StoryTextEditor';
 import { StoryTextInput } from '@/components/story/StoryTextInput';
-import { pickPhotos, type PickedPhoto } from '@/api/photos';
+import {
+  composeStoryCanvas,
+  pickPhotos,
+  STORY_BACKDROP,
+  type PickedPhoto,
+} from '@/api/photos';
 import { useCreateStory } from '@/api/stories';
 import { useTodayTrack } from '@/api/tracks';
 
 const IDENTITY: CanvasTransform = { scale: 1, tx: 0, ty: 0 };
 
-/**
- * 화면을 이미지로 굽는 건 네이티브 전용이다(react-native-view-shot).
- * 웹에서는 사진을 잘라내는 길밖에 없어서 여백이 생기는 구간을 아예 열지 않는다.
- */
-const CAN_BAKE = Platform.OS !== 'web';
-
-/** 사진 뒤에 까는 흐린 배경 — 사진을 줄였을 때 드러난다 (인스타와 같은 그림) */
-const BLUR_RADIUS = 28;
+/** 굽는 방법만 플랫폼마다 다르다 — 네이티브는 화면 캡처, 웹은 canvas 합성 */
+const IS_WEB = Platform.OS === 'web';
 
 /** 사진 위에 얹는 도구 버튼 — 글리프가 아니라 라벨이라 뭘 하는지 읽힌다 */
 function ToolPill({
@@ -162,8 +160,18 @@ export default function CreateStory() {
   /**
    * 편집 화면의 사진 레이어를 그대로 한 장으로 굽는다 — 흐린 배경과 여백까지 픽셀로 남는다.
    * 이래야 뷰어·피드·보관함이 구도를 몰라도 되고, 텍스트의 0~1 좌표가 곧 이미지 좌표가 된다.
+   *
+   * 네이티브는 그려진 화면을 그대로 캡처하고, 웹은 같은 그림을 canvas에 다시 그린다
+   * (`captureRef`가 네이티브 전용이라). 흐린 배경 값은 양쪽이 `STORY_BACKDROP` 하나를 본다.
    */
   const bakePhotoLayer = async (source: PickedPhoto): Promise<PickedPhoto> => {
+    if (IS_WEB) {
+      return composeStoryCanvas(source, {
+        ...transform,
+        canvasWidth: canvas.width,
+        canvasHeight: canvas.height,
+      });
+    }
     const uri = await captureRef(photoLayer, { format: 'jpg', quality: 0.92, result: 'tmpfile' });
     const size = await new Promise<{ width: number; height: number }>((resolve, reject) =>
       RNImage.getSize(uri, (width, height) => resolve({ width, height }), reject),
@@ -175,13 +183,8 @@ export default function CreateStory() {
     if (!photo || saving) return;
     setSaving(true);
     try {
-      // 웹은 굽지 못한다 — 대신 축소 구간이 막혀 있어 잘라내기만으로 같은 그림이 나온다
-      const baked = CAN_BAKE ? await bakePhotoLayer(photo) : null;
       await createStory.mutateAsync({
-        photo: baked ?? photo,
-        crop: baked
-          ? undefined
-          : { ...transform, canvasWidth: canvas.width, canvasHeight: canvas.height },
+        photo: await bakePhotoLayer(photo),
         trackId: attachToTrack ? (todayTrack.data?.id ?? null) : null,
         overlays,
       });
@@ -207,26 +210,23 @@ export default function CreateStory() {
             collapsable={false}
             style={{ width: canvas.width, height: canvas.height, backgroundColor: '#000' }}
           >
-            {/* 웹은 축소가 cover에서 막혀 사진이 늘 다 덮는다 — 깔아 봐야 드러날 일이 없다 */}
-            {CAN_BAKE && (
-              <>
-                <Image
-                  source={{ uri: photo.uri }}
-                  style={StyleSheet.absoluteFill}
-                  contentFit="cover"
-                  blurRadius={BLUR_RADIUS}
-                />
-                {/* 흐린 배경이 사진보다 튀지 않게 한 겹 눌러 준다 */}
-                <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.32)' }]} />
-              </>
-            )}
+            <Image
+              source={{ uri: photo.uri }}
+              style={StyleSheet.absoluteFill}
+              contentFit="cover"
+              blurRadius={STORY_BACKDROP.blurRadius}
+            />
+            {/* 흐린 배경이 사진보다 튀지 않게 한 겹 눌러 준다 */}
+            <View
+              style={[StyleSheet.absoluteFill, { backgroundColor: STORY_BACKDROP.scrim }]}
+            />
             <StoryCanvas
               uri={photo.uri}
               photoWidth={photo.width}
               photoHeight={photo.height}
               width={canvas.width}
               height={canvas.height}
-              minScale={CAN_BAKE ? CANVAS_ZOOM_MIN : CANVAS_ZOOM_MIN_WEB}
+              minScale={CANVAS_ZOOM_MIN}
               onChange={setTransform}
             />
           </View>

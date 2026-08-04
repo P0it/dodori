@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from './supabase';
 import { useMyCouple } from './couple';
 import {
-  cropToCanvas,
   signedThumbUrl,
   storagePathsFor,
   uploadPhotos,
@@ -145,16 +144,11 @@ export function useCreateStory() {
   return useMutation({
     mutationFn: async ({
       photo,
-      crop,
       trackId,
       overlays,
     }: {
+      /** 편집 화면을 이미 한 장으로 구워 온 그림 — 여기서 더 손대지 않는다 */
       photo: PickedPhoto;
-      /**
-       * 편집 캔버스에서 잡은 구도 — 올릴 때 그대로 잘라 굽는다.
-       * 화면을 통째로 구워 온 경우(네이티브)에는 이미 완성된 그림이라 생략한다.
-       */
-      crop?: { canvasWidth: number; canvasHeight: number; scale: number; tx: number; ty: number };
       trackId: string | null;
       overlays: TextOverlay[];
     }) => {
@@ -174,8 +168,7 @@ export function useCreateStory() {
         .single();
       if (error) throw error;
       const storyId = data.id as string;
-      const baked = crop ? await cropToCanvas(photo, crop) : photo;
-      await uploadPhotos({ storyId }, couple.data.coupleId, [baked]);
+      await uploadPhotos({ storyId }, couple.data.coupleId, [photo]);
       return storyId;
     },
     onSuccess: (_id, vars) => {
