@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
@@ -10,7 +11,7 @@ import {
 import { TopBar } from '@/components/TopBar';
 import { Meta } from '@/components/Meta';
 import { PlaylistTile } from '@/components/playlist/PlaylistTile';
-import { ChevronGlyph, MoreGlyph } from '@/components/glyphs';
+import { ChevronGlyph, CloseGlyph } from '@/components/glyphs';
 import { PlaceKindTile } from '@/components/PlaceKindTile';
 
 /** 테마(커스텀) 플레이리스트 상세 (목업 P1) — 데이트가 아니라 장소를 모은다 */
@@ -22,8 +23,11 @@ export default function CustomPlaylist() {
   const delPlaylist = useDeletePlaylist();
 
   const p = detail.data;
-  // 찜은 커플당 하나뿐이고 다시 만들 수 없다 — 삭제 진입점 자체를 감춘다(DB 트리거가 최종 방어)
+  // 찜은 커플당 하나뿐이고 다시 만들 수 없다 — 리스트 삭제 진입점만 감춘다(DB 트리거가 최종 방어).
+  // 담은 곳 빼기는 찜에서도 돼야 하므로 수정 모드 자체는 막지 않는다
   const isSaved = p?.kind === 'saved';
+  // 조회가 기본, "수정"을 눌러야 편집 어포던스(장소 ×·리스트 삭제)가 열린다 — 앨범 상세와 같은 규칙
+  const [editing, setEditing] = useState(false);
 
   const onDelete = () =>
     Alert.alert('리스트 삭제', '장소 목록만 삭제되고 기록은 남아요.', [
@@ -38,18 +42,26 @@ export default function CustomPlaylist() {
   return (
     <View style={{ flex: 1, backgroundColor: color.bg }}>
       <TopBar
-        title={p?.name ?? ''}
+        title={editing ? '리스트 수정' : (p?.name ?? '')}
+        // 좌측은 수정 중에도 뒤로가기 그대로 — ×는 즉시 반영이라 되돌릴 "취소"가 없다
         right={
-          isSaved ? undefined : (
-            // hitSlop으로 키우면 부모(폭 22) 밖으로 나간 영역이 안드로이드에서 잘려 눌리지 않는다.
-            // 실제 크기를 44로 준다.
-            <Pressable
-              onPress={onDelete}
-              style={{ width: 44, height: 44, alignItems: 'flex-end', justifyContent: 'center' }}
+          // hitSlop으로 키우면 부모(폭 22) 밖으로 나간 영역이 안드로이드에서 잘려 눌리지 않는다.
+          // 실제 크기를 44로 준다.
+          <Pressable
+            onPress={() => setEditing((v) => !v)}
+            style={{ height: 44, justifyContent: 'center', paddingLeft: 12 }}
+          >
+            <Text
+              style={{
+                fontFamily: typeface,
+                fontWeight: '700',
+                fontSize: 14,
+                color: editing ? color.accent : color.sub,
+              }}
             >
-              <MoreGlyph size={22} />
-            </Pressable>
-          )
+              {editing ? '완료' : '수정'}
+            </Text>
+          </Pressable>
         }
       />
       <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
@@ -66,16 +78,8 @@ export default function CustomPlaylist() {
             <Pressable
               key={pl.placeId}
               onPress={() => router.push(`/place/${pl.placeId}`)}
-              onLongPress={() =>
-                Alert.alert(pl.name, undefined, [
-                  { text: '취소', style: 'cancel' },
-                  {
-                    text: '리스트에서 제거',
-                    style: 'destructive',
-                    onPress: () => removePlace.mutate(pl.placeId),
-                  },
-                ])
-              }
+              // 수정 중엔 행 탭으로 화면을 뜨지 않는다 — ×를 겨냥하다 빗나가면 편집이 끊긴다
+              disabled={editing}
               style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 9 }}
             >
               {pl.photoThumbs[0] ? (
@@ -93,7 +97,16 @@ export default function CustomPlaylist() {
                 </Text>
                 <Meta style={{ marginTop: 3, fontSize: 12.5 }}>{pl.category ?? '장소'}</Meta>
               </View>
-              <ChevronGlyph size={22} color={color.sub} />
+              {editing ? (
+                <Pressable
+                  onPress={() => removePlace.mutate(pl.placeId)}
+                  style={{ width: 40, height: 44, alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <CloseGlyph />
+                </Pressable>
+              ) : (
+                <ChevronGlyph size={22} color={color.sub} />
+              )}
             </Pressable>
           ))}
           <Pressable
@@ -114,6 +127,15 @@ export default function CustomPlaylist() {
           >
             <Text style={{ color: color.accent, fontFamily: typeface, fontWeight: '600', fontSize: 13.5 }}>+ 장소 담기</Text>
           </Pressable>
+
+          {/* 리스트 통째로 삭제는 수정 모드 안에서만 — 조회 중엔 지울 방법이 노출되지 않는다 */}
+          {editing && !isSaved && (
+            <Pressable onPress={onDelete} style={{ height: 46, alignItems: 'center', justifyContent: 'center', marginTop: 18 }}>
+              <Text style={{ color: color.danger, fontFamily: typeface, fontWeight: '600', fontSize: 13.5 }}>
+                리스트 삭제
+              </Text>
+            </Pressable>
+          )}
         </View>
       </ScrollView>
     </View>
