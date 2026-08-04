@@ -1,11 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from './supabase';
 import { useMyCouple } from './couple';
-import { signedThumbUrl, uploadPhotos, type PickedPhoto } from './photos';
+import { signedThumbUrl, storagePathsFor, uploadPhotos, type PickedPhoto } from './photos';
 
 export interface PostPhoto {
   id: string;
   storagePath: string;
+  /** 미리 구운 렌디션(_360)이 있는지 — 삭제 대상 경로가 이 값으로 갈린다 */
+  renditions: boolean;
   /** 서명된 썸네일 URL (비공개 버킷) — 피드 캐러셀용 비율 보존 변형 */
   thumbUrl: string;
   width: number | null;
@@ -33,7 +35,7 @@ export interface Post {
 }
 
 const SELECT = `id, author_id, caption, created_at,
-   photos!photos_post_id_fkey(id, storage_path, width, height, created_at),
+   photos!photos_post_id_fkey(id, storage_path, renditions, width, height, created_at),
    post_reactions(emoji, user_id),
    post_comments(id, author_id, body, created_at, parent_id)`;
 
@@ -42,7 +44,14 @@ type PostRow = {
   author_id: string;
   caption: string;
   created_at: string;
-  photos: { id: string; storage_path: string; width: number | null; height: number | null; created_at: string }[];
+  photos: {
+    id: string;
+    storage_path: string;
+    renditions: boolean;
+    width: number | null;
+    height: number | null;
+    created_at: string;
+  }[];
   post_reactions: { emoji: string; user_id: string }[];
   post_comments: {
     id: string;
@@ -68,12 +77,15 @@ async function toPost(row: PostRow): Promise<Post> {
       sortedPhotos.map(async (p) => ({
         id: p.id,
         storagePath: p.storage_path,
-        thumbUrl: await signedThumbUrl(p.storage_path, 'feed'),
+        renditions: p.renditions,
+        thumbUrl: await signedThumbUrl(p.storage_path, 'feed', p.renditions),
         width: p.width,
         height: p.height,
       })),
     ),
-    gridThumbUrl: sortedPhotos[0] ? await signedThumbUrl(sortedPhotos[0].storage_path, 'grid') : null,
+    gridThumbUrl: sortedPhotos[0]
+      ? await signedThumbUrl(sortedPhotos[0].storage_path, 'grid', sortedPhotos[0].renditions)
+      : null,
     reactions: [...byEmoji.entries()].map(([emoji, userIds]) => ({ emoji, userIds })),
     comments: (row.post_comments ?? [])
       .map((c) => ({
@@ -134,7 +146,9 @@ export function useDeletePost() {
       const { error } = await supabase.from('posts').delete().eq('id', post.id);
       if (error) throw error;
       if (post.photos.length) {
-        await supabase.storage.from('photos').remove(post.photos.map((p) => p.storagePath));
+        await supabase.storage
+          .from('photos')
+          .remove(post.photos.flatMap((p) => storagePathsFor(p)));
       }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['posts'] }),

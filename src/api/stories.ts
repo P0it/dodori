@@ -1,13 +1,21 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from './supabase';
 import { useMyCouple } from './couple';
-import { cropToCanvas, signedThumbUrl, uploadPhotos, type PickedPhoto } from './photos';
+import {
+  cropToCanvas,
+  signedThumbUrl,
+  storagePathsFor,
+  uploadPhotos,
+  type PickedPhoto,
+} from './photos';
 import { parseOverlays, type TextOverlay } from '@/lib/stories';
 import type { Json } from '@/types/database.types';
 
 export interface StoryPhoto {
   id: string;
   storagePath: string;
+  /** 미리 구운 렌디션(_360)이 있는지 — 삭제 대상 경로가 이 값으로 갈린다 */
+  renditions: boolean;
   /** 뷰어용 비율 보존 썸네일 */
   thumbUrl: string;
   /** 보관함 그리드용 360 정사각 */
@@ -46,7 +54,7 @@ export interface Story {
 
 const SELECT = `id, author_id, caption, created_at, seen_at, track_id, overlays,
    tracks(title),
-   photos!photos_story_id_fkey(id, storage_path, width, height, created_at),
+   photos!photos_story_id_fkey(id, storage_path, renditions, width, height, created_at),
    story_reactions(emoji, user_id),
    story_comments(id, author_id, body, created_at)`;
 
@@ -62,6 +70,7 @@ type StoryRow = {
   photos: {
     id: string;
     storage_path: string;
+    renditions: boolean;
     width: number | null;
     height: number | null;
     created_at: string;
@@ -89,8 +98,9 @@ async function toStory(row: StoryRow): Promise<Story> {
       ? {
           id: p.id,
           storagePath: p.storage_path,
-          thumbUrl: await signedThumbUrl(p.storage_path, 'feed'),
-          gridThumbUrl: await signedThumbUrl(p.storage_path, 'grid'),
+          renditions: p.renditions,
+          thumbUrl: await signedThumbUrl(p.storage_path, 'feed', p.renditions),
+          gridThumbUrl: await signedThumbUrl(p.storage_path, 'grid', p.renditions),
           width: p.width,
           height: p.height,
         }
@@ -182,7 +192,9 @@ export function useDeleteStory() {
     mutationFn: async (story: { id: string; photo: StoryPhoto | null }) => {
       const { error } = await supabase.from('stories').delete().eq('id', story.id);
       if (error) throw error;
-      if (story.photo) await supabase.storage.from('photos').remove([story.photo.storagePath]);
+      if (story.photo) {
+        await supabase.storage.from('photos').remove(storagePathsFor(story.photo));
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['stories'] });

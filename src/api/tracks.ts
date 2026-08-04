@@ -25,9 +25,9 @@ export function useMonthTracks(monthKey: string) {
         .from('tracks')
         .select(
           `id, title, date,
-           cover:photos!tracks_cover_photo_fk(storage_path),
-           photos!photos_track_id_fkey(storage_path, created_at),
-           stories(photos!photos_story_id_fkey(storage_path, created_at))`,
+           cover:photos!tracks_cover_photo_fk(storage_path, renditions),
+           photos!photos_track_id_fkey(storage_path, renditions, created_at),
+           stories(photos!photos_story_id_fkey(storage_path, renditions, created_at))`,
         )
         .gte('date', from)
         .lt('date', to)
@@ -40,12 +40,14 @@ export function useMonthTracks(monthKey: string) {
             ...(t.photos ?? []),
             ...(t.stories ?? []).flatMap((s) => s.photos ?? []),
           ].sort((a, b) => a.created_at.localeCompare(b.created_at))[0];
-          const coverPath = t.cover?.storage_path ?? fallback?.storage_path ?? null;
+          const cover = t.cover ?? fallback ?? null;
           return {
             id: t.id,
             title: t.title,
             date: t.date,
-            coverThumbUrl: coverPath ? await signedThumbUrl(coverPath, 'calendar') : null,
+            coverThumbUrl: cover
+              ? await signedThumbUrl(cover.storage_path, 'grid', cover.renditions)
+              : null,
           };
         }),
       );
@@ -70,21 +72,22 @@ export function useAllTracks() {
         .from('tracks')
         .select(
           `id, title, date,
-           cover:photos!tracks_cover_photo_fk(storage_path),
-           photos!photos_track_id_fkey(id, storage_path),
+           cover:photos!tracks_cover_photo_fk(storage_path, renditions),
+           photos!photos_track_id_fkey(id, storage_path, renditions),
            notes(id), track_places(place_id)`,
         )
         .order('date', { ascending: false });
       if (error) throw error;
       return Promise.all(
         data.map(async (t) => {
-          const firstPhoto = t.photos?.[0]?.storage_path ?? null;
-          const coverPath = t.cover?.storage_path ?? firstPhoto;
+          const cover = t.cover ?? t.photos?.[0] ?? null;
           return {
             id: t.id,
             title: t.title,
             date: t.date,
-            coverThumbUrl: coverPath ? await signedThumbUrl(coverPath, 'grid') : null,
+            coverThumbUrl: cover
+              ? await signedThumbUrl(cover.storage_path, 'grid', cover.renditions)
+              : null,
             photoCount: t.photos?.length ?? 0,
             noteCount: t.notes?.length ?? 0,
             placeCount: t.track_places?.length ?? 0,
@@ -116,6 +119,8 @@ export function useTodayTrack() {
 export interface TrackPhoto {
   id: string;
   storagePath: string;
+  /** 미리 구운 렌디션(_360)이 있는지 — 삭제·서명 URL이 이 값으로 갈린다 */
+  renditions: boolean;
   /** 그리드용 서명 썸네일 — 비공개 버킷이라 렌더에는 이 값만 쓴다 */
   thumbUrl: string;
   uploaderId: string;
@@ -166,8 +171,8 @@ export function useTrack(id: string | undefined) {
         .from('tracks')
         .select(
           `id, title, date, cover_photo_id, created_by,
-           cover:photos!tracks_cover_photo_fk(storage_path),
-           photos!photos_track_id_fkey(id, storage_path, uploader_id, taken_at, created_at, width, height),
+           cover:photos!tracks_cover_photo_fk(storage_path, renditions),
+           photos!photos_track_id_fkey(id, storage_path, renditions, uploader_id, taken_at, created_at, width, height),
            track_places(place_id, visit_time, sort_order, added_by, done, places(name, category, address, link, lat, lng)),
            notes(id, author_id, body, created_at)`,
         )
@@ -178,7 +183,7 @@ export function useTrack(id: string | undefined) {
       const { data: stories, error: storyError } = await supabase
         .from('stories')
         .select(
-          `id, photos!photos_story_id_fkey(id, storage_path, uploader_id, taken_at, created_at, width, height)`,
+          `id, photos!photos_story_id_fkey(id, storage_path, renditions, uploader_id, taken_at, created_at, width, height)`,
         )
         .eq('track_id', id!);
       if (storyError) throw storyError;
@@ -193,7 +198,8 @@ export function useTrack(id: string | undefined) {
           .map(async (p) => ({
             id: p.id,
             storagePath: p.storage_path,
-            thumbUrl: await signedThumbUrl(p.storage_path, 'grid'),
+            renditions: p.renditions,
+            thumbUrl: await signedThumbUrl(p.storage_path, 'grid', p.renditions),
             uploaderId: p.uploader_id,
             takenAt: p.taken_at,
             createdAt: p.created_at,
@@ -207,8 +213,8 @@ export function useTrack(id: string | undefined) {
         title: t.title,
         date: t.date,
         coverPhotoId: t.cover_photo_id,
-        coverThumbUrl: t.cover?.storage_path
-          ? await signedThumbUrl(t.cover.storage_path, 'grid')
+        coverThumbUrl: t.cover
+          ? await signedThumbUrl(t.cover.storage_path, 'grid', t.cover.renditions)
           : null,
         createdBy: t.created_by,
         photos,

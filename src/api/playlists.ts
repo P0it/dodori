@@ -147,13 +147,13 @@ async function visitStats(placeIds: string[]) {
   if (!placeIds.length) return map;
   const { data } = await supabase
     .from('track_places')
-    .select('place_id, tracks(date, photos!photos_track_id_fkey(storage_path))')
+    .select('place_id, tracks(date, photos!photos_track_id_fkey(storage_path, renditions))')
     .in('place_id', placeIds);
   for (const row of data ?? []) {
     const entry = map.get(row.place_id) ?? { count: 0, thumbs: [] };
     entry.count++;
     for (const ph of row.tracks?.photos ?? []) {
-      if (entry.thumbs.length < 4) entry.thumbs.push(await signedThumbUrl(ph.storage_path, 'grid'));
+      if (entry.thumbs.length < 4) entry.thumbs.push(await signedThumbUrl(ph.storage_path, 'grid', ph.renditions));
     }
     map.set(row.place_id, entry);
   }
@@ -227,7 +227,7 @@ export function usePlaceDetail(id: string | undefined) {
       if (error) throw error;
       const { data: tps } = await supabase
         .from('track_places')
-        .select('tracks(id, title, date, photos!photos_track_id_fkey(storage_path))')
+        .select('tracks(id, title, date, photos!photos_track_id_fkey(storage_path, renditions))')
         .eq('place_id', id!);
       const tracks = (tps ?? [])
         .map((tp) => tp.tracks)
@@ -237,7 +237,7 @@ export function usePlaceDetail(id: string | undefined) {
         tracks
           .flatMap((t) => t.photos ?? [])
           .slice(0, 6)
-          .map((ph) => signedThumbUrl(ph.storage_path, 'grid')),
+          .map((ph) => signedThumbUrl(ph.storage_path, 'grid', ph.renditions)),
       );
       return {
         id: p.id,

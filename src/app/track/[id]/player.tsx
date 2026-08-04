@@ -4,7 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { color, typeface } from '@/theme/tokens';
 import { useTrack } from '@/api/tracks';
-import { originalUrl } from '@/api/photos';
+import { signedThumbUrl } from '@/api/photos';
 import { Eyebrow } from '@/components/Eyebrow';
 import { Meta } from '@/components/Meta';
 
@@ -28,14 +28,14 @@ export default function Player() {
     return () => clearInterval(t);
   }, [playing, photos.length]);
 
-  // 현재 사진 원본 서명 URL (실패 시 그리드 썸네일 폴백)
+  // 현재 사진의 본체(1080) 서명 URL — 최대본이다 (실패 시 그리드 썸네일 폴백)
   const current = photos[index];
   useEffect(() => {
     let alive = true;
     setFullUrl(null);
     if (current) {
-      originalUrl(current.storagePath)
-        .then((u) => alive && setFullUrl(u))
+      signedThumbUrl(current.storagePath, 'feed', current.renditions)
+        .then((u: string) => alive && setFullUrl(u))
         .catch(() => alive && setFullUrl(current.thumbUrl));
     }
     return () => {

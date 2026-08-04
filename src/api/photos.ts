@@ -7,45 +7,55 @@ import { supabase } from './supabase';
 import { useMyCouple } from './couple';
 
 /**
- * 썸네일 3단계 (§6.3): 캘린더 124@2x / 그리드·스트립 360 / 뷰어 원본.
- * 피드(feed)는 원본 비율 보존 — 높이 미지정으로 가로세로가 안 잘린다.
- * 원본은 뷰어 전용 — 목록 화면에서 원본 URL 사용 금지 (§9)
+ * 렌디션 2종 — 업로드할 때 기기에서 만들어 함께 올린다.
+ *
+ * 서버 이미지 변환(Storage Image Transformations)은 Pro에서 원본 100장까지만 무료라
+ * Spend Cap을 켜면 곧 기능이 제한된다 — 앱 전체 사진이 안 보이게 된다. 그래서 쓰지 않는다.
+ * 본체(feed)가 곧 최대본이다 — 2048px "원본" 계층은 폐기했다.
+ * 캘린더 칸도 grid(360)를 받아 화면에서 줄여 그린다 (124 렌디션은 폐기).
  */
-export const THUMB = {
-  calendar: { width: 124, height: 124, quality: 60 },
-  grid: { width: 360, height: 360, quality: 70 },
-  feed: { width: 1080, quality: 72 },
+export const RENDITION = {
+  feed: { width: 1080, compress: 0.8 },
+  grid: { width: 360, compress: 0.7 },
 } as const;
 
-/**
- * 비율 보존의 열쇠는 height를 안 주는 것 — width만 제약하면 세로가 안 잘린다.
- * (resize는 storage-js 기본값이 이미 'cover'라 명시는 height 있는 변형의 의도 표기용)
- */
-function transformFor(kind: keyof typeof THUMB) {
-  const t = THUMB[kind];
-  return 'height' in t ? { ...t, resize: 'cover' as const } : { ...t };
+export type RenditionKind = keyof typeof RENDITION;
+
+/** 목록 렌디션의 경로 — 본체가 `{uuid}.jpg`면 `{uuid}_360.jpg` */
+export function renditionPath(storagePath: string, kind: RenditionKind): string {
+  return kind === 'feed' ? storagePath : storagePath.replace(/\.jpg$/, '_360.jpg');
 }
 
 /**
- * 썸네일 서명 URL — photos 버킷이 비공개라 public URL은 렌더되지 않는다.
+ * 사진 하나가 스토리지에 실제로 차지하는 경로 전부.
+ * 삭제할 때 이걸 안 쓰면 _360이 고아 파일로 남는다.
+ */
+export function storagePathsFor(photo: { storagePath: string; renditions: boolean }): string[] {
+  return photo.renditions
+    ? [photo.storagePath, renditionPath(photo.storagePath, 'grid')]
+    : [photo.storagePath];
+}
+
+/**
+ * 렌디션 서명 URL — photos 버킷이 비공개라 public URL은 렌더되지 않는다.
  * (getPublicUrl로 만든 주소는 401로 떨어져 이미지가 통째로 빈 칸이 된다 — 절대 쓰지 않는다)
+ *
+ * renditions=true(신규 업로드)는 미리 구운 파일 경로를 그대로 서명한다.
+ * false(옛 사진)는 _360 파일이 없어 서버 변환으로 폴백한다 — Pro에서만 동작하며 대상이 소수라
+ * 무료분 안이다. 폴백 대상이 늘지 않으므로 시간이 지나면 저절로 사라지는 분기다.
  */
 export async function signedThumbUrl(
   storagePath: string,
-  kind: keyof typeof THUMB,
+  kind: RenditionKind,
+  renditions = false,
 ): Promise<string> {
+  const path = renditions ? renditionPath(storagePath, kind) : storagePath;
+  const options = renditions
+    ? undefined
+    : { transform: { width: RENDITION[kind].width, quality: 72 } };
   const { data, error } = await supabase.storage
     .from('photos')
-    .createSignedUrl(storagePath, 60 * 60, { transform: transformFor(kind) });
-  if (error) throw error;
-  return data.signedUrl;
-}
-
-/** 뷰어용 원본 — 비공개 버킷이므로 서명 URL */
-export async function originalUrl(storagePath: string): Promise<string> {
-  const { data, error } = await supabase.storage
-    .from('photos')
-    .createSignedUrl(storagePath, 60 * 60);
+    .createSignedUrl(path, 60 * 60, options);
   if (error) throw error;
   return data.signedUrl;
 }
@@ -127,18 +137,16 @@ export function parseExifDate(exif: Record<string, unknown> | null | undefined):
   return `${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:${m[6]}+09:00`;
 }
 
-/** 업로드 전 리사이즈: 장변 2048px + JPEG 80 (§7.3) */
-async function resizeForUpload(photo: PickedPhoto) {
+/** 업로드용 렌디션 하나 만들기 — 장변을 제한한다 (원본이 더 작으면 그대로) */
+async function renderRendition(photo: PickedPhoto, kind: RenditionKind) {
+  const { width, compress } = RENDITION[kind];
   const landscape = photo.width >= photo.height;
-  const needResize = Math.max(photo.width, photo.height) > 2048;
   const ctx = ImageManipulator.ImageManipulator.manipulate(photo.uri);
-  if (needResize) ctx.resize(landscape ? { width: 2048 } : { height: 2048 });
+  if (Math.max(photo.width, photo.height) > width) {
+    ctx.resize(landscape ? { width } : { height: width });
+  }
   const rendered = await ctx.renderAsync();
-  const result = await rendered.saveAsync({
-    format: ImageManipulator.SaveFormat.JPEG,
-    compress: 0.8,
-  });
-  return result; // { uri, width, height }
+  return rendered.saveAsync({ format: ImageManipulator.SaveFormat.JPEG, compress });
 }
 
 /**
@@ -191,14 +199,21 @@ export async function uploadPhotos(
 
   const ids: string[] = [];
   for (const photo of photos) {
-    const resized = await resizeForUpload(photo);
     const path = `${coupleId}/${parentId}/${Crypto.randomUUID()}.jpg`;
-    const file = await fetch(resized.uri);
-    const body = await file.arrayBuffer();
-    const { error: upError } = await supabase.storage
-      .from('photos')
-      .upload(path, body, { contentType: 'image/jpeg' });
-    if (upError) throw upError;
+    const main = await renderRendition(photo, 'feed');
+    const small = await renderRendition(photo, 'grid');
+
+    for (const [p, out] of [
+      [path, main],
+      [renditionPath(path, 'grid'), small],
+    ] as const) {
+      const body = await (await fetch(out.uri)).arrayBuffer();
+      const { error: upError } = await supabase.storage
+        .from('photos')
+        .upload(p, body, { contentType: 'image/jpeg' });
+      if (upError) throw upError;
+    }
+
     const { data: row, error: rowError } = await supabase
       .from('photos')
       .insert({
@@ -206,9 +221,11 @@ export async function uploadPhotos(
         post_id: parent.postId ?? null,
         story_id: parent.storyId ?? null,
         uploader_id: uid,
+        couple_id: coupleId,
         storage_path: path,
-        width: resized.width,
-        height: resized.height,
+        renditions: true,
+        width: main.width,
+        height: main.height,
         taken_at: photo.takenAt,
       })
       .select('id')
@@ -244,10 +261,10 @@ export function useUploadPhotos(parent: PhotoParent) {
 export function useDeletePhoto(trackId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (photo: { id: string; storagePath: string }) => {
+    mutationFn: async (photo: { id: string; storagePath: string; renditions: boolean }) => {
       const { error } = await supabase.from('photos').delete().eq('id', photo.id);
       if (error) throw error;
-      await supabase.storage.from('photos').remove([photo.storagePath]);
+      await supabase.storage.from('photos').remove(storagePathsFor(photo));
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['track', trackId] });

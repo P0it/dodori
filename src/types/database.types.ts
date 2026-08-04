@@ -118,18 +118,24 @@ export type Database = {
           created_at: string
           id: string
           invite_code: string | null
+          photo_quota: number
+          plan: string
           started_at: string | null
         }
         Insert: {
           created_at?: string
           id?: string
           invite_code?: string | null
+          photo_quota?: number
+          plan?: string
           started_at?: string | null
         }
         Update: {
           created_at?: string
           id?: string
           invite_code?: string | null
+          photo_quota?: number
+          plan?: string
           started_at?: string | null
         }
         Relationships: []
@@ -287,10 +293,12 @@ export type Database = {
       }
       photos: {
         Row: {
+          couple_id: string
           created_at: string
           height: number | null
           id: string
           post_id: string | null
+          renditions: boolean
           storage_path: string
           story_id: string | null
           taken_at: string | null
@@ -299,10 +307,12 @@ export type Database = {
           width: number | null
         }
         Insert: {
+          couple_id: string
           created_at?: string
           height?: number | null
           id?: string
           post_id?: string | null
+          renditions?: boolean
           storage_path: string
           story_id?: string | null
           taken_at?: string | null
@@ -311,10 +321,12 @@ export type Database = {
           width?: number | null
         }
         Update: {
+          couple_id?: string
           created_at?: string
           height?: number | null
           id?: string
           post_id?: string | null
+          renditions?: boolean
           storage_path?: string
           story_id?: string | null
           taken_at?: string | null
@@ -323,6 +335,13 @@ export type Database = {
           width?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "photos_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "photos_post_id_fkey"
             columns: ["post_id"]

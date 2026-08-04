@@ -36,7 +36,7 @@ export default function Gallery() {
       buttons.push({
         text: '삭제',
         style: 'destructive',
-        onPress: () => delPhoto.mutate({ id: p.id, storagePath: p.storagePath }),
+        onPress: () => delPhoto.mutate({ id: p.id, storagePath: p.storagePath, renditions: p.renditions }),
       });
     }
     Alert.alert('사진', undefined, buttons);
