@@ -2,8 +2,25 @@ import { Pressable, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { color, eventColor, tintBg, typeface, type EventColorKey } from '@/theme/tokens';
 import type { DayCell } from '@/lib/calendar';
+import { laneCounts, type SpanSegment } from '@/lib/span';
 import { shortHolidayName } from '@/lib/holidays';
 import { StarGlyph } from '@/components/glyphs';
+
+/** 여러 날 일정 막대 한 토막 — 주 경계에서 끊긴 조각 하나가 항목 하나다 */
+export interface DaySpan {
+  /** 같은 일정의 여러 토막이 같은 key를 공유한다 (React key는 week를 붙여 만든다) */
+  key: string;
+  title: string;
+  color: EventColorKey;
+  segment: SpanSegment;
+  lane: number;
+}
+
+/** 막대 높이·간격 — 셀 안 마커를 이만큼 아래로 밀어야 겹치지 않는다 */
+const BAR_H = 15;
+const BAR_GAP = 2;
+/** 셀 위쪽 padding(5) + 날짜 숫자(24) + 숨(3) */
+const BAR_TOP = 32;
 
 /** 셀 하나에 표시할 마커 집합 — 화면(조합 계층)에서 만들어 내려준다 */
 export interface DayMarks {
@@ -25,6 +42,8 @@ const WEEK = ['일', '월', '화', '수', '목', '금', '토'];
 type Props = {
   cells: DayCell[];
   marks: Record<string, DayMarks>;
+  /** 여러 날 일정 — 셀 위를 가로지르는 막대. 하루짜리는 marks.events로 온다 */
+  spans?: DaySpan[];
   selected: string;
   onSelectDay: (date: string) => void;
   /** 빈 달 데모용 흐림 처리 */
@@ -32,9 +51,11 @@ type Props = {
 };
 
 /** 월간 그리드 (목업 17 — 7열, 라이브러리 없이 자체 구현 §3). 부모가 준 높이를 주 단위 행이 균등하게 나눠 갖는다 */
-export function MonthGrid({ cells, marks, selected, onSelectDay, dim }: Props) {
+export function MonthGrid({ cells, marks, spans = [], selected, onSelectDay, dim }: Props) {
   const weeks: DayCell[][] = [];
   for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7));
+  /** 주마다 막대가 몇 줄인가 — 셀 안 마커를 그만큼 내린다 */
+  const lanes = laneCounts(spans, weeks.length);
 
   return (
     <View style={{ flex: 1, paddingHorizontal: 12, opacity: dim ? 0.35 : 1 }}>
@@ -55,19 +76,92 @@ export function MonthGrid({ cells, marks, selected, onSelectDay, dim }: Props) {
           </Text>
         ))}
       </View>
-      {weeks.map((week) => (
-        <View key={week[0].date} style={{ flexDirection: 'row', flex: 1 }}>
-          {week.map((cell) => (
-            <DayCellView
-              key={cell.date}
-              cell={cell}
-              m={cell.inMonth ? (marks[cell.date] ?? {}) : {}}
-              selected={cell.inMonth && cell.date === selected}
-              onPress={() => cell.inMonth && onSelectDay(cell.date)}
-            />
-          ))}
+      {weeks.map((week, w) => (
+        <View key={week[0].date} style={{ flex: 1 }}>
+          <View style={{ flexDirection: 'row', flex: 1 }}>
+            {week.map((cell) => (
+              <DayCellView
+                key={cell.date}
+                cell={cell}
+                m={cell.inMonth ? (marks[cell.date] ?? {}) : {}}
+                markTop={lanes[w] * (BAR_H + BAR_GAP)}
+                selected={cell.inMonth && cell.date === selected}
+                onPress={() => cell.inMonth && onSelectDay(cell.date)}
+              />
+            ))}
+          </View>
+          {/* 막대는 셀 위에 겹쳐 깐다 — 탭은 아래 셀이 받아야 하므로 이벤트를 통과시킨다 */}
+          <SpanBars spans={spans.filter((s) => s.segment.week === w)} />
         </View>
       ))}
+    </View>
+  );
+}
+
+/**
+ * 한 주의 막대 층. 칸(lane)마다 가로 한 줄을 깔고, 그 안에서 flex 비율로 열을 맞춘다
+ * (7열이 flex:1이라 퍼센트 대신 flex 스페이서를 쓰면 셀 경계와 정확히 떨어진다).
+ */
+function SpanBars({ spans }: { spans: DaySpan[] }) {
+  if (spans.length === 0) return null;
+  const byLane = new Map<number, DaySpan[]>();
+  for (const s of spans) byLane.set(s.lane, [...(byLane.get(s.lane) ?? []), s]);
+
+  return (
+    <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, top: BAR_TOP }}>
+      {[...byLane.entries()]
+        .sort((a, b) => a[0] - b[0])
+        .map(([lane, items]) => {
+          const sorted = [...items].sort((a, b) => a.segment.startCol - b.segment.startCol);
+          const row: React.ReactNode[] = [];
+          let col = 0;
+          for (const s of sorted) {
+            const { startCol, endCol, continuesLeft, continuesRight } = s.segment;
+            if (startCol > col) row.push(<View key={`gap-${startCol}`} style={{ flex: startCol - col }} />);
+            row.push(
+              <View
+                key={s.key}
+                style={{
+                  flex: endCol - startCol + 1,
+                  height: BAR_H,
+                  justifyContent: 'center',
+                  backgroundColor: eventColor[s.color].bg,
+                  // 이어지는 쪽은 모서리를 세워 붙여둔다 — 다음 주로 계속된다는 신호
+                  borderTopLeftRadius: continuesLeft ? 0 : 3,
+                  borderBottomLeftRadius: continuesLeft ? 0 : 3,
+                  borderTopRightRadius: continuesRight ? 0 : 3,
+                  borderBottomRightRadius: continuesRight ? 0 : 3,
+                  marginLeft: continuesLeft ? 0 : 2,
+                  marginRight: continuesRight ? 0 : 2,
+                }}
+              >
+                {/* 제목은 토막마다 한 번 — 주가 바뀌어 다시 시작해도 무엇인지 알아야 한다 */}
+                <Text
+                  numberOfLines={1}
+                  style={{
+                    paddingHorizontal: 4,
+                    fontSize: 10,
+                    fontFamily: typeface,
+                    fontWeight: '700',
+                    color: eventColor[s.color].fg,
+                  }}
+                >
+                  {s.title}
+                </Text>
+              </View>,
+            );
+            col = endCol + 1;
+          }
+          if (col <= 6) row.push(<View key="gap-end" style={{ flex: 7 - col }} />);
+          return (
+            <View
+              key={lane}
+              style={{ flexDirection: 'row', height: BAR_H, marginBottom: BAR_GAP }}
+            >
+              {row}
+            </View>
+          );
+        })}
     </View>
   );
 }
@@ -75,11 +169,14 @@ export function MonthGrid({ cells, marks, selected, onSelectDay, dim }: Props) {
 function DayCellView({
   cell,
   m,
+  markTop,
   selected,
   onPress,
 }: {
   cell: DayCell;
   m: DayMarks;
+  /** 이 주의 막대가 차지한 높이 — 셀 안 마커를 그만큼 내린다 */
+  markTop: number;
   selected: boolean;
   onPress: () => void;
 }) {
@@ -149,8 +246,8 @@ function DayCellView({
         </Text>
       </View>
 
-      {/* 마커 — 날짜 숫자 바로 아래 (셀이 커져도 숫자에 붙어 있게) */}
-      <View style={{ marginTop: 3, gap: 3 }}>
+      {/* 마커 — 날짜 숫자 바로 아래 (셀이 커져도 숫자에 붙어 있게). 여러 날 막대가 있으면 그 아래로 */}
+      <View style={{ marginTop: 3 + markTop, gap: 3 }}>
         {m.annivLabel && (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
             <StarGlyph size={10} />

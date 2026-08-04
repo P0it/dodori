@@ -19,8 +19,9 @@ import {
   typeface,
   type EventColorKey,
 } from '@/theme/tokens';
-import { isISODate, todayKST, toKSTDate, weekdayKo } from '@/lib/date';
+import { isISODate, todayKST, weekdayKo } from '@/lib/date';
 import { addHours, isAfter, isHHmm } from '@/lib/time';
+import { daySpan, eventDayRange } from '@/lib/span';
 import {
   useCreateEvent,
   useDeleteEvent,
@@ -38,32 +39,38 @@ export default function AddEvent() {
   const params = useLocalSearchParams<{ date?: string; id?: string }>();
   const editingId = params.id ?? null;
 
+  const seed = params.date ?? todayKST();
+
   const [title, setTitle] = useState('');
-  const [date, setDate] = useState(params.date ?? todayKST());
+  // 기본은 오늘 하루 종일 — 대부분의 일정이 그렇고, 여러 날이면 종료일만 바꾸면 된다
+  const [startDate, setStartDate] = useState(seed);
+  const [endDate, setEndDate] = useState(seed);
   const [startTime, setStartTime] = useState('19:00');
-  const [endTime, setEndTime] = useState('');
-  const [allDay, setAllDay] = useState(false);
+  const [endTime, setEndTime] = useState('21:00');
+  const [allDay, setAllDay] = useState(true);
   const [description, setDescription] = useState('');
   const [ownerId, setOwnerId] = useState('');
   const [eventColorKey, setEventColorKey] = useState<EventColorKey>(DEFAULT_EVENT_COLOR);
   /** 어떤 피커가 펼쳐져 있나 — 한 번에 하나만 */
-  const [open, setOpen] = useState<'none' | 'date' | 'start' | 'end'>('none');
-  const [pickerMonth, setPickerMonth] = useState(() => initialMonth(params.date ?? todayKST()));
+  const [open, setOpen] = useState<'none' | 'startDate' | 'endDate' | 'startTime' | 'endTime'>('none');
+  const [pickerMonth, setPickerMonth] = useState(() => initialMonth(seed));
 
   // 수정 모드: 기존 값 로드 (해당 월 캐시에서)
-  const monthEvents = useMonthEvents(date.slice(0, 7));
+  const monthEvents = useMonthEvents(startDate.slice(0, 7));
   useEffect(() => {
     if (!editingId) return;
     const e = monthEvents.data?.find((ev) => ev.id === editingId);
     if (!e || !e.starts_at) return;
     setTitle(e.title ?? '');
-    const d = toKSTDate(new Date(e.starts_at));
-    setDate(d);
-    setPickerMonth(initialMonth(d));
+    const { from, to } = eventDayRange(e.starts_at, e.ends_at);
+    setStartDate(from);
+    setEndDate(to);
+    setPickerMonth(initialMonth(from));
     setAllDay(!!e.all_day);
     setDescription(e.description ?? '');
     setStartTime(kstTime(e.starts_at));
-    setEndTime(e.ends_at ? kstTime(e.ends_at) : '');
+    // 종일이 아닌데 종료가 없던 옛 일정은 시작+2시간으로 채운다 (이제 종료는 항상 있다)
+    setEndTime(e.ends_at && !e.all_day ? kstTime(e.ends_at) : addHours(kstTime(e.starts_at), 2));
     setOwnerId(e.owner_id ?? '');
     setEventColorKey(toEventColor(e.color));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -82,18 +89,28 @@ export default function AddEvent() {
     if (meId) setOwnerId(meId);
   }, [editingId, ownerId, profiles.data]);
 
-  // 종료는 선택이지만, 넣었다면 시작보다 뒤여야 한다 — 일정은 날짜를 넘기지 않는다
-  const endOk = !endTime || isAfter(startTime, endTime);
+  const multiDay = daySpan(startDate, endDate) > 1;
+  // 종료일은 시작일보다 앞설 수 없고, 하루짜리 시간 일정이면 종료 시각이 시작보다 뒤여야 한다.
+  // 여러 날이면 시각의 앞뒤는 따지지 않는다 (10일 19시 → 13일 09시는 정상)
+  const rangeOk = daySpan(startDate, endDate) >= 1;
+  const timeOk = allDay || multiDay || isAfter(startTime, endTime);
   const valid =
-    title.trim().length > 0 && isISODate(date) && !!ownerId && (allDay || (isHHmm(startTime) && endOk));
+    title.trim().length > 0 &&
+    isISODate(startDate) &&
+    isISODate(endDate) &&
+    !!ownerId &&
+    rangeOk &&
+    (allDay || (isHHmm(startTime) && isHHmm(endTime))) &&
+    timeOk;
 
   const save = () => {
     if (!valid || busy) return;
     const input = {
       title: title.trim(),
       ownerId,
-      startsAt: allDay ? `${date}T00:00:00+09:00` : `${date}T${startTime}:00+09:00`,
-      endsAt: !allDay && isHHmm(endTime) ? `${date}T${endTime}:00+09:00` : null,
+      // 종일은 그 날 전체를 덮는다 — 마지막 날 23:59:59까지 잡아야 캘린더 막대가 그 날을 포함한다
+      startsAt: allDay ? `${startDate}T00:00:00+09:00` : `${startDate}T${startTime}:00+09:00`,
+      endsAt: allDay ? `${endDate}T23:59:59+09:00` : `${endDate}T${endTime}:00+09:00`,
       allDay,
       description: description.trim() || null,
       color: eventColorKey,
@@ -257,18 +274,44 @@ export default function AddEvent() {
         />
 
         <View style={{ marginTop: 20, gap: 10 }}>
+          {/* 종일이 먼저 — 이 스위치가 아래 시각 행의 유무를 정한다 */}
+          <FieldRow label="종일">
+            <Toggle on={allDay} onToggle={() => setAllDay((v) => !v)} />
+          </FieldRow>
+
           <FieldRow
-            label="날짜"
-            onPress={() => setOpen((v) => (v === 'date' ? 'none' : 'date'))}
-            value={`${date.replaceAll('-', '.')} (${weekdayKo(date)})`}
-            open={open === 'date'}
+            label="시작"
+            onPress={() => setOpen((v) => (v === 'startDate' ? 'none' : 'startDate'))}
+            value={dateLabel(startDate)}
+            open={open === 'startDate'}
           />
-          {open === 'date' && (
+          {open === 'startDate' && (
             <DatePicker
-              value={date}
+              value={startDate}
               // 날짜는 한 번 고르면 끝 — 계속 펼쳐두면 아래 항목이 가린다
               onChange={(d) => {
-                setDate(d);
+                setStartDate(d);
+                // 시작을 종료 뒤로 밀면 종료도 함께 당겨온다 — 뒤집힌 채로 두면 저장을 막을 뿐이다
+                if (d > endDate) setEndDate(d);
+                setOpen('none');
+              }}
+              month={pickerMonth}
+              onMonthChange={setPickerMonth}
+            />
+          )}
+
+          <FieldRow
+            label="종료"
+            onPress={() => setOpen((v) => (v === 'endDate' ? 'none' : 'endDate'))}
+            value={dateLabel(endDate) + (multiDay ? ` · ${daySpan(startDate, endDate)}일` : '')}
+            open={open === 'endDate'}
+          />
+          {open === 'endDate' && (
+            <DatePicker
+              value={endDate}
+              onChange={(d) => {
+                setEndDate(d);
+                if (d < startDate) setStartDate(d);
                 setOpen('none');
               }}
               month={pickerMonth}
@@ -279,46 +322,33 @@ export default function AddEvent() {
           {!allDay && (
             <>
               <FieldRow
-                label="시작"
-                onPress={() => setOpen((v) => (v === 'start' ? 'none' : 'start'))}
+                label="시작 시각"
+                onPress={() => setOpen((v) => (v === 'startTime' ? 'none' : 'startTime'))}
                 value={startTime}
-                open={open === 'start'}
+                open={open === 'startTime'}
               />
-              {open === 'start' && (
+              {open === 'startTime' && (
                 <TimePicker
                   value={startTime}
                   onChange={(t) => {
                     setStartTime(t);
-                    // 종료가 비어 있으면 +2시간을 깔아준다 — 대부분의 데이트가 그쯤이고, 바로 고쳐 쓸 수 있다
-                    if (!endTime) setEndTime(addHours(t, 2));
+                    // 하루짜리면 종료를 앞질러 갈 수 없다 — 따라 밀어준다
+                    if (!multiDay && !isAfter(t, endTime)) setEndTime(addHours(t, 2));
                   }}
                 />
               )}
 
               <FieldRow
-                label="종료"
-                onPress={() => {
-                  // 비어 있는 채로 열면 휠에 보이는 값(시작+2시간)을 바로 값으로 삼는다 —
-                  // 굴리지 않고 닫으면 '없음'으로 남는 게 함정이었다. 없애려면 아래 버튼으로.
-                  if (open !== 'end' && !endTime) setEndTime(addHours(startTime, 2));
-                  setOpen((v) => (v === 'end' ? 'none' : 'end'));
-                }}
-                value={endTime || '없음'}
-                muted={!endTime}
-                warn={!endOk}
-                open={open === 'end'}
+                label="종료 시각"
+                onPress={() => setOpen((v) => (v === 'endTime' ? 'none' : 'endTime'))}
+                value={endTime}
+                warn={!timeOk}
+                open={open === 'endTime'}
               />
-              {open === 'end' && (
+              {open === 'endTime' && (
                 <View style={{ gap: 8 }}>
-                  <TimePicker value={endTime || addHours(startTime, 2)} onChange={setEndTime} />
-                  {!!endTime && (
-                    <Pressable onPress={() => setEndTime('')} style={{ alignSelf: 'center' }} hitSlop={8}>
-                      <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 13, color: color.sub }}>
-                        종료 시각 없애기
-                      </Text>
-                    </Pressable>
-                  )}
-                  {!endOk && (
+                  <TimePicker value={endTime} onChange={setEndTime} />
+                  {!timeOk && (
                     <Meta style={{ fontSize: 12, textAlign: 'center', color: color.danger }}>
                       종료는 시작보다 뒤여야 해요
                     </Meta>
@@ -327,10 +357,6 @@ export default function AddEvent() {
               )}
             </>
           )}
-
-          <FieldRow label="종일">
-            <Toggle on={allDay} onToggle={() => setAllDay((v) => !v)} />
-          </FieldRow>
         </View>
 
         {/* 설명 (메모) — 상대에게 그대로 공유됨 */}
@@ -371,6 +397,11 @@ export default function AddEvent() {
 
 function showError(e: unknown) {
   Alert.alert('저장 실패', e instanceof Error ? e.message : String(e));
+}
+
+/** '2026-08-10' → '2026.08.10 (월)' */
+function dateLabel(d: string): string {
+  return `${d.replaceAll('-', '.')} (${weekdayKo(d)})`;
 }
 
 function kstTime(iso: string): string {

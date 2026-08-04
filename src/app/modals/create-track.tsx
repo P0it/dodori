@@ -16,7 +16,7 @@ import { monthCells, addMonths, monthLabel } from '@/lib/calendar';
 import { monthKey as toMonthKey, todayKST, isISODate } from '@/lib/date';
 import { useCreateTrack } from '@/api/tracks';
 import { useMonthEvents } from '@/api/events';
-import { toKSTDate } from '@/lib/date';
+import { eventDayRange, spanDays } from '@/lib/span';
 
 /** 데이트 만들기 — 1) 날짜 2) 제목. 장소는 앨범을 만든 뒤 상세에서 담는다. */
 export default function CreateTrack() {
@@ -148,7 +148,10 @@ function PickDate({
   const busyDays = useMemo(() => {
     const s = new Set<string>();
     for (const e of events.data ?? []) {
-      if (e.starts_at) s.add(toKSTDate(new Date(e.starts_at)));
+      if (!e.starts_at) continue;
+      // 여러 날 일정은 걸친 날이 전부 바쁘다 — 시작일만 찍으면 여행 중간이 빈 날로 보인다
+      const { from, to } = eventDayRange(e.starts_at, e.ends_at);
+      for (const d of spanDays(from, to)) s.add(d);
     }
     return s;
   }, [events.data]);

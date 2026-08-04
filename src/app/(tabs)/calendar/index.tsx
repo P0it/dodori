@@ -4,7 +4,8 @@ import { useRouter } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
 import { color, toEventColor, typeface } from '@/theme/tokens';
 import { monthCells, addMonths, monthLabel } from '@/lib/calendar';
-import { monthKey as toMonthKey, todayKST, isReleased, toKSTDate } from '@/lib/date';
+import { monthKey as toMonthKey, todayKST, isReleased } from '@/lib/date';
+import { assignLanes, daySpan, eventDayRange, spanSegments } from '@/lib/span';
 import { occurrenceInMonth } from '@/lib/anniversaries';
 import { holidayMapForMonth } from '@/lib/holidays';
 import { useMonthEvents } from '@/api/events';
@@ -14,7 +15,7 @@ import { useCoupleProfiles } from '@/api/couple';
 import { useHolidayExtras } from '@/api/holidays';
 import { useSession } from '@/api/auth';
 import { FilterChip } from '@/components/FilterChip';
-import { MonthGrid, type DayMarks } from '@/components/calendar/MonthGrid';
+import { MonthGrid, type DayMarks, type DaySpan } from '@/components/calendar/MonthGrid';
 import { DayAgenda } from '@/components/calendar/DayAgenda';
 
 type Filter = 'us' | 'me' | 'partner';
@@ -41,6 +42,40 @@ export default function Calendar() {
     [month, holidayExtras.data],
   );
 
+  /** 필터를 통과한 일정 — 셀 칩과 막대가 같은 목록을 본다 */
+  const visibleEvents = useMemo(
+    () =>
+      (events.data ?? []).filter((e) => {
+        if (!e.starts_at || !e.owner_id) return false;
+        const who: Filter = e.owner_id === uid ? 'me' : 'partner';
+        return filter === 'us' || filter === who;
+      }),
+    [events.data, filter, uid],
+  );
+
+  /** 여러 날 일정 → 주별 막대. 이르게 시작하고 긴 것부터 위 칸을 잡는다 */
+  const spans = useMemo((): DaySpan[] => {
+    const gridDates = cells.map((c) => c.date);
+    const multi = visibleEvents
+      .map((e) => ({ e, ...eventDayRange(e.starts_at!, e.ends_at) }))
+      .filter((x) => daySpan(x.from, x.to) > 1)
+      .sort((a, b) => a.from.localeCompare(b.from) || daySpan(b.from, b.to) - daySpan(a.from, a.to));
+
+    return assignLanes(
+      multi.map((x) => ({
+        key: x.e.id!,
+        segments: spanSegments(gridDates, x.from, x.to),
+        value: x.e,
+      })),
+    ).map((p) => ({
+      key: p.key,
+      title: p.value.title ?? '일정',
+      color: toEventColor(p.value.color),
+      segment: p.segment,
+      lane: p.lane,
+    }));
+  }, [cells, visibleEvents]);
+
   const marks = useMemo(() => {
     const map: Record<string, DayMarks> = {};
     const at = (d: string) => (map[d] ??= {});
@@ -60,16 +95,15 @@ export default function Calendar() {
       const occ = occurrenceInMonth(a.date, a.repeatYearly, month);
       if (occ) at(occ).annivLabel = a.label;
     }
-    for (const e of events.data ?? []) {
-      if (!e.starts_at || !e.owner_id) continue;
-      const day = toKSTDate(new Date(e.starts_at));
-      const who: Filter = e.owner_id === uid ? 'me' : 'partner';
-      if (filter !== 'us' && filter !== who) continue;
-      const m = at(day);
+    // 하루짜리만 셀 안 칩으로 — 여러 날은 아래 spans에서 막대로 간다
+    for (const e of visibleEvents) {
+      const { from, to } = eventDayRange(e.starts_at!, e.ends_at);
+      if (daySpan(from, to) > 1) continue;
+      const m = at(from);
       m.events = [...(m.events ?? []), { title: e.title ?? '일정', color: toEventColor(e.color) }];
     }
     return map;
-  }, [holidays, tracks.data, annivs.data, events.data, month, filter, uid]);
+  }, [holidays, tracks.data, annivs.data, visibleEvents, month]);
 
   const lbl = monthLabel(month);
   const partnerName = profiles.data?.partner?.nickname || '상대';
@@ -124,15 +158,17 @@ export default function Calendar() {
         </View>
 
       <View style={{ flex: 1, marginTop: 8 }}>
-        <MonthGrid cells={cells} marks={marks} selected={selected} onSelectDay={setSelected} />
+        <MonthGrid cells={cells} marks={marks} spans={spans} selected={selected} onSelectDay={setSelected} />
       </View>
 
       <View style={{ height: '30%', borderTopWidth: 1, borderTopColor: color.surface2 }}>
         <DayAgenda
           date={selected}
-          events={(events.data ?? []).filter(
-            (e) => e.starts_at && toKSTDate(new Date(e.starts_at)) === selected,
-          )}
+          events={visibleEvents.filter((e) => {
+            // 여러 날 일정은 걸친 모든 날의 아젠다에 뜬다 — 시작일에만 뜨면 여행 중엔 빈 날로 보인다
+            const { from, to } = eventDayRange(e.starts_at!, e.ends_at);
+            return from <= selected && selected <= to;
+          })}
           tracks={(tracks.data ?? []).filter((t) => t.date === selected)}
           annivs={(annivs.data ?? []).filter(
             (a) => occurrenceInMonth(a.date, a.repeatYearly, month) === selected,

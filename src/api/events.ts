@@ -31,11 +31,13 @@ export function useMonthEvents(monthKey: string) {
       const [y, m] = monthKey.split('-').map(Number);
       const from = new Date(Date.UTC(y, m - 1, 1, -9)).toISOString();
       const to = new Date(Date.UTC(y, m, 1, -9)).toISOString();
+      // 여러 날 일정은 지난달에 시작해 이번 달로 넘어올 수 있다 — starts_at만 보면 통째로 사라진다.
+      // "이 달이 시작되기 전에 시작했고 아직 안 끝난" 것까지 집는다 (ends_at 없으면 하루짜리).
       const { data, error } = await supabase
         .from('events_visible')
         .select('*')
-        .gte('starts_at', from)
         .lt('starts_at', to)
+        .or(`ends_at.gte.${from},and(ends_at.is.null,starts_at.gte.${from})`)
         .order('starts_at');
       if (error) throw error;
       return data;

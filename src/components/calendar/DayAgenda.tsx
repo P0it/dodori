@@ -3,6 +3,7 @@ import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { color, eventColor, toEventColor, typeface } from '@/theme/tokens';
 import { formatDday, todayKST } from '@/lib/date';
+import { daySpan, eventDayRange } from '@/lib/span';
 import type { VisibleEvent } from '@/api/events';
 import type { MonthTrack } from '@/api/tracks';
 import type { AnnivItem } from '@/api/anniversaries';
@@ -24,6 +25,15 @@ type Props = {
 };
 
 const WEEKDAY = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
+
+function kstHHmm(iso: string): string {
+  return new Date(iso).toLocaleTimeString('ko-KR', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    timeZone: 'Asia/Seoul',
+  });
+}
 
 /** 선택일 어젠다 — 캘린더 그리드 아래에 상주한다 (목업 18·19 본문) */
 export function DayAgenda({ date, events, tracks, annivs, name, avatarUrl }: Props) {
@@ -133,14 +143,15 @@ export function DayAgenda({ date, events, tracks, annivs, name, avatarUrl }: Pro
       ) : (
         events.map((e) => {
           const tint = eventColor[toEventColor(e.color)];
-          const time = e.all_day
-            ? '종일'
-            : new Date(e.starts_at!).toLocaleTimeString('ko-KR', {
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: false,
-                timeZone: 'Asia/Seoul',
-              });
+          const { from, to } = eventDayRange(e.starts_at!, e.ends_at);
+          const total = daySpan(from, to);
+          // 여러 날 일정은 이 날이 며칠째인지가 시각보다 중요하다 — 3일째 아침에 '19:00'은 거짓말이다
+          const time =
+            total > 1
+              ? `${daySpan(from, date)}/${total}일`
+              : e.all_day
+                ? '종일'
+                : kstHHmm(e.starts_at!);
           return (
             <Pressable
               key={e.id}
@@ -149,7 +160,9 @@ export function DayAgenda({ date, events, tracks, annivs, name, avatarUrl }: Pro
             >
               {/* 일정 색 — 사람이 아니라 이 일정의 색 */}
               <View style={{ width: 3, alignSelf: 'stretch', borderRadius: 2, backgroundColor: tint.fg }} />
-              <Text style={{ fontFamily: typeface, fontSize: 11, color: color.sub, width: 36 }}>{time}</Text>
+              <Text numberOfLines={1} style={{ fontFamily: typeface, fontSize: 11, color: color.sub, width: 44 }}>
+                {time}
+              </Text>
               <View style={{ flex: 1 }}>
                 <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 15, color: color.white }}>
                   {e.title}

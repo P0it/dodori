@@ -110,6 +110,10 @@ Windows 작업 트리에서는 iOS 빌드가 불가능하다. 맥미니에 같�
 - 탭바는 커스텀 4탭 (`CoupleTabBar`) — NextUp 미니플레이어는 제거됨. 진입 첫 화면은 `home`
 - **홈**: 하루 한 개의 대화주제. 내가 투표해야 상대 답이 열린다 (`lib/topics.ts`, 주제는 커플별 `seq` 순차 배정)
 - 캘린더 월간 그리드는 라이브러리 없이 자체 구현 (`components/calendar/MonthGrid.tsx`) + 그 아래 인라인 아젠다
+- **여러 날 일정**은 셀 안 칩이 아니라 셀 위를 가로지르는 **막대**(구글 캘린더식). 기하 계산은 전부
+  `lib/span.ts`(순수·테스트 대상) — 주별 토막 나누기(`spanSegments`)·겹침 칸 배정(`assignLanes`).
+  종일 일정의 `ends_at`은 **마지막 날 23:59:59**로 저장한다(그 날을 포함시키려고).
+  `useMonthEvents`는 `starts_at`만 보면 안 된다 — 지난달에 시작해 넘어오는 일정을 놓친다
 - 공휴일: `lib/holidays.ts`가 규칙으로 계산(양력 고정 + KASI 음양력 변환 + 대체공휴일, ~2050).
   계산 불가능한 임시공휴일·선거일만 `holidays_extra` 테이블 + `sync-holidays` cron이 채운다
 - **오늘의 게임**: 홈 카드 → `/game`. 종목 7개는 요일 고정(`lib/games.ts`, epochDay+3 → 월=0),
