@@ -1,5 +1,5 @@
 import { monthCells } from '../calendar';
-import { assignLanes, daySpan, eventDayRange, laneCounts, spanDays, spanSegments } from '../span';
+import { assignLanes, daySpan, eventDayRange, laneCounts, rowBudget, spanDays, spanSegments } from '../span';
 
 // 2026-08은 1일(토)로 시작 → 그리드 첫 칸은 7/26(일)
 const CELLS = monthCells('2026-08', new Date('2026-08-04T00:00:00Z')).map((c) => c.date);
@@ -135,5 +135,24 @@ describe('laneCounts', () => {
       { segment: { week: 2, startCol: 0, endCol: 1, continuesLeft: false, continuesRight: false }, lane: 0 },
     ];
     expect(laneCounts(placed, 4)).toEqual([3, 0, 1, 0]);
+  });
+});
+
+describe('rowBudget', () => {
+  it('다 들어가면 예산을 그대로 쓴다', () => {
+    expect(rowBudget(4, 1, 2)).toEqual({ lanes: 1, marks: 3 });
+  });
+
+  it('넘치면 마지막 한 줄을 "+N" 몫으로 비운다', () => {
+    // 4줄 예산에 막대 1 + 칩 4 → 3줄만 쓰고 한 줄은 +N
+    expect(rowBudget(4, 1, 4)).toEqual({ lanes: 1, marks: 2 });
+  });
+
+  it('막대가 예산을 다 먹어도 +N 자리는 남긴다', () => {
+    expect(rowBudget(3, 5, 0)).toEqual({ lanes: 2, marks: 0 });
+  });
+
+  it('셀이 아무리 낮아도 한 줄은 준다', () => {
+    expect(rowBudget(0, 3, 2)).toEqual({ lanes: 1, marks: 0 });
   });
 });

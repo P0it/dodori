@@ -106,6 +106,26 @@ export function assignLanes<T>(
   return out;
 }
 
+/**
+ * 한 주의 세로 예산(줄 수)을 막대 칸과 셀 안 칩에 나눈다.
+ *
+ * 셀 높이는 달마다 고정인데 일정 수는 아니다 — 넘치는 걸 그대로 그리면 칩이 셀 밖으로
+ * 삐져나가거나 잘린 채 다음 주와 겹친다. 넘칠 땐 마지막 한 줄을 "+N" 몫으로 비운다.
+ * 막대(주 전체를 가로지름)를 칩보다 먼저 채운다 — 칸이 밀리면 이웃 셀의 같은 일정까지 어긋난다.
+ */
+export function rowBudget(
+  maxRows: number,
+  laneCount: number,
+  /** 이 주의 셀 하나가 요구하는 칩 수의 최댓값 — 한 주는 줄 높이를 공유한다 */
+  maxMarks: number,
+): { lanes: number; marks: number } {
+  const rows = Math.max(1, maxRows);
+  const overflow = laneCount + maxMarks > rows;
+  const budget = Math.max(1, overflow ? rows - 1 : rows);
+  const lanes = Math.min(laneCount, budget);
+  return { lanes, marks: budget - lanes };
+}
+
 /** 주별 막대 칸 수 — 셀 안 마커를 그만큼 아래로 밀어야 한다 */
 export function laneCounts(
   placed: { segment: SpanSegment; lane: number }[],
