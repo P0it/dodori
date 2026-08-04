@@ -210,14 +210,21 @@ function TrackBody({ t }: { t: TrackDetail }) {
   );
 
   // 아카이브: 사진 (목업 12·13) — 발매 전이라도 그날 스토리가 담기면 여기 채워진다
-  const photoArchive = (released || t.photos.length > 0) && (
+  // 탭이 뜨는 조건 — 섹션이 자기 제목을 또 그릴지 여기서 갈린다
+  // (탭 없이 코스만 나오는 계획-only 날에는 "코스" 제목이 있어야 한다)
+  const tabbed = released || t.photos.length > 0;
+  const photoArchive = tabbed && (
     <View style={{ paddingHorizontal: 20, paddingTop: 22 }}>
       <View
         style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}
       >
-        <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 17, color: color.white }}>
-          사진 <Text style={{ color: color.sub, fontFamily: typeface, fontWeight: '500' }}>{t.photos.length}</Text>
-        </Text>
+        {tabbed ? (
+          <View />
+        ) : (
+          <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 17, color: color.white }}>
+            사진 <Text style={{ color: color.sub, fontFamily: typeface, fontWeight: '500' }}>{t.photos.length}</Text>
+          </Text>
+        )}
         {t.photos.length > 0 && (
           <Pressable onPress={() => router.push(`/track/${t.id}/gallery`)}>
             <Text style={{ fontSize: 12.5, color: color.accent, fontFamily: typeface, fontWeight: '600' }}>
@@ -268,7 +275,13 @@ function TrackBody({ t }: { t: TrackDetail }) {
   const courseSection = (
     <View style={{ paddingHorizontal: 20, paddingTop: 22 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 17, color: color.white }}>코스</Text>
+        {tabbed ? (
+          <View />
+        ) : (
+          <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 17, color: color.white }}>
+            코스
+          </Text>
+        )}
         {hasPins && (
           <Pressable
             onPress={() => router.push(`/track/${t.id}/map`)}
@@ -478,7 +491,11 @@ function TrackBody({ t }: { t: TrackDetail }) {
           <>
             <View style={{ flexDirection: 'row', paddingHorizontal: 20, paddingTop: 6 }}>
               <TrackTab label="코스" active={tab === 'course'} onPress={() => setTab('course')} />
-              <TrackTab label="사진" active={tab === 'photos'} onPress={() => setTab('photos')} />
+              <TrackTab
+                label={t.photos.length ? `사진 ${t.photos.length}` : '사진'}
+                active={tab === 'photos'}
+                onPress={() => setTab('photos')}
+              />
             </View>
             {tab === 'course' ? courseSection : photoArchive}
           </>
@@ -584,8 +601,9 @@ function TrackBody({ t }: { t: TrackDetail }) {
 }
 
 /**
- * 코스·사진 탭 — 활성은 흰 글자 + accent 밑줄, 비활성은 muted 글자.
- * pill 채움을 쓰지 않는다 (색 면이 하나 더 늘면 히어로·D-day 배지와 강조가 겹친다).
+ * 코스·사진 탭 — 활성은 흰 pill(검은 글자), 비활성은 surface2 위 sub 글자.
+ * FilterChip과 같은 언어다 — 흰 면은 앱에서 유일한 최상위 강조라 어느 쪽이 켜졌는지 바로 읽힌다.
+ * (핑크 pill은 톤에서 튀었고, 밑줄만으로는 눈에 덜 띈다)
  */
 function TrackTab({
   label,
@@ -597,25 +615,29 @@ function TrackTab({
   onPress: () => void;
 }) {
   return (
-    <Pressable onPress={onPress} style={{ paddingTop: 8, paddingHorizontal: 4, marginRight: 12 }}>
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => ({
+        height: 32,
+        paddingHorizontal: 16,
+        borderRadius: 999,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 8,
+        backgroundColor: active ? color.white : color.surface2,
+        opacity: pressed ? 0.8 : 1,
+      })}
+    >
       <Text
         style={{
           fontFamily: typeface,
           fontWeight: '700',
-          fontSize: 15,
-          color: active ? color.white : color.muted,
-          paddingBottom: 7,
+          fontSize: 13.5,
+          color: active ? color.bg : color.sub,
         }}
       >
         {label}
       </Text>
-      <View
-        style={{
-          height: 2,
-          borderRadius: 1,
-          backgroundColor: active ? color.accent : 'transparent',
-        }}
-      />
     </Pressable>
   );
 }
