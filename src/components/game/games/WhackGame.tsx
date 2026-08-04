@@ -87,7 +87,10 @@ function Hole({ active, onHit }: { active: boolean; onHit: () => void }) {
 
   return (
     <Pressable
-      onPress={() => {
+      // 손을 뗄 때(onPress) 판정하면 두더지가 600ms마다 제멋대로 옮겨가므로 누른 뒤
+      // 떼기 전에 옮겨간 탭이 버려진다. ScrollView 안이라 손가락이 조금만 밀려도
+      // ScrollView가 responder를 가져가 onPress 자체가 취소된다 — 닿는 순간 판정한다
+      onPressIn={() => {
         if (!active) return;
         // 맞은 순간 즉시 움츠러들게 — 다음 칸으로 넘어가기 전에 반응이 보인다
         pop.value = withSequence(withTiming(1.15, { duration: 60 }), withTiming(0, { duration: 90 }));
