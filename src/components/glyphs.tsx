@@ -488,3 +488,14 @@ export function CloseGlyph({ size = 18, color: fg = color.sub }: GlyphProps) {
     </Svg>
   );
 }
+
+/** 더보기(⋯) — 상단 바 우측 액션 */
+export function DotsGlyph({ size = 20, color: fg = color.sub }: GlyphProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill={fg}>
+      <Circle cx={5} cy={12} r={1.9} />
+      <Circle cx={12} cy={12} r={1.9} />
+      <Circle cx={19} cy={12} r={1.9} />
+    </Svg>
+  );
+}

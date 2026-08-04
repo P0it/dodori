@@ -10,6 +10,7 @@ import {
 import { TopBar } from '@/components/TopBar';
 import { Meta } from '@/components/Meta';
 import { PlaylistTile } from '@/components/playlist/PlaylistTile';
+import { ChevronGlyph, DotsGlyph } from '@/components/glyphs';
 
 /** 테마(커스텀) 플레이리스트 상세 (목업 P1) — 데이트가 아니라 장소를 모은다 */
 export default function CustomPlaylist() {
@@ -22,7 +23,6 @@ export default function CustomPlaylist() {
   const p = detail.data;
   // 찜은 커플당 하나뿐이고 다시 만들 수 없다 — 삭제 진입점 자체를 감춘다(DB 트리거가 최종 방어)
   const isSaved = p?.kind === 'saved';
-  const totalVisits = p?.places.reduce((n, pl) => n + pl.visitCount, 0) ?? 0;
 
   const onDelete = () =>
     Alert.alert('리스트 삭제', '장소 목록만 삭제되고 기록은 남아요.', [
@@ -40,8 +40,13 @@ export default function CustomPlaylist() {
         title={p?.name ?? ''}
         right={
           isSaved ? undefined : (
-            <Pressable hitSlop={8} onPress={onDelete}>
-              <Text style={{ fontFamily: typeface, color: color.sub, fontSize: 18 }}>⋯</Text>
+            // hitSlop으로 키우면 부모(폭 22) 밖으로 나간 영역이 안드로이드에서 잘려 눌리지 않는다.
+            // 실제 크기를 44로 준다.
+            <Pressable
+              onPress={onDelete}
+              style={{ width: 44, height: 44, alignItems: 'flex-end', justifyContent: 'center' }}
+            >
+              <DotsGlyph />
             </Pressable>
           )
         }
@@ -52,9 +57,7 @@ export default function CustomPlaylist() {
           <Text style={{ fontFamily: typeface, fontWeight: '800', fontSize: 24, color: color.white, marginTop: 16 }}>
             {p?.name}
           </Text>
-          <Meta style={{ marginTop: 6 }}>
-            리스트 · 장소 {p?.places.length ?? 0}곳 · 방문 {totalVisits}회
-          </Meta>
+          <Meta style={{ marginTop: 6 }}>리스트 · 장소 {p?.places.length ?? 0}곳</Meta>
         </View>
 
         <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
@@ -118,11 +121,9 @@ export default function CustomPlaylist() {
                     </Text>
                   )}
                 </View>
-                <Meta style={{ marginTop: 3, fontSize: 12.5 }}>
-                  {pl.category ?? '장소'} · 방문 {pl.visitCount}회
-                </Meta>
+                <Meta style={{ marginTop: 3, fontSize: 12.5 }}>{pl.category ?? '장소'}</Meta>
               </View>
-              <Text style={{ fontFamily: typeface, color: color.muted }}>›</Text>
+              <ChevronGlyph size={22} color={color.sub} />
             </Pressable>
           ))}
           <Pressable

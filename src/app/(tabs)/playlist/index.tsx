@@ -14,6 +14,7 @@ import { Eyebrow } from '@/components/Eyebrow';
 import { AlbumCarousel } from '@/components/AlbumCarousel';
 import { RecommendStrip } from '@/components/playlist/RecommendStrip';
 import { PlaylistTile } from '@/components/playlist/PlaylistTile';
+import { ChevronGlyph } from '@/components/glyphs';
 
 /** 플레이리스트 탭 루트 (목업 07) */
 export default function PlaylistRoot() {
@@ -121,7 +122,7 @@ export default function PlaylistRoot() {
               <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 15, color: color.white }}>{p.name}</Text>
               <Meta style={{ marginTop: 2, fontSize: 12.5 }}>장소 {p.placeCount}곳</Meta>
             </View>
-            <Text style={{ fontFamily: typeface, color: color.muted }}>›</Text>
+            <ChevronGlyph size={22} color={color.sub} />
           </Pressable>
         ))}
       </View>
