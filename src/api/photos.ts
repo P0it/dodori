@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as Crypto from 'expo-crypto';
+import { cropRect } from '@/lib/stories';
 import { supabase } from './supabase';
 import { useMyCouple } from './couple';
 
@@ -134,6 +135,34 @@ async function resizeForUpload(photo: PickedPhoto) {
     compress: 0.8,
   });
   return result; // { uri, width, height }
+}
+
+/**
+ * 스토리 편집 캔버스에 보이던 만큼만 잘라낸다 — 변환값을 저장하는 대신 여기서 확정한다.
+ * 이래야 뷰어·피드·보관함이 크롭을 몰라도 되고, 텍스트의 0~1 좌표가 그대로 맞는다.
+ */
+export async function cropToCanvas(
+  photo: PickedPhoto,
+  crop: { canvasWidth: number; canvasHeight: number; scale: number; tx: number; ty: number },
+): Promise<PickedPhoto> {
+  const r = cropRect(
+    photo.width,
+    photo.height,
+    crop.canvasWidth,
+    crop.canvasHeight,
+    crop.scale,
+    crop.tx,
+    crop.ty,
+  );
+  if (r.width <= 0 || r.height <= 0) return photo;
+  const ctx = ImageManipulator.ImageManipulator.manipulate(photo.uri);
+  ctx.crop({ originX: r.x, originY: r.y, width: r.width, height: r.height });
+  const rendered = await ctx.renderAsync();
+  const out = await rendered.saveAsync({
+    format: ImageManipulator.SaveFormat.JPEG,
+    compress: 0.9,
+  });
+  return { uri: out.uri, width: out.width, height: out.height, takenAt: photo.takenAt };
 }
 
 /** 사진의 부모 — 트랙(데이트)·post(게시물)·story(스토리). photos 테이블은 셋 중 하나만 가진다 */

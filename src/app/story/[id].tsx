@@ -8,6 +8,7 @@ import {
   Text,
   TextInput,
   View,
+  type ViewStyle,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -39,6 +40,48 @@ import { StoryCommentBubble } from '@/components/story/StoryCommentBubble';
 /** 한 칸이 머무는 시간 */
 const STEP_MS = 5000;
 const TICK_MS = 50;
+/** 이만큼 누르고 있으면 넘기려는 게 아니라 멈춰서 보려는 것 */
+const HOLD_MS = 220;
+
+/**
+ * 사진 위 좌·우 절반 — 짧게 누르면 넘기고, 꾹 누르고 있으면 멈춘다.
+ * onLongPress는 "누르고 있는 동안"을 알려주지 않아 직접 잰다.
+ */
+function TapZone({
+  style,
+  onTap,
+  onHold,
+}: {
+  style: ViewStyle;
+  onTap: () => void;
+  onHold: (on: boolean) => void;
+}) {
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const held = useRef(false);
+
+  return (
+    <Pressable
+      style={[{ position: 'absolute', top: 0, bottom: 0 }, style]}
+      onPressIn={() => {
+        timer.current = setTimeout(() => {
+          held.current = true;
+          onHold(true);
+        }, HOLD_MS);
+      }}
+      // 넘길지 멈춤을 풀지는 뗄 때 정한다 — onPress는 onPressOut 뒤에 와서 판정이 늦다
+      onPressOut={() => {
+        if (timer.current) clearTimeout(timer.current);
+        timer.current = null;
+        if (held.current) {
+          held.current = false;
+          onHold(false);
+        } else {
+          onTap();
+        }
+      }}
+    />
+  );
+}
 
 /**
  * 스토리 뷰어 — 전체화면 1장. 좌우 탭으로 이동, 아래로 밀면 닫힌다.
@@ -72,8 +115,12 @@ export default function StoryViewer() {
   const [progress, setProgress] = useState(0);
   const [frame, setFrame] = useState({ width: 0, height: 0 });
   const [reply, setReply] = useState('');
-  // 답장을 쓰는 동안 다음 스토리로 넘어가 버리면 쓰던 말이 엉뚱한 사진에 붙는다
-  const [paused, setPaused] = useState(false);
+  // 답장을 쓰는 동안 다음 스토리로 넘어가 버리면 쓰던 말이 엉뚱한 사진에 붙는다.
+  // 꾹 누르고 있는 동안에도 멈춘다 (hold)
+  const [pausedBy, setPausedBy] = useState({ reply: false, hold: false });
+  const paused = pausedBy.reply || pausedBy.hold;
+  // 멈췄다 풀었을 때 이어서 가야 한다 — 이 칸에서 이미 흘러간 시간
+  const elapsed = useRef(0);
   // 목록이 늦게 도착해도 진입 스토리에서 시작하도록, 처음 한 번만 위치를 맞춘다
   const aligned = useRef(false);
   useEffect(() => {
@@ -85,13 +132,20 @@ export default function StoryViewer() {
 
   const current = list[index];
 
-  // 자동 진행 — 마지막 칸이 끝나면 닫는다. 답장을 쓰는 동안엔 멈춘다
+  // 칸이 바뀌면 처음부터 — 멈췄다 푸는 것과 구분해야 이어보기가 성립한다
+  useEffect(() => {
+    elapsed.current = 0;
+    setProgress(0);
+  }, [current?.id]);
+
+  // 자동 진행 — 마지막 칸이 끝나면 닫는다. 답장을 쓰거나 꾹 누르는 동안엔 멈춘다
   useEffect(() => {
     if (!current || paused) return;
-    setProgress(0);
-    const started = Date.now();
+    const resumedAt = Date.now();
+    const from = elapsed.current;
     const timer = setInterval(() => {
-      const p = (Date.now() - started) / STEP_MS;
+      elapsed.current = from + (Date.now() - resumedAt);
+      const p = elapsed.current / STEP_MS;
       if (p >= 1) {
         clearInterval(timer);
         if (index + 1 < list.length) setIndex(index + 1);
@@ -121,6 +175,10 @@ export default function StoryViewer() {
       </View>
     );
   }
+
+  // 꾹 누르는 동안은 사진만 남긴다 — 가린 것 없이 보려고 누르는 것이므로
+  const hold = (on: boolean) => setPausedBy((p) => ({ ...p, hold: on }));
+  const chrome = pausedBy.hold ? 0 : 1;
 
   const isMine = current.authorId === uid;
   const profile = isMine ? profiles.data?.me : profiles.data?.partner;
@@ -193,17 +251,20 @@ export default function StoryViewer() {
           />
         </View>
 
-        {/* 좌우 탭 이동 — 사진 위 전면을 반씩 나눠 덮는다 */}
-        <Pressable style={{ position: 'absolute', top: 90, bottom: 120, left: 0, width: '32%' }} onPress={() => go(-1)} />
-        <Pressable style={{ position: 'absolute', top: 90, bottom: 120, right: 0, width: '32%' }} onPress={() => go(1)} />
+        {/* 좌우 탭 이동 + 꾹 눌러 멈추기 — 전면을 덮고, 위아래 UI가 그 위에 얹힌다 */}
+        <TapZone style={{ left: 0, width: '30%' }} onTap={() => go(-1)} onHold={hold} />
+        <TapZone style={{ right: 0, width: '70%' }} onTap={() => go(1)} onHold={hold} />
 
         {/* 상단 — 진행바 + 작성자 */}
         <LinearGradient
           colors={['rgba(0,0,0,0.65)', 'transparent']}
-          style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 140 }}
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 140, opacity: chrome }}
           pointerEvents="none"
         />
-        <View style={{ paddingHorizontal: space[3], paddingTop: space[3] }}>
+        <View
+          style={{ paddingHorizontal: space[3], paddingTop: space[3], opacity: chrome }}
+          pointerEvents={pausedBy.hold ? 'none' : 'auto'}
+        >
           <StoryProgress count={list.length} index={index} progress={progress} />
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 9, marginTop: 12 }}>
             <Avatar url={profile?.avatar_url ?? null} name={profile?.nickname || (isMine ? '나' : '상대')} size={30} />
@@ -230,12 +291,13 @@ export default function StoryViewer() {
         {/* 하단 — 앨범 배지 + 캡션 + 답장 말풍선 + 입력 */}
         <LinearGradient
           colors={['transparent', 'rgba(0,0,0,0.75)']}
-          style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 260 }}
+          style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 260, opacity: chrome }}
           pointerEvents="none"
         />
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          style={{ position: 'absolute', left: 0, right: 0, bottom: 0 }}
+          style={{ position: 'absolute', left: 0, right: 0, bottom: 0, opacity: chrome }}
+          pointerEvents={pausedBy.hold ? 'none' : 'box-none'}
         >
           <View style={{ paddingHorizontal: space[4], paddingBottom: space[3], gap: 8 }}>
             {!!current.caption && (
@@ -286,8 +348,8 @@ export default function StoryViewer() {
             <TextInput
               value={reply}
               onChangeText={setReply}
-              onFocus={() => setPaused(true)}
-              onBlur={() => setPaused(false)}
+              onFocus={() => setPausedBy((p) => ({ ...p, reply: true }))}
+              onBlur={() => setPausedBy((p) => ({ ...p, reply: false }))}
               onSubmitEditing={send}
               returnKeyType="send"
               placeholder="답장 남기기"

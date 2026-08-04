@@ -167,6 +167,76 @@ export interface Rect {
   height: number;
 }
 
+// ============================================================
+// 편집 캔버스 (사진 확대·이동 → 크롭)
+// ============================================================
+
+/** 편집 캔버스 비율 — 인스타 스토리와 같은 9:16 */
+export const STORY_ASPECT = 9 / 16;
+/** cover 배율 대비 최대 확대 */
+export const CANVAS_ZOOM_MAX = 4;
+
+/**
+ * 캔버스를 빈틈없이 덮는 최소 배율.
+ * contain(=Math.min)이 아니라 cover(=Math.max)인 이유: 스토리는 여백 없이 꽉 차야 한다.
+ */
+export function coverScale(
+  photoW: number,
+  photoH: number,
+  canvasW: number,
+  canvasH: number,
+): number {
+  if (photoW <= 0 || photoH <= 0) return 1;
+  return Math.max(canvasW / photoW, canvasH / photoH);
+}
+
+/**
+ * 이동량을 사진이 캔버스를 계속 덮는 범위로 자른다.
+ * 여기서 자르지 않으면 끌어낸 자리에 검은 여백이 생기고 그 여백이 그대로 구워진다.
+ * `scale`은 cover 대비 배율(1이면 딱 덮는 상태)이라 1일 때 여유는 축마다 0 이상이다.
+ */
+export function clampPan(
+  photoW: number,
+  photoH: number,
+  canvasW: number,
+  canvasH: number,
+  scale: number,
+  tx: number,
+  ty: number,
+): { tx: number; ty: number } {
+  const s = coverScale(photoW, photoH, canvasW, canvasH) * scale;
+  const slackX = Math.max(0, (photoW * s - canvasW) / 2);
+  const slackY = Math.max(0, (photoH * s - canvasH) / 2);
+  return { tx: clamp(tx, -slackX, slackX), ty: clamp(ty, -slackY, slackY) };
+}
+
+/**
+ * 캔버스에 보이는 영역 → 원본 픽셀 사각형 (expo-image-manipulator의 crop 인자).
+ * 사진은 중심을 캔버스 중심에 맞춘 뒤 `scale`만큼 키우고 `tx/ty`만큼 민 상태다.
+ */
+export function cropRect(
+  photoW: number,
+  photoH: number,
+  canvasW: number,
+  canvasH: number,
+  scale: number,
+  tx: number,
+  ty: number,
+): Rect {
+  const s = coverScale(photoW, photoH, canvasW, canvasH) * scale;
+  // 캔버스 한 변이 원본에서 차지하는 길이 — 원본보다 클 수는 없다
+  const width = Math.min(photoW, canvasW / s);
+  const height = Math.min(photoH, canvasH / s);
+  const originX = clamp(photoW / 2 - tx / s - width / 2, 0, photoW - width);
+  const originY = clamp(photoH / 2 - ty / s - height / 2, 0, photoH - height);
+  return {
+    x: Math.round(originX),
+    y: Math.round(originY),
+    width: Math.round(width),
+    height: Math.round(height),
+  };
+}
+
 /**
  * 프레임 안에 사진을 contain으로 놓았을 때 사진이 실제로 차지하는 사각형.
  * 텍스트는 프레임이 아니라 **사진**에 붙어야 하므로, 편집 화면과 뷰어 양쪽이 이 사각형을 기준으로 찍는다.

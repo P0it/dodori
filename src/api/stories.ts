@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from './supabase';
 import { useMyCouple } from './couple';
-import { signedThumbUrl, uploadPhotos, type PickedPhoto } from './photos';
+import { cropToCanvas, signedThumbUrl, uploadPhotos, type PickedPhoto } from './photos';
 import { parseOverlays, type TextOverlay } from '@/lib/stories';
 import type { Json } from '@/types/database.types';
 
@@ -135,10 +135,13 @@ export function useCreateStory() {
   return useMutation({
     mutationFn: async ({
       photo,
+      crop,
       trackId,
       overlays,
     }: {
       photo: PickedPhoto;
+      /** 편집 캔버스에서 잡은 구도 — 올릴 때 그대로 잘라 굽는다 */
+      crop: { canvasWidth: number; canvasHeight: number; scale: number; tx: number; ty: number };
       trackId: string | null;
       overlays: TextOverlay[];
     }) => {
@@ -158,7 +161,7 @@ export function useCreateStory() {
         .single();
       if (error) throw error;
       const storyId = data.id as string;
-      await uploadPhotos({ storyId }, couple.data.coupleId, [photo]);
+      await uploadPhotos({ storyId }, couple.data.coupleId, [await cropToCanvas(photo, crop)]);
       return storyId;
     },
     onSuccess: (_id, vars) => {
