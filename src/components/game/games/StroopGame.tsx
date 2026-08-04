@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -20,22 +20,24 @@ const WORDS = [
   { label: '노랑', key: 'yellow', hex: color.anniv },
 ];
 
+/** 뜻과 색이 같으면 함정이 성립하지 않아 반드시 어긋나게 뽑는다. */
+function nextQuestion() {
+  const w = Math.floor(Math.random() * WORDS.length);
+  let i = Math.floor(Math.random() * WORDS.length);
+  if (i === w) i = (i + 1) % WORDS.length;
+  return { word: WORDS[w], ink: WORDS[i] };
+}
+
 /** 글자의 뜻이 아니라 '글자색'을 고른다. 제한 시간 안에 맞힌 수. */
 export default function StroopGame({ onFinish }: GameProps) {
-  const [n, setN] = useState(0);
+  // 문제는 state로 든다 — useMemo는 React Compiler가 의존성을 다시 추론해
+  // (콜백이 카운터를 읽지 않으므로) 최초 1회만 계산하고 영영 갱신되지 않는다
+  const [{ word, ink }, setQuestion] = useState(nextQuestion);
   const [score, setScore] = useState(0);
   const [left, setLeft] = useState(DURATION);
   const done = useRef(false);
   const enter = useSharedValue(1);
   const shake = useSharedValue(0);
-
-  // 문제마다 새로 뽑는다. 뜻과 색이 같으면 함정이 성립하지 않아 반드시 어긋나게 한다.
-  const { word, ink } = useMemo(() => {
-    const w = Math.floor(Math.random() * WORDS.length);
-    let i = Math.floor(Math.random() * WORDS.length);
-    if (i === w) i = (i + 1) % WORDS.length;
-    return { word: WORDS[w], ink: WORDS[i] };
-  }, [n]);
 
   useEffect(() => {
     const tick = setInterval(() => setLeft((l) => Math.max(0, l - 100)), 100);
@@ -63,7 +65,7 @@ export default function StroopGame({ onFinish }: GameProps) {
         withTiming(0, { duration: 45 }),
       );
     }
-    setN((v) => v + 1);
+    setQuestion(nextQuestion());
   }
 
   const prompt = useAnimatedStyle(() => ({
