@@ -1,6 +1,14 @@
 import { useMemo, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, Text, useWindowDimensions, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, {
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 import Svg, { Path } from 'react-native-svg';
 import { color, toEventColor, typeface } from '@/theme/tokens';
 import { monthCells, addMonths, monthLabel } from '@/lib/calendar';
@@ -105,6 +113,35 @@ export default function Calendar() {
   const partnerName = profiles.data?.partner?.nickname || '상대';
   const myName = profiles.data?.me?.nickname || '나';
 
+  // 그리드 좌우 스와이프로 달 넘기기 — 화살표는 작아서 조준이 필요하다.
+  // 아젠다(세로 스크롤)와 싸우지 않게 그리드 영역에만 붙이고, 세로로 먼저 움직이면 제스처를 포기한다.
+  const { width: screenW } = useWindowDimensions();
+  const tx = useSharedValue(0);
+  const gridStyle = useAnimatedStyle(() => ({ transform: [{ translateX: tx.value }] }));
+  const goMonth = (delta: number) => {
+    setMonth((m) => addMonths(m, delta));
+    // 새 달은 나간 쪽 반대편에서 밀려 들어온다
+    tx.value = delta > 0 ? screenW : -screenW;
+    tx.value = withTiming(0, { duration: 180 });
+  };
+  const swipe = Gesture.Pan()
+    .activeOffsetX([-14, 14])
+    .failOffsetY([-14, 14])
+    .onUpdate((e) => {
+      tx.value = e.translationX;
+    })
+    .onEnd((e) => {
+      // 충분히 끌었거나 빠르게 튕겼으면 넘긴다
+      if (Math.abs(e.translationX) > screenW * 0.22 || Math.abs(e.velocityX) > 700) {
+        const delta = e.translationX < 0 ? 1 : -1;
+        tx.value = withTiming(delta > 0 ? -screenW : screenW, { duration: 120 }, () =>
+          runOnJS(goMonth)(delta),
+        );
+      } else {
+        tx.value = withSpring(0, { damping: 20, stiffness: 220 });
+      }
+    });
+
   const profileOf = (id: string) => (id === uid ? profiles.data?.me : profiles.data?.partner);
   const nameOf = (id: string) => profileOf(id)?.nickname || (id === uid ? myName : partnerName);
   const avatarOf = (id: string) => profileOf(id)?.avatar_url ?? null;
@@ -153,8 +190,12 @@ export default function Calendar() {
           </View>
         </View>
 
-      <View style={{ flex: 1, marginTop: 8 }}>
-        <MonthGrid cells={cells} marks={marks} spans={spans} selected={selected} onSelectDay={setSelected} />
+      <View style={{ flex: 1, marginTop: 8, overflow: 'hidden' }}>
+        <GestureDetector gesture={swipe}>
+          <Animated.View style={[{ flex: 1 }, gridStyle]}>
+            <MonthGrid cells={cells} marks={marks} spans={spans} selected={selected} onSelectDay={setSelected} />
+          </Animated.View>
+        </GestureDetector>
       </View>
 
       <View style={{ height: '30%', borderTopWidth: 1, borderTopColor: color.surface2 }}>
