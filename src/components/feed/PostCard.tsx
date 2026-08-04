@@ -88,7 +88,7 @@ export function PostCard({
         )}
       </View>
 
-      {/* 사진 캐러셀 — 원본 비율(레터박스), 페이징 */}
+      {/* 사진 캐러셀 — 인스타 규격(세로 최대 4:5)으로 꽉 채워 크롭, 페이징 */}
       {post.photos.length > 0 && (
         <View>
           <ScrollView
@@ -104,7 +104,7 @@ export function PostCard({
                 key={p.id}
                 source={{ uri: p.thumbUrl }}
                 style={{ width, height: carouselH, backgroundColor: color.bg }}
-                contentFit="contain"
+                contentFit="cover"
                 transition={160}
               />
             ))}
