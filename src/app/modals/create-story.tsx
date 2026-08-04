@@ -1,14 +1,15 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Dimensions,
   Pressable,
   Text,
-  useWindowDimensions,
   View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Crypto from 'expo-crypto';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   color,
@@ -22,11 +23,8 @@ import {
   createTextOverlay,
   OVERLAY_MAX,
   OVERLAY_SIZE_DEFAULT,
-  STORY_ASPECT,
   type TextOverlay,
 } from '@/lib/stories';
-import { Meta } from '@/components/Meta';
-import { PlusGlyph } from '@/components/glyphs';
 import { StoryCanvas, type CanvasTransform } from '@/components/story/StoryCanvas';
 import { StoryTextEditor } from '@/components/story/StoryTextEditor';
 import { StoryTextInput } from '@/components/story/StoryTextInput';
@@ -37,14 +35,20 @@ import { useTodayTrack } from '@/api/tracks';
 const IDENTITY: CanvasTransform = { scale: 1, tx: 0, ty: 0 };
 
 /**
- * 스토리 올리기 — 인스타식 풀스크린 캔버스.
- * 사진은 9:16 캔버스를 덮고, 핀치·팬으로 잡은 구도가 그대로 잘려 올라간다.
- * 텍스트는 캔버스를 떠나지 않고 그 위에서 바로 쓰고 바로 끈다.
+ * 스토리 올리기 — 인스타식 풀블리드 캔버스.
+ *
+ * 캔버스가 곧 화면이다. 검은 여백도 테두리도 없으니 "어디까지 올라가는지"를
+ * 물을 자리가 없다 — 보이는 것이 올라가는 것이다. 버튼은 사진 밖이 아니라
+ * 사진 위에 얹힌다.
+ *
+ * 캔버스 크기는 **마운트 시점의 창 크기로 고정**한다. 매 렌더 다시 재면
+ * 키보드가 올라올 때 창이 줄면서 사진까지 같이 줄어든다 (텍스트를 칠 때마다
+ * 배경이 쪼그라들던 원인).
  */
 export default function CreateStory() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const win = useWindowDimensions();
+  const [canvas] = useState(() => Dimensions.get('window'));
 
   const [photo, setPhoto] = useState<PickedPhoto | null>(null);
   const [transform, setTransform] = useState<CanvasTransform>(IDENTITY);
@@ -58,26 +62,36 @@ export default function CreateStory() {
   const createStory = useCreateStory();
   const todayTrack = useTodayTrack();
 
-  // 9:16을 화면 안에 넣는다 — 세로가 짧은 기기에서는 높이가 먼저 걸린다
-  const chrome = insets.top + insets.bottom + 132;
-  const canvasWidth = Math.min(win.width, (win.height - chrome) * STORY_ASPECT);
-  const canvasHeight = canvasWidth / STORY_ASPECT;
   // 텍스트는 캔버스에 붙는다 — 잘라낸 사진이 곧 캔버스라 이 좌표가 저장 후에도 그대로 맞는다
-  const rect = { x: 0, y: 0, width: canvasWidth, height: canvasHeight };
+  const rect = { x: 0, y: 0, width: canvas.width, height: canvas.height };
 
   const editing = overlays.find((o) => o.id === editingId) ?? null;
 
-  const onPick = async () => {
+  const onPick = async (first: boolean) => {
     try {
       const [picked] = await pickPhotos(1);
       if (picked) {
         setPhoto(picked);
         setTransform(IDENTITY);
+      } else if (first) {
+        // 진입하자마자 뜬 갤러리를 그냥 닫았다 = 올릴 생각이 없다
+        router.dismiss();
       }
     } catch (e) {
       Alert.alert('사진 선택 실패', e instanceof Error ? e.message : String(e));
+      if (first) router.dismiss();
     }
   };
+
+  // 들어오면 곧바로 갤러리 — 사진을 고르는 것 말고 할 일이 없는 화면을 한 장 끼우지 않는다
+  const opened = useRef(false);
+  useEffect(() => {
+    if (opened.current) return;
+    opened.current = true;
+    onPick(true);
+    // 마운트 때 한 번 (onPick은 매 렌더 새 함수)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const addText = () => {
     if (overlays.length >= OVERLAY_MAX) return;
@@ -103,7 +117,7 @@ export default function CreateStory() {
     try {
       await createStory.mutateAsync({
         photo,
-        crop: { ...transform, canvasWidth, canvasHeight },
+        crop: { ...transform, canvasWidth: canvas.width, canvasHeight: canvas.height },
         trackId: attachToTrack ? (todayTrack.data?.id ?? null) : null,
         overlays,
       });
@@ -115,55 +129,44 @@ export default function CreateStory() {
     }
   };
 
-  if (!photo) {
-    return (
-      <View style={{ flex: 1, backgroundColor: '#000' }}>
-        <Pressable
-          onPress={onPick}
-          style={({ pressed }) => ({
-            flex: 1,
-            alignItems: 'center',
-            justifyContent: 'center',
-            opacity: pressed ? 0.85 : 1,
-          })}
-        >
-          <PlusGlyph size={26} color={color.sub} />
-          <Meta style={{ marginTop: 8 }}>오늘 한 컷을 골라주세요</Meta>
-        </Pressable>
-        <Pressable
-          hitSlop={12}
-          onPress={() => router.dismiss()}
-          style={{ position: 'absolute', top: insets.top + space[3], left: space[4] }}
-        >
-          <Text style={{ fontFamily: typeface, fontSize: 22, color: color.white }}>×</Text>
-        </Pressable>
-      </View>
-    );
-  }
-
   return (
-    <View style={{ flex: 1, backgroundColor: '#000', alignItems: 'center', justifyContent: 'center' }}>
-      <View style={{ width: canvasWidth, height: canvasHeight, borderRadius: radius.cover, overflow: 'hidden' }}>
-        <StoryCanvas
-          uri={photo.uri}
-          photoWidth={photo.width}
-          photoHeight={photo.height}
-          width={canvasWidth}
-          height={canvasHeight}
-          onChange={setTransform}
-        />
-        {/* 편집 중인 글자는 입력 쪽에 떠 있다 — 캔버스에 두 번 그리지 않는다 */}
-        <StoryTextEditor
-          overlays={overlays.filter((o) => o.id !== editingId && !!o.text)}
-          rect={rect}
-          onChange={(o) => setOverlays((prev) => prev.map((p) => (p.id === o.id ? o : p)))}
-          onEdit={(o) => setEditingId(o.id)}
-        />
-      </View>
+    <View style={{ flex: 1, backgroundColor: '#000' }}>
+      {/* 사진 — 화면에 못 박혀 있다. 키보드가 올라와도 여기는 움직이지 않는다 */}
+      {photo && (
+        <View style={{ position: 'absolute', top: 0, left: 0, width: canvas.width, height: canvas.height }}>
+          <StoryCanvas
+            uri={photo.uri}
+            photoWidth={photo.width}
+            photoHeight={photo.height}
+            width={canvas.width}
+            height={canvas.height}
+            onChange={setTransform}
+          />
+          {/* 편집 중인 글자는 입력 쪽에 떠 있다 — 캔버스에 두 번 그리지 않는다 */}
+          <StoryTextEditor
+            overlays={overlays.filter((o) => o.id !== editingId && !!o.text)}
+            rect={rect}
+            onChange={(o) => setOverlays((prev) => prev.map((p) => (p.id === o.id ? o : p)))}
+            onEdit={(o) => setEditingId(o.id)}
+          />
+        </View>
+      )}
 
-      {!editing && (
+      {photo && !editing && (
         <>
-          {/* 상단 — 닫기 / 텍스트 */}
+          {/* 밝은 사진 위에서도 아이콘이 읽히도록 — 위아래로만 얇게 */}
+          <LinearGradient
+            colors={['rgba(0,0,0,0.5)', 'transparent']}
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, height: insets.top + 92 }}
+            pointerEvents="none"
+          />
+          <LinearGradient
+            colors={['transparent', 'rgba(0,0,0,0.55)']}
+            style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: insets.bottom + 130 }}
+            pointerEvents="none"
+          />
+
+          {/* 상단 — 닫기 / 사진 바꾸기 / 텍스트 */}
           <View
             style={{
               position: 'absolute',
@@ -179,7 +182,7 @@ export default function CreateStory() {
               <Text style={{ fontFamily: typeface, fontSize: 22, color: color.white }}>×</Text>
             </Pressable>
             <View style={{ flex: 1 }} />
-            <Pressable hitSlop={12} onPress={onPick}>
+            <Pressable hitSlop={12} onPress={() => onPick(false)}>
               <Text style={{ fontFamily: typeface, fontSize: 13, color: 'rgba(255,255,255,0.85)' }}>
                 사진 바꾸기
               </Text>
@@ -198,7 +201,7 @@ export default function CreateStory() {
             </Pressable>
           </View>
 
-          {/* 하단 — 앨범에 담기 + 올리기 */}
+          {/* 하단 — 앨범에 담기(좌) + 올리기(우). 사진 위에 얹힌 한 줄 */}
           <View
             style={{
               position: 'absolute',
@@ -206,6 +209,8 @@ export default function CreateStory() {
               left: 0,
               right: 0,
               paddingHorizontal: space[4],
+              flexDirection: 'row',
+              alignItems: 'center',
               gap: space[3],
             }}
           >
@@ -213,10 +218,10 @@ export default function CreateStory() {
               <Pressable
                 onPress={() => setAttachToTrack((v) => !v)}
                 style={({ pressed }) => ({
+                  flexShrink: 1,
                   flexDirection: 'row',
                   alignItems: 'center',
                   gap: 9,
-                  alignSelf: 'flex-start',
                   paddingHorizontal: 11,
                   paddingVertical: 8,
                   borderRadius: radius.pill,
@@ -241,7 +246,9 @@ export default function CreateStory() {
                   )}
                 </View>
                 <Text
+                  numberOfLines={1}
                   style={{
+                    flexShrink: 1,
                     fontFamily: typeface,
                     fontWeight: '700',
                     fontSize: 12.5,
@@ -253,11 +260,15 @@ export default function CreateStory() {
               </Pressable>
             )}
 
+            <View style={{ flex: 1 }} />
+
             <Pressable
               onPress={save}
               disabled={saving}
               style={({ pressed }) => ({
-                height: 52,
+                height: 46,
+                minWidth: 96,
+                paddingHorizontal: 24,
                 borderRadius: radius.pill,
                 backgroundColor: color.accent,
                 alignItems: 'center',
@@ -284,11 +295,11 @@ export default function CreateStory() {
         </>
       )}
 
-      {editing && (
+      {photo && editing && (
         <StoryTextInput
           key={editing.id}
           initial={{ text: editing.text, color: editing.color, size: editing.size }}
-          canvasWidth={canvasWidth}
+          canvasWidth={canvas.width}
           onDelete={removeEditing}
           onDone={({ text, color: textColor, size }) => {
             // 빈 글자는 남길 이유가 없다 — 캔버스에 안 보이는 스티커가 쌓인다

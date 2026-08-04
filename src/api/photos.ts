@@ -57,13 +57,17 @@ export interface PickedPhoto {
   takenAt: string | null;
 }
 
-/** 갤러리에서 다중 선택 + EXIF 촬영시각 추출 (§7.3) */
+/**
+ * 갤러리에서 사진 고르기 + EXIF 촬영시각 추출 (§7.3).
+ * limit이 1이면 다중 선택 UI를 아예 끈다 — 켜 두면 한 장만 받으면서도
+ * "여러 장 고르기" 화면이 떠서 고르고 나서 확인을 한 번 더 눌러야 한다.
+ */
 export async function pickPhotos(limit = 20): Promise<PickedPhoto[]> {
   const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (!perm.granted) throw new Error('사진 접근 권한이 필요해요');
   const res = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ['images'],
-    allowsMultipleSelection: true,
+    allowsMultipleSelection: limit > 1,
     selectionLimit: limit,
     exif: true,
     quality: 1,

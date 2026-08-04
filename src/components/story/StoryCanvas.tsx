@@ -8,7 +8,13 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
-import { CANVAS_ZOOM_MAX, clampPan, coverScale } from '@/lib/stories';
+import {
+  CANVAS_ZOOM_MAX,
+  CANVAS_ZOOM_MIN,
+  CANVAS_ZOOM_RUBBER,
+  clampPan,
+  coverScale,
+} from '@/lib/stories';
 
 /** 캔버스에 보이는 만큼만 저장된다 — 올릴 때 이 값으로 원본을 자른다 */
 export interface CanvasTransform {
@@ -81,10 +87,24 @@ export function StoryCanvas({
       saved.value = scale.value;
     })
     .onChange((e) => {
-      scale.value = Math.min(CANVAS_ZOOM_MAX, Math.max(1, saved.value * e.scale));
+      const raw = saved.value * e.scale;
+      // 1 위로는 그대로, 1 밑으로는 저항하며 따라 준다 (손을 떼면 되돌아간다)
+      scale.value =
+        raw >= 1
+          ? Math.min(CANVAS_ZOOM_MAX, raw)
+          : Math.max(CANVAS_ZOOM_MIN, 1 - (1 - raw) * CANVAS_ZOOM_RUBBER);
       fit();
     })
-    .onEnd(() => runOnJS(commit)());
+    .onEnd(() => {
+      if (scale.value < 1) {
+        scale.value = withTiming(1);
+        tx.value = withTiming(0);
+        ty.value = withTiming(0);
+        runOnJS(onChange)({ scale: 1, tx: 0, ty: 0 });
+      } else {
+        runOnJS(commit)();
+      }
+    });
 
   // 두 번 두드리면 처음 구도로 — 확대하다 길을 잃었을 때 빠져나올 길
   const reset = Gesture.Tap()
