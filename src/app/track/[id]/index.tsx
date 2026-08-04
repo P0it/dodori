@@ -12,7 +12,7 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { color, heroScrim, HERO_SCRIM_STOPS, tintBg, typeface } from '@/theme/tokens';
+import { color, heroScrim, HERO_SCRIM_STOPS, typeface } from '@/theme/tokens';
 import { isReleased, formatDday, weekdayKo } from '@/lib/date';
 import { pinnablePlaces } from '@/lib/map';
 import Svg, { Path } from 'react-native-svg';
@@ -476,7 +476,7 @@ function TrackBody({ t }: { t: TrackDetail }) {
         */}
         {photoArchive ? (
           <>
-            <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 20, paddingTop: 6 }}>
+            <View style={{ flexDirection: 'row', paddingHorizontal: 20, paddingTop: 6 }}>
               <TrackTab label="코스" active={tab === 'course'} onPress={() => setTab('course')} />
               <TrackTab label="사진" active={tab === 'photos'} onPress={() => setTab('photos')} />
             </View>
@@ -583,7 +583,10 @@ function TrackBody({ t }: { t: TrackDetail }) {
   );
 }
 
-/** 코스·사진 세그먼트 탭 — 활성 쪽은 핑크로 채운 pill (surface2 채움만으로는 어느 쪽인지 잘 안 읽힌다) */
+/**
+ * 코스·사진 탭 — 활성은 흰 글자 + accent 밑줄, 비활성은 muted 글자.
+ * pill 채움을 쓰지 않는다 (색 면이 하나 더 늘면 히어로·D-day 배지와 강조가 겹친다).
+ */
 function TrackTab({
   label,
   active,
@@ -594,29 +597,25 @@ function TrackTab({
   onPress: () => void;
 }) {
   return (
-    <Pressable
-      onPress={onPress}
-      style={{
-        height: 34,
-        paddingHorizontal: 16,
-        borderRadius: 999,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: active ? tintBg.pink : 'transparent',
-        borderWidth: 1,
-        borderColor: active ? color.pink : 'transparent',
-      }}
-    >
+    <Pressable onPress={onPress} style={{ paddingTop: 8, paddingHorizontal: 4, marginRight: 12 }}>
       <Text
         style={{
           fontFamily: typeface,
           fontWeight: '700',
-          fontSize: 14,
-          color: active ? color.pink : color.muted,
+          fontSize: 15,
+          color: active ? color.white : color.muted,
+          paddingBottom: 7,
         }}
       >
         {label}
       </Text>
+      <View
+        style={{
+          height: 2,
+          borderRadius: 1,
+          backgroundColor: active ? color.accent : 'transparent',
+        }}
+      />
     </Pressable>
   );
 }
