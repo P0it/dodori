@@ -9,6 +9,7 @@ import { useSubmitRound, useTodayGameScores, type Score } from '@/api/games';
 import { GameHost } from '@/components/game/GameHost';
 import { Meta } from '@/components/Meta';
 import { Eyebrow } from '@/components/Eyebrow';
+import { ChevronGlyph } from '@/components/glyphs';
 
 type Phase = 'intro' | 'play' | 'result';
 
@@ -48,8 +49,23 @@ export default function GameScreen() {
       style={{ backgroundColor: color.bg }}
       contentContainerStyle={{ padding: space[4], paddingTop: space[6] }}
     >
-      <Pressable onPress={() => router.back()} hitSlop={8} style={{ marginBottom: space[4] }}>
-        <Meta>‹ 홈</Meta>
+      <Pressable
+        onPress={() => router.back()}
+        hitSlop={10}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          alignSelf: 'flex-start',
+          gap: 4,
+          marginBottom: space[4],
+          paddingVertical: space[1],
+        }}
+      >
+        {/* 오른쪽 꺾쇠를 돌려 왼쪽(‹)으로 — 홈으로 돌아가는 표시 */}
+        <View style={{ transform: [{ rotate: '180deg' }] }}>
+          <ChevronGlyph size={24} color={color.sub} />
+        </View>
+        <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 16, color: color.sub }}>홈</Text>
       </Pressable>
 
       <Eyebrow>오늘의 게임</Eyebrow>
