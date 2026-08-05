@@ -180,21 +180,37 @@ export function AlbumCarousel({
         })}
 
         {/* 꼬리의 빈 앨범 — "한 장 더 꽂는다". 활성 글로우는 주지 않는다(앨범이 아니므로) */}
-        <NewAlbumSlot size={card} dist={Math.abs(albums.length - active)} onPress={onCreate} />
+        <NewAlbumSlot
+          size={card}
+          dist={Math.abs(albums.length - active)}
+          total={total}
+          onPress={onCreate}
+        />
       </ScrollView>
     </View>
   );
 }
 
 /** 캐러셀 꼬리의 빈 앨범 — 실제 앨범과 같은 규격에 점선 테두리만 두른다 */
-function NewAlbumSlot({ size, dist, onPress }: { size: number; dist: number; onPress: () => void }) {
+function NewAlbumSlot({
+  size,
+  dist,
+  total,
+  onPress,
+}: {
+  size: number;
+  dist: number;
+  total: number;
+  onPress: () => void;
+}) {
   return (
     <Pressable
       onPress={onPress}
       style={{
         width: size,
         height: size,
-        zIndex: 0,
+        // 앨범과 같은 규칙 — 가운데로 오면 맨 위. 고정 0이면 왼쪽 앨범이 위를 덮는다
+        zIndex: total - dist,
         opacity: dist === 0 ? 1 : Math.max(0.25, 0.5 - (dist - 1) * 0.12),
         transform: [{ scale: dist === 0 ? 1 : Math.max(0.76, 0.86 - (dist - 1) * 0.05) }],
       }}
