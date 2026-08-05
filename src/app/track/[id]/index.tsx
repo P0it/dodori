@@ -500,10 +500,10 @@ function TrackBody({ t }: { t: TrackDetail }) {
           courseSection
         )}
 
-        {/* 노트 (사전 메모 / 라이너 노트) */}
+        {/* 노트 — 계획이든 회고든 "메모" 하나로 부른다 (음악 메타포보다 뜻이 바로 읽히는 쪽) */}
         <View style={{ paddingHorizontal: 20, paddingTop: 22 }}>
           <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 17, color: color.white }}>
-            {released ? '라이너 노트' : '메모'}
+            메모
           </Text>
           {t.notes.map((n) => (
             <View key={n.id} style={{ flexDirection: 'row', gap: 10, paddingVertical: 10 }}>
@@ -528,7 +528,7 @@ function TrackBody({ t }: { t: TrackDetail }) {
             <TextInput
               value={noteDraft}
               onChangeText={setNoteDraft}
-              placeholder={released ? '이 날의 기억을 남겨보세요' : '메모 남기기'}
+              placeholder="메모 남기기"
               placeholderTextColor={color.muted}
               multiline
               style={{
