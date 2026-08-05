@@ -196,8 +196,8 @@ export interface PastTopic extends Topic {
   partner: Choice | null;
 }
 
-/** 지난 주제 히스토리 (홈 하단) — 오늘 이전 seq만, 최신순 */
-export function usePastTopics() {
+/** 지난 주제 히스토리 (오늘 주제 상세 하단) — 오늘 이전 seq만, 최신순 */
+export function usePastTopics(limit: number) {
   const session = useSession();
   const uid = session.data?.user.id;
   const couple = useMyCouple();
@@ -210,13 +210,14 @@ export function usePastTopics() {
 
   return useQuery({
     enabled: todaySeq !== null && !!uid,
-    queryKey: ['pastTopics', todaySeq],
+    queryKey: ['pastTopics', todaySeq, limit],
     queryFn: async (): Promise<PastTopic[]> => {
       const { data, error } = await supabase
         .from('topics')
         .select('id, seq, question, options, topic_votes(user_id, choice)')
         .lt('seq', todaySeq!)
-        .order('seq', { ascending: false });
+        .order('seq', { ascending: false })
+        .limit(limit);
       if (error) throw error;
       return data.map((t) => ({
         id: t.id,
