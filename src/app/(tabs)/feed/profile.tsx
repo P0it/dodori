@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { color, typeface } from '@/theme/tokens';
 import { useMyProfile, useUpdateProfile } from '@/api/couple';
@@ -9,6 +9,7 @@ import { Avatar } from '@/components/Avatar';
 import { Meta } from '@/components/Meta';
 import { DatePicker, initialMonth } from '@/components/DatePicker';
 import { todayKST } from '@/lib/date';
+import { alertDialog } from '@/components/dialog';
 
 /** 내 프로필 수정 — 닉네임 + 프로필 사진 */
 export default function EditProfile() {
@@ -41,7 +42,7 @@ export default function EditProfile() {
       const uri = await pickAvatarImage();
       if (uri) setPickedUri(uri);
     } catch (e) {
-      Alert.alert('사진 변경 실패', e instanceof Error ? e.message : '사진을 바꾸지 못했어요.');
+      alertDialog('사진 변경 실패', e instanceof Error ? e.message : '사진을 바꾸지 못했어요.');
     }
   };
 
@@ -55,7 +56,7 @@ export default function EditProfile() {
       await update.mutateAsync({ nickname: name, avatarUrl, birthday: birthday || null });
       router.back();
     } catch (e) {
-      Alert.alert('저장 실패', e instanceof Error ? e.message : '프로필을 저장하지 못했어요.');
+      alertDialog('저장 실패', e instanceof Error ? e.message : '프로필을 저장하지 못했어요.');
     } finally {
       setSaving(false);
     }

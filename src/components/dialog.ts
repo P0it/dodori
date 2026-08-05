@@ -31,6 +31,36 @@ export function confirmDialog(
   });
 }
 
+/**
+ * 여러 선택지 중 하나 (길게 눌러 뜨는 액션 시트). 고른 항목의 인덱스, 취소면 -1.
+ * 웹에는 다중 선택 대화상자가 없어 위에서부터 예/아니오로 물어본다 —
+ * 선택지가 하나뿐인 흔한 경우엔 confirm 한 번과 똑같다.
+ */
+export function chooseDialog(
+  title: string,
+  choices: { label: string; destructive?: boolean }[],
+): Promise<number> {
+  if (Platform.OS === 'web') {
+    const picked = choices.findIndex((c) => window.confirm(`${title}\n\n${c.label}`));
+    return Promise.resolve(picked);
+  }
+  return new Promise((resolve) => {
+    Alert.alert(
+      title,
+      undefined,
+      [
+        { text: '취소', style: 'cancel' as const, onPress: () => resolve(-1) },
+        ...choices.map((c, i) => ({
+          text: c.label,
+          style: c.destructive ? ('destructive' as const) : ('default' as const),
+          onPress: () => resolve(i),
+        })),
+      ],
+      { cancelable: true, onDismiss: () => resolve(-1) },
+    );
+  });
+}
+
 /** 단순 알림 (버튼 하나) */
 export function alertDialog(title: string, message?: string) {
   if (Platform.OS === 'web') {

@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Modal,
   Pressable,
   ScrollView,
@@ -22,6 +21,7 @@ import { Divider } from '@/components/Divider';
 import { Dday } from '@/components/Dday';
 import { DatePicker, initialMonth } from '@/components/DatePicker';
 import { AnnivCover } from '@/components/AnnivCover';
+import { alertDialog, confirmDialog } from '@/components/dialog';
 
 /** 기념일 관리 (목업 26) + 커스텀 기념일 추가 (목업 24) */
 export default function AnnivManage() {
@@ -47,15 +47,11 @@ export default function AnnivManage() {
       <Pressable
         onLongPress={
           a.type === 'custom'
-            ? () =>
-                Alert.alert(a.label, undefined, [
-                  { text: '취소', style: 'cancel' },
-                  {
-                    text: '삭제',
-                    style: 'destructive',
-                    onPress: () => removeCustom.mutate(a.id),
-                  },
-                ])
+            ? async () => {
+                if (await confirmDialog(a.label, '이 기념일을 삭제할까요?', '삭제')) {
+                  removeCustom.mutate(a.id);
+                }
+              }
             : undefined
         }
         style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 11 }}
@@ -167,7 +163,7 @@ function AddCustomAnniv({ onClose }: { onClose: () => void }) {
       qc.invalidateQueries({ queryKey: ['anniversaries'] });
       onClose();
     },
-    onError: (e) => Alert.alert('저장 실패', e instanceof Error ? e.message : String(e)),
+    onError: (e) => alertDialog('저장 실패', e instanceof Error ? e.message : String(e)),
   });
 
   const valid = label.trim().length > 0 && isISODate(date);

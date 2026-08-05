@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   ScrollView,
   Text,
@@ -38,6 +37,7 @@ import { Dday } from '@/components/Dday';
 import { TrackCover } from '@/components/TrackCover';
 import { Avatar } from '@/components/Avatar';
 import { PlaceKindTile } from '@/components/PlaceKindTile';
+import { alertDialog, confirmDialog } from '@/components/dialog';
 import { CloseGlyph, GripGlyph } from '@/components/glyphs';
 
 /** 코스 한 행의 고정 높이 — 드래그 재정렬(절대배치)이 기준으로 삼는다 */
@@ -123,7 +123,7 @@ function TrackBody({ t }: { t: TrackDetail }) {
         await upload.mutateAsync(picked);
       }
     } catch (e) {
-      Alert.alert('업로드 실패', e instanceof Error ? e.message : String(e));
+      alertDialog('업로드 실패', e instanceof Error ? e.message : String(e));
     }
   };
 
@@ -132,19 +132,17 @@ function TrackBody({ t }: { t: TrackDetail }) {
       const picked = await pickPhotos(1);
       if (picked.length) await setCover.mutateAsync(picked[0]);
     } catch (e) {
-      Alert.alert('커버 변경 실패', e instanceof Error ? e.message : String(e));
+      alertDialog('커버 변경 실패', e instanceof Error ? e.message : String(e));
     }
   };
 
-  const onDelete = () => {
-    Alert.alert('데이트 삭제', '기록과 사진 연결이 함께 삭제돼요.', [
-      { text: '취소', style: 'cancel' },
-      {
-        text: '삭제',
-        style: 'destructive',
-        onPress: () => del.mutate(undefined, { onSuccess: () => router.back() }),
-      },
-    ]);
+  const onDelete = async () => {
+    if (!(await confirmDialog('데이트 삭제', '기록과 사진 연결이 함께 삭제돼요.', '삭제'))) return;
+    del.mutate(undefined, {
+      onSuccess: () => router.back(),
+      // 조용히 실패하면 "눌러도 아무 일 없음"이 된다 — 이유를 띄운다
+      onError: (e) => alertDialog('삭제 실패', e instanceof Error ? e.message : String(e)),
+    });
   };
 
   const startEdit = () => {

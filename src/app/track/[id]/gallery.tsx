@@ -1,4 +1,4 @@
-import { Alert, Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { FlashList } from '@shopify/flash-list';
@@ -8,6 +8,7 @@ import { useDeletePhoto } from '@/api/photos';
 import { useSession } from '@/api/auth';
 import { TopBar } from '@/components/TopBar';
 import { Meta } from '@/components/Meta';
+import { chooseDialog } from '@/components/dialog';
 
 /** 사진 전체 갤러리 (목업 15) — 탭: 슬라이드쇼, 길게: 커버 지정/삭제 */
 export default function Gallery() {
@@ -21,25 +22,20 @@ export default function Gallery() {
 
   const photos = track.data?.photos ?? [];
 
-  const onLongPress = (p: (typeof photos)[number]) => {
+  const onLongPress = async (p: (typeof photos)[number]) => {
     // 스토리에서 흘러온 사진은 앨범이 빌려 보여줄 뿐 — 커버 지정·삭제는 스토리 뷰어에서
     if (p.storyId) return;
     const isCover = track.data?.coverPhotoId === p.id;
-    const buttons: Parameters<typeof Alert.alert>[2] = [
-      { text: '취소', style: 'cancel' },
-      {
-        text: isCover ? '커버 해제' : '커버로 지정',
-        onPress: () => update.mutate({ coverPhotoId: isCover ? null : p.id }),
-      },
+    const choices: { label: string; destructive?: boolean }[] = [
+      { label: isCover ? '커버 해제' : '커버로 지정' },
     ];
-    if (p.uploaderId === uid) {
-      buttons.push({
-        text: '삭제',
-        style: 'destructive',
-        onPress: () => delPhoto.mutate({ id: p.id, storagePath: p.storagePath, renditions: p.renditions }),
-      });
+    if (p.uploaderId === uid) choices.push({ label: '삭제', destructive: true });
+
+    const picked = await chooseDialog('사진', choices);
+    if (picked === 0) update.mutate({ coverPhotoId: isCover ? null : p.id });
+    else if (picked === 1) {
+      delPhoto.mutate({ id: p.id, storagePath: p.storagePath, renditions: p.renditions });
     }
-    Alert.alert('사진', undefined, buttons);
   };
 
   return (

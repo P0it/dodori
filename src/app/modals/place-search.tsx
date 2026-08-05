@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { color, typeface } from '@/theme/tokens';
 import { TopBar } from '@/components/TopBar';
@@ -14,6 +14,7 @@ import { SavedHeart } from '@/components/SavedHeart';
 import { PlaylistPickerSheet } from '@/components/playlist/PlaylistPickerSheet';
 import { CheckGlyph, PlusGlyph } from '@/components/glyphs';
 import { PlaceKindTile } from '@/components/PlaceKindTile';
+import { alertDialog } from '@/components/dialog';
 
 // Supabase 에러는 Error 인스턴스가 아니라 {code, message, details, hint} 객체라 통째로 찍는다
 const describeError = (e: unknown) => {
@@ -119,7 +120,7 @@ export default function PlaceSearch() {
     setCommitting(false);
     if (failed.length) {
       setFailReason(reasons.join('\n'));
-      Alert.alert('일부 담기 실패', reasons.join('\n'));
+      alertDialog('일부 담기 실패', reasons.join('\n'));
       setStaged(failed); // 성공분은 이미 저장됨 — 실패한 것만 남겨 다시 시도
     } else {
       router.back();
@@ -309,7 +310,7 @@ export default function PlaceSearch() {
             {
               onSuccess: () => setJustSaved((s) => new Set(s).add(place.naver_id)),
               onError: (e) =>
-                Alert.alert('담기 실패', e instanceof Error ? e.message : '리스트에 담지 못했어요.'),
+                alertDialog('담기 실패', e instanceof Error ? e.message : '리스트에 담지 못했어요.'),
             },
           );
         }}

@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Dimensions,
   Image as RNImage,
   Platform,
@@ -42,6 +41,7 @@ import {
 } from '@/api/photos';
 import { useCreateStory } from '@/api/stories';
 import { useTodayTrack } from '@/api/tracks';
+import { alertDialog } from '@/components/dialog';
 
 const IDENTITY: CanvasTransform = { scale: 1, tx: 0, ty: 0 };
 
@@ -124,7 +124,7 @@ export default function CreateStory() {
         router.dismiss();
       }
     } catch (e) {
-      Alert.alert('사진 선택 실패', e instanceof Error ? e.message : String(e));
+      alertDialog('사진 선택 실패', e instanceof Error ? e.message : String(e));
       if (first) router.dismiss();
     }
   };
@@ -190,7 +190,7 @@ export default function CreateStory() {
       });
       router.dismiss();
     } catch (e) {
-      Alert.alert('올리기 실패', e instanceof Error ? e.message : String(e));
+      alertDialog('올리기 실패', e instanceof Error ? e.message : String(e));
     } finally {
       setSaving(false);
     }

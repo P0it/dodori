@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   ScrollView,
   Text,
@@ -35,6 +34,7 @@ import { ChevronGlyph, ClockGlyph, PinGlyph } from '@/components/glyphs';
 import { PlaceSearchSheet } from '@/components/PlaceSearchSheet';
 import type { SearchPlace } from '@/api/places';
 import { useCoupleProfiles } from '@/api/couple';
+import { alertDialog, confirmDialog } from '@/components/dialog';
 
 /** 일정 추가/수정 (목업 21) — 주인(나/상대)·제목·날짜·시간·종일·설명 */
 export default function AddEvent() {
@@ -139,16 +139,10 @@ export default function AddEvent() {
     else create.mutate(input, done);
   };
 
-  const del = () => {
+  const del = async () => {
     if (!editingId) return;
-    Alert.alert('일정 삭제', '이 일정을 삭제할까요?', [
-      { text: '취소', style: 'cancel' },
-      {
-        text: '삭제',
-        style: 'destructive',
-        onPress: () => remove.mutate(editingId, { onSuccess: () => router.back(), onError: showError }),
-      },
-    ]);
+    if (!(await confirmDialog('일정 삭제', '이 일정을 삭제할까요?', '삭제'))) return;
+    remove.mutate(editingId, { onSuccess: () => router.back(), onError: showError });
   };
 
   return (
@@ -473,7 +467,7 @@ export default function AddEvent() {
 }
 
 function showError(e: unknown) {
-  Alert.alert('저장 실패', e instanceof Error ? e.message : String(e));
+  alertDialog('저장 실패', e instanceof Error ? e.message : String(e));
 }
 
 /**

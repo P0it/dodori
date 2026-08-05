@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   ScrollView,
   Text,
@@ -17,6 +16,7 @@ import { monthKey as toMonthKey, todayKST, isISODate } from '@/lib/date';
 import { useCreateTrack } from '@/api/tracks';
 import { useMonthEvents } from '@/api/events';
 import { eventDayRange, spanDays } from '@/lib/span';
+import { alertDialog } from '@/components/dialog';
 
 /** 데이트 만들기 — 1) 날짜 2) 제목. 장소는 앨범을 만든 뒤 상세에서 담는다. */
 export default function CreateTrack() {
@@ -39,7 +39,7 @@ export default function CreateTrack() {
       // 만들자마자 장소부터 담는 동선 — 상세가 addPlaces를 보고 담기 모달을 연다
       router.push({ pathname: '/track/[id]', params: { id: trackId, addPlaces: '1' } });
     } catch (e) {
-      Alert.alert('저장 실패', e instanceof Error ? e.message : String(e));
+      alertDialog('저장 실패', e instanceof Error ? e.message : String(e));
     } finally {
       setSaving(false);
     }

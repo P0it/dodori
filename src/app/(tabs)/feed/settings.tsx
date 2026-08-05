@@ -1,4 +1,4 @@
-import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { color, typeface } from '@/theme/tokens';
 import { useCoupleProfiles } from '@/api/couple';
@@ -9,6 +9,7 @@ import { Meta } from '@/components/Meta';
 import { Divider } from '@/components/Divider';
 import { Avatar } from '@/components/Avatar';
 import { StarGlyph, StoryGlyph, LinkGlyph, LogoutGlyph, ChevronGlyph } from '@/components/glyphs';
+import { confirmDialog } from '@/components/dialog';
 
 /** 스튜디오 관리 — 기념일·연결·로그아웃 (계정 화면에서 분리) */
 export default function StudioSettings() {
@@ -18,18 +19,11 @@ export default function StudioSettings() {
 
   const customCount = (annivs.data ?? []).filter((a) => a.type === 'custom').length;
 
-  const onSignOut = () =>
-    Alert.alert('로그아웃', '다시 로그인하면 기록은 그대로예요.', [
-      { text: '취소', style: 'cancel' },
-      {
-        text: '로그아웃',
-        style: 'destructive',
-        onPress: async () => {
-          await signOut();
-          router.replace('/(auth)/login');
-        },
-      },
-    ]);
+  const onSignOut = async () => {
+    if (!(await confirmDialog('로그아웃', '다시 로그인하면 기록은 그대로예요.', '로그아웃'))) return;
+    await signOut();
+    router.replace('/(auth)/login');
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: color.bg }}>

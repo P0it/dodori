@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
 import { color, typeface } from '@/theme/tokens';
@@ -15,6 +15,7 @@ import { AlbumCarousel } from '@/components/AlbumCarousel';
 import { RecommendStrip } from '@/components/playlist/RecommendStrip';
 import { PlaylistTile } from '@/components/playlist/PlaylistTile';
 import { ChevronGlyph } from '@/components/glyphs';
+import { alertDialog } from '@/components/dialog';
 
 /** 플레이리스트 탭 루트 (목업 07) */
 export default function PlaylistRoot() {
@@ -147,7 +148,7 @@ export default function PlaylistRoot() {
                   {
                     onSuccess: () => setAddedIds((s) => new Set(s).add(placeId)),
                     onError: (e) =>
-                      Alert.alert('추가 실패', e instanceof Error ? e.message : '코스에 담지 못했어요.'),
+                      alertDialog('추가 실패', e instanceof Error ? e.message : '코스에 담지 못했어요.'),
                   },
                 )
               }

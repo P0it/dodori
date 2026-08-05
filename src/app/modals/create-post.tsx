@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   ScrollView,
   Text,
@@ -21,6 +20,7 @@ import { cropToCanvas, pickPhotos, type PickedPhoto } from '@/api/photos';
 import { useCreatePost } from '@/api/posts';
 import { usePhotoQuota } from '@/api/couple';
 import { postFrameRatio } from '@/lib/posts';
+import { alertDialog } from '@/components/dialog';
 
 /** 게시물 작성 — 사진 선택 + 캡션 */
 export default function CreatePost() {
@@ -36,14 +36,14 @@ export default function CreatePost() {
 
   const onPick = async () => {
     if (quota.data?.full) {
-      Alert.alert('공간이 가득 찼어요', '곧 더 많은 공간을 제공할 예정이에요');
+      alertDialog('공간이 가득 찼어요', '곧 더 많은 공간을 제공할 예정이에요');
       return;
     }
     try {
       const picked = await pickPhotos(10);
       if (picked.length) setPhotos((prev) => [...prev, ...picked].slice(0, 10));
     } catch (e) {
-      Alert.alert('사진 선택 실패', e instanceof Error ? e.message : String(e));
+      alertDialog('사진 선택 실패', e instanceof Error ? e.message : String(e));
     }
   };
 
@@ -62,7 +62,7 @@ export default function CreatePost() {
       });
       setPhotos((prev) => prev.map((p) => (p.uri === target.uri ? cropped : p)));
     } catch (e) {
-      Alert.alert('자르기 실패', e instanceof Error ? e.message : String(e));
+      alertDialog('자르기 실패', e instanceof Error ? e.message : String(e));
     }
   };
 
@@ -75,7 +75,7 @@ export default function CreatePost() {
       await createPost.mutateAsync({ caption, photos });
       router.dismiss();
     } catch (e) {
-      Alert.alert('저장 실패', e instanceof Error ? e.message : String(e));
+      alertDialog('저장 실패', e instanceof Error ? e.message : String(e));
     } finally {
       setSaving(false);
     }

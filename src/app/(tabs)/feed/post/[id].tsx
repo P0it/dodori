@@ -1,4 +1,4 @@
-import { Alert, RefreshControl, useWindowDimensions, View } from 'react-native';
+import { RefreshControl, useWindowDimensions, View } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useLocalSearchParams } from 'expo-router';
 import { color } from '@/theme/tokens';
@@ -14,6 +14,7 @@ import {
 } from '@/api/posts';
 import { TopBar } from '@/components/TopBar';
 import { PostCard } from '@/components/feed/PostCard';
+import { confirmDialog } from '@/components/dialog';
 
 /** 게시물 피드 — 그리드에서 탭한 게시물 위치부터 세로 스크롤 (인스타 동일) */
 export default function PostFeed() {
@@ -41,15 +42,10 @@ export default function PostFeed() {
     profileOf(author)?.nickname || (author === uid ? '나' : '상대');
   const avatarUrl = (author: string): string | null => profileOf(author)?.avatar_url ?? null;
 
-  const onDelete = (post: Post) =>
-    Alert.alert('피드 삭제', '되돌릴 수 없어요.', [
-      { text: '취소', style: 'cancel' },
-      {
-        text: '삭제',
-        style: 'destructive',
-        onPress: () => deletePost.mutate({ id: post.id, photos: post.photos }),
-      },
-    ]);
+  const onDelete = async (post: Post) => {
+    if (!(await confirmDialog('피드 삭제', '되돌릴 수 없어요.', '삭제'))) return;
+    deletePost.mutate({ id: post.id, photos: post.photos });
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: color.bg }}>
