@@ -1,7 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { Linking, Pressable, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import BottomSheet, { BottomSheetFlatList } from '@gorhom/bottom-sheet';
@@ -86,7 +85,6 @@ export default function CustomPlaylist() {
   /** 이름·색·아이콘 입력을 여는가 (찜은 커플당 하나뿐인 고정 목록이라 열지 않는다) */
   const look = editing && !isSaved;
 
-  const insets = useSafeAreaInsets();
   const sheetRef = useRef<BottomSheet>(null);
   const listRef = useRef<React.ComponentRef<typeof BottomSheetFlatList>>(null);
   const mapRef = useRef<PlaceMapHandle>(null);
@@ -228,7 +226,9 @@ export default function CustomPlaylist() {
           수정 중에도 그대로 둔다 — 저장 전에 나가면 이름·색·아이콘 변경은 버려진다 */}
       <Pressable
         onPress={() => router.back()}
-        style={[FLOAT, { position: 'absolute', left: 12, top: insets.top + 2, width: 40, height: 40, borderRadius: 20 }]}
+        // top은 safe-area를 더하지 않는다 — app/_layout.tsx가 이미 모든 화면에 paddingTop: insets.top을
+        // 주므로 여기 좌표계는 상태바 아래에서 시작한다. 더하면 상태바 높이만큼 이중으로 밀린다
+        style={[FLOAT, { position: 'absolute', left: 12, top: 8, width: 40, height: 40, borderRadius: 20 }]}
       >
         <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
           <Path d="M15 5l-7 7 7 7" stroke={color.white} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
