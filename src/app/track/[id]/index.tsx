@@ -112,13 +112,15 @@ function TrackBody({ t }: { t: TrackDetail }) {
   const hasPins = useMemo(() => pinnablePlaces(t.places).length >= 1, [t.places]);
 
   /*
-   * 좌우 스와이프로 옆 앨범 — 순서는 플레이리스트·캐러셀과 같은 최신순(useAllTracks).
-   * 왼쪽으로 밀면 더 과거, 오른쪽으로 밀면 더 최근. push가 아니라 replace라 뒤로가기가 쌓이지 않는다.
+   * 좌우 스와이프로 옆 앨범 — 목록은 최신순(useAllTracks)이지만 이동은 날짜축을 따른다:
+   * 왼쪽으로 밀면(내용을 왼쪽으로 끌면) 오른쪽에 있던 더 최근 날짜가 온다. 캘린더 스와이프와 같은 방향.
+   * push가 아니라 replace라 뒤로가기가 쌓이지 않는다.
    */
   const siblings = useAllTracks().data ?? [];
   const idx = siblings.findIndex((s) => s.id === t.id);
-  const goSibling = (delta: number) => {
-    const next = idx >= 0 ? siblings[idx + delta] : undefined;
+  /** days: +1이면 더 최근 날짜. 목록이 최신순이라 인덱스는 반대로 움직인다 */
+  const goSibling = (days: number) => {
+    const next = idx >= 0 ? siblings[idx - days] : undefined;
     if (next) router.replace(`/track/${next.id}`);
   };
   const swipe = Gesture.Pan()
