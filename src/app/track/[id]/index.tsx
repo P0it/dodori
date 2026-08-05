@@ -99,8 +99,8 @@ function TrackBody({ t }: { t: TrackDetail }) {
   const [editing, setEditing] = useState(false);
   const [titleDraft, setTitleDraft] = useState(t.title);
   const [reordering, setReordering] = useState(false); // 드래그 중 부모 스크롤 잠금
-  // 코스·사진 탭 — 처음 열리는 쪽은 상태가 정한다. 지나간 날은 사진, 다가오는·오늘은 코스
-  const [tab, setTab] = useState<'course' | 'photos'>(released ? 'photos' : 'course');
+  // 코스·사진 탭 — 지난 날도 코스부터 (다녀온 뒤 코스를 기록하는 쓰임이 있다)
+  const [tab, setTab] = useState<'course' | 'photos'>('course');
 
   const placeById = useMemo(() => {
     const m: Record<string, TrackPlace> = {};
