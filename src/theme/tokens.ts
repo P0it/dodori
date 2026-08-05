@@ -143,6 +143,19 @@ export const heroScrim = [
 ] as const;
 export const HERO_SCRIM_STOPS = [0, 0.3, 0.78, 1] as const;
 
+/**
+ * 사진 위 pill 배경 — 색을 꽉 채우고 글자를 검게 뒤집는 대신, 어두운 판을 깔고 글자는 종류 색 그대로 둔다.
+ * 커버 사진 위에서도 읽히면서 밝은 덩어리가 화면을 때리지 않는다. 값은 heroScrim과 같은 color.bg 알파 변주.
+ */
+export const onPhotoBg = 'rgba(18,18,18,0.78)';
+
+/** 칩·pill 테두리 — tintBg와 짝. 배경만으로는 경계가 흐릿한 자리에 얹는다 */
+export const tintBorder = {
+  accent: 'rgba(30,215,96,0.42)',
+  anniv: 'rgba(232,184,75,0.42)',
+  date: 'rgba(34,211,238,0.42)',
+} as const;
+
 export const radius = {
   mini: 3,
   card: 4,
