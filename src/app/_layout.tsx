@@ -16,6 +16,7 @@ import { color } from '@/theme/tokens';
 import { BrandSplash } from '@/components/BrandSplash';
 import { useAuthListener } from '@/api/auth';
 import { useCoupleRealtime } from '@/api/realtime';
+import { useQueryFocus } from '@/api/focus';
 import { usePushRegistration } from '@/api/notifications';
 
 // 네이티브 스플래시는 BrandSplash가 마운트된 뒤 직접 내린다 (워드마크 등장까지 이어붙이기)
@@ -54,6 +55,7 @@ const persister = createAsyncStoragePersister({ storage: AsyncStorage });
 function AuthBridge() {
   useAuthListener();
   useCoupleRealtime();
+  useQueryFocus();
   usePushRegistration();
   return null;
 }
