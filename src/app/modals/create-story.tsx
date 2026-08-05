@@ -14,6 +14,7 @@ import * as Crypto from 'expo-crypto';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { captureRef } from 'react-native-view-shot';
+import type { GestureType } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   color,
@@ -107,6 +108,13 @@ export default function CreateStory() {
   const todayTrack = useTodayTrack();
   /** 굽기의 대상 — 사진과 흐린 배경까지, 텍스트는 뺀 레이어 */
   const photoLayer = useRef<View>(null);
+  // 캔버스(사진)와 텍스트 레이어는 형제 뷰라 RNGH가 알아서 우선순위를 정해 주지 않는다.
+  // 이 ref들로 "글자를 잡으면 사진 제스처는 막는다"를 명시한다
+  const canvasGestures = {
+    pan: useRef<GestureType | undefined>(undefined),
+    pinch: useRef<GestureType | undefined>(undefined),
+    reset: useRef<GestureType | undefined>(undefined),
+  };
 
   // 텍스트는 캔버스에 붙는다 — 잘라낸 사진이 곧 캔버스라 이 좌표가 저장 후에도 그대로 맞는다
   const rect = { x: 0, y: 0, width: canvas.width, height: canvas.height };
@@ -228,6 +236,7 @@ export default function CreateStory() {
               height={canvas.height}
               minScale={CANVAS_ZOOM_MIN}
               onChange={setTransform}
+              gestureRefs={canvasGestures}
             />
           </View>
           {/* 편집 중인 글자는 입력 쪽에 떠 있다 — 캔버스에 두 번 그리지 않는다 */}
@@ -236,6 +245,7 @@ export default function CreateStory() {
             rect={rect}
             onChange={(o) => setOverlays((prev) => prev.map((p) => (p.id === o.id ? o : p)))}
             onEdit={(o) => setEditingId(o.id)}
+            blocks={[canvasGestures.pan, canvasGestures.pinch, canvasGestures.reset]}
           />
         </View>
       )}

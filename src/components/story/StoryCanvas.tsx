@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { View } from 'react-native';
 import { Image } from 'expo-image';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { Gesture, GestureDetector, type GestureType } from 'react-native-gesture-handler';
 import Animated, {
   runOnJS,
   useAnimatedStyle,
@@ -28,6 +28,16 @@ type Props = {
   minScale: number;
   /** 손을 뗐을 때 확정된 구도 */
   onChange: (t: CanvasTransform) => void;
+  /**
+   * 이 캔버스의 제스처를 밖에서 가리키기 위한 ref들.
+   * 위에 얹히는 텍스트 레이어가 `blocksExternalGesture`로 이걸 막는다 —
+   * 둘은 형제 뷰라 RNGH가 알아서 우선순위를 정해 주지 않는다.
+   */
+  gestureRefs?: {
+    pan: React.MutableRefObject<GestureType | undefined>;
+    pinch: React.MutableRefObject<GestureType | undefined>;
+    reset: React.MutableRefObject<GestureType | undefined>;
+  };
 };
 
 /**
@@ -46,6 +56,7 @@ export function StoryCanvas({
   height,
   minScale,
   onChange,
+  gestureRefs,
 }: Props) {
   const scale = useSharedValue(1);
   const saved = useSharedValue(1);
@@ -73,6 +84,7 @@ export function StoryCanvas({
   };
 
   const pan = Gesture.Pan()
+    .withRef(gestureRefs?.pan ?? { current: undefined })
     .onChange((e) => {
       tx.value += e.changeX;
       ty.value += e.changeY;
@@ -81,6 +93,7 @@ export function StoryCanvas({
     .onEnd(() => runOnJS(commit)());
 
   const pinch = Gesture.Pinch()
+    .withRef(gestureRefs?.pinch ?? { current: undefined })
     .onBegin(() => {
       saved.value = scale.value;
     })
@@ -92,6 +105,7 @@ export function StoryCanvas({
 
   // 두 번 두드리면 처음 구도로 — 확대하다 길을 잃었을 때 빠져나올 길
   const reset = Gesture.Tap()
+    .withRef(gestureRefs?.reset ?? { current: undefined })
     .numberOfTaps(2)
     .onEnd(() => {
       scale.value = withTiming(1);

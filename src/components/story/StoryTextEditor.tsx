@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { View } from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { Gesture, GestureDetector, type GestureType } from 'react-native-gesture-handler';
 import Animated, {
   runOnJS,
   useAnimatedStyle,
@@ -22,17 +22,23 @@ type Props = {
   onChange: (overlay: TextOverlay) => void;
   /** 탭 — 내용·색 고치기 */
   onEdit: (overlay: TextOverlay) => void;
+  /**
+   * 글자를 잡았을 때 막아야 할 바깥 제스처들 (밑에 깔린 사진 캔버스의 팬·핀치·더블탭).
+   * 캔버스와 이 레이어는 형제 뷰라 RNGH가 알아서 우선순위를 정하지 않는다 —
+   * 명시하지 않으면 글자를 끄는 동안 사진까지 같이 끌린다.
+   */
+  blocks?: React.MutableRefObject<GestureType | undefined>[];
 };
 
 /** 편집용 텍스트 레이어 — 끌어서 옮기고, 오므려서 키우고, 돌려서 기울인다 */
-export function StoryTextEditor({ overlays, rect, onChange, onEdit }: Props) {
+export function StoryTextEditor({ overlays, rect, onChange, onEdit, blocks }: Props) {
   return (
     <View
       pointerEvents="box-none"
       style={{ position: 'absolute', left: rect.x, top: rect.y, width: rect.width, height: rect.height }}
     >
       {overlays.map((o) => (
-        <EditableText key={o.id} overlay={o} rect={rect} onChange={onChange} onEdit={onEdit} />
+        <EditableText key={o.id} overlay={o} rect={rect} onChange={onChange} onEdit={onEdit} blocks={blocks} />
       ))}
     </View>
   );
@@ -43,11 +49,13 @@ function EditableText({
   rect,
   onChange,
   onEdit,
+  blocks,
 }: {
   overlay: TextOverlay;
   rect: Rect;
   onChange: (overlay: TextOverlay) => void;
   onEdit: (overlay: TextOverlay) => void;
+  blocks?: React.MutableRefObject<GestureType | undefined>[];
 }) {
   const x = useSharedValue(overlay.x);
   const y = useSharedValue(overlay.y);
@@ -65,7 +73,11 @@ function EditableText({
   const commit = () =>
     onChange({ ...overlay, x: x.value, y: y.value, size: size.value, rotation: rotation.value });
 
+  // 글자를 잡는 순간 밑에 깔린 캔버스 제스처를 막는다 — 없으면 글자와 사진이 함께 움직인다
+  const outer = blocks ?? [];
+
   const pan = Gesture.Pan()
+    .blocksExternalGesture(...outer)
     .onChange((e) => {
       x.value = Math.min(1, Math.max(0, x.value + e.changeX / rect.width));
       y.value = Math.min(1, Math.max(0, y.value + e.changeY / rect.height));
@@ -73,6 +85,7 @@ function EditableText({
     .onEnd(() => runOnJS(commit)());
 
   const pinch = Gesture.Pinch()
+    .blocksExternalGesture(...outer)
     .onChange((e) => {
       size.value = Math.min(
         OVERLAY_SIZE_MAX,
@@ -82,12 +95,15 @@ function EditableText({
     .onEnd(() => runOnJS(commit)());
 
   const rotate = Gesture.Rotation()
+    .blocksExternalGesture(...outer)
     .onChange((e) => {
       rotation.value += (e.rotationChange * 180) / Math.PI;
     })
     .onEnd(() => runOnJS(commit)());
 
-  const tap = Gesture.Tap().onEnd(() => runOnJS(onEdit)(overlay));
+  const tap = Gesture.Tap()
+    .blocksExternalGesture(...outer)
+    .onEnd(() => runOnJS(onEdit)(overlay));
 
   // 탭은 움직이기 시작하면 진다 — 나머지 셋은 동시에 먹는다
   const gesture = Gesture.Simultaneous(Gesture.Race(tap, pan), pinch, rotate);
@@ -121,9 +137,10 @@ function EditableText({
       <GestureDetector gesture={gesture}>
         {/*
           글자 딱 만큼이면 잡기가 어렵다 — 여백을 둬서 손가락이 닿을 자리를 만든다.
-          특히 핀치·회전은 **두 손가락이 모두 이 상자 안**에 들어와야 이 글자에 먹는다.
-          하나라도 밖에 떨어지면 밑에 깔린 사진 캔버스의 핀치로 새기 때문에,
+          핀치·회전은 두 손가락이 모두 이 상자 안에 들어와야 이 글자에 먹으므로
           한 손가락이 글자를 잡는 폭보다 넉넉히 크게 잡는다.
+          (예전엔 손가락이 밖으로 나가면 캔버스 핀치로 "새는" 문제도 있었지만,
+           그건 이제 blocksExternalGesture가 막는다 — 여백은 잡기 편하라고만 남긴다)
         */}
         <Animated.View style={[{ paddingHorizontal: 36, paddingVertical: 28 }, box]}>
           <Animated.Text style={[overlayTextStyle(overlay, rect), text]}>
