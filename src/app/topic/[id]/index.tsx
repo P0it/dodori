@@ -52,6 +52,8 @@ export default function TopicDetail() {
   const [draft, setDraft] = useState('');
   const [replyTo, setReplyTo] = useState<TopicComment | null>(null);
   const [pastCount, setPastCount] = useState(PAST_STEP);
+  /** 아직 제출하지 않은 임시 선택 — 한 번 탭으로 바로 제출되지 않게 확인 버튼을 거친다 */
+  const [pending, setPending] = useState<Choice | null>(null);
 
   // 이 라우트는 지난 주제로도 들어온다 — 목록은 오늘 주제를 볼 때만 붙인다(안 그러면 재귀)
   const todayTopic = useTodayTopic();
@@ -70,6 +72,10 @@ export default function TopicDetail() {
   const locked = mine === null;
   /** 상대가 고르기 전이면 다시 고를 수 있다 — 볼 상대 답이 없으니 뒤집기가 성립하지 않는다 */
   const editable = mine === null || partner === null;
+  /** 라디오는 임시 선택(pending)을 먼저 비추고, 없으면 확정(mine)을 보여준다 */
+  const shown = pending ?? mine;
+  /** 확인 버튼은 편집 가능하고 임시 선택이 확정과 다를 때만 — 첫 제출·답 바꾸기 공통 */
+  const showConfirm = editable && pending !== null && pending !== mine;
 
   const pickedBy = (c: Choice): string[] => {
     const names: string[] = [];
@@ -134,13 +140,34 @@ export default function TopicDetail() {
                 key={key}
                 label={label}
                 pickedBy={pickedBy(key)}
-                selected={mine === key}
+                selected={shown === key}
                 disabled={!editable || vote.isPending}
-                onPress={() => vote.mutate(key)}
+                onPress={() => setPending(key)}
               />
             );
           })}
         </View>
+
+        {/* 확인 버튼 — 탭으로 고른 답을 여기서 제출한다 (한 번 탭에 바로 제출되지 않게) */}
+        {showConfirm && (
+          <Pressable
+            onPress={() => pending && vote.mutate(pending)}
+            disabled={vote.isPending}
+            style={({ pressed }) => ({
+              marginTop: 14,
+              height: 50,
+              borderRadius: 999,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: color.accent,
+              opacity: pressed || vote.isPending ? 0.85 : 1,
+            })}
+          >
+            <Text style={{ fontFamily: typeface, fontWeight: '800', fontSize: 15, color: color.onPrimary }}>
+              {vote.isPending ? '정하는 중…' : mine === null ? '이 답으로 정하기' : '이 답으로 바꾸기'}
+            </Text>
+          </Pressable>
+        )}
 
         {locked ? (
           <View
