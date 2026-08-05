@@ -31,7 +31,11 @@ export default function TrackMapScreen() {
       })),
     [track.data],
   );
-  const region = useMemo(() => boundsOf(pins.map((p) => ({ lat: p.lat, lng: p.lng }))), [pins]);
+  // 코스는 하단 카드 스트립이 지도 아래를 가린다 — 기본보다 넉넉히 줄여 전체 동선이 한눈에 들게
+  const region = useMemo(
+    () => boundsOf(pins.map((p) => ({ lat: p.lat, lng: p.lng })), 2),
+    [pins],
+  );
 
   // 핀 탭·카드 선택 공통 — 그 장소를 선택하고 지도 카메라를 이동. (핀↔카드 동기화)
   const select = (placeId: string) => {

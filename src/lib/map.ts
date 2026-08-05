@@ -33,7 +33,8 @@ export interface MapRegion {
 // 장소가 하나뿐일 때 건물만 꽉 차 보이던 것을 고치려고 500m에서 올렸다(2026-08-05):
 // 핀 하나만 봐도 그게 어느 동네인지는 보여야 한다.
 const MIN_SPAN = 0.012;
-// 핀이 화면 가장자리에 붙지 않게 범위를 넉넉히 감싸는 배율.
+// 핀이 화면 가장자리에 붙지 않게 범위를 넉넉히 감싸는 기본 배율.
+// 호출처가 필요하면 더 키운다 — 코스 지도는 하단 카드에 가려 더 줄여야 한눈에 든다.
 const PADDING = 1.5;
 
 /** 좌표(lat·lng 둘 다 유효)가 있는 장소만. 순서는 넘어온 그대로 — 찜 목록처럼 코스 순서가 없는 쪽이 쓴다 */
@@ -58,8 +59,8 @@ export function naverMapUrl(place: { name: string; lat: number | null; lng: numb
   return `${base}?c=${lng},${lat},16,0,0,0,dh`;
 }
 
-/** 핀들을 모두 담는 카메라 범위. 빈 배열이면 null */
-export function boundsOf(points: LatLng[]): MapRegion | null {
+/** 핀들을 모두 담는 카메라 범위. 빈 배열이면 null. padding으로 여백 배율을 키운다 */
+export function boundsOf(points: LatLng[], padding: number = PADDING): MapRegion | null {
   if (points.length === 0) return null;
   let minLat = Infinity;
   let maxLat = -Infinity;
@@ -71,8 +72,8 @@ export function boundsOf(points: LatLng[]): MapRegion | null {
     if (lng < minLng) minLng = lng;
     if (lng > maxLng) maxLng = lng;
   }
-  const latDelta = Math.max(maxLat - minLat, MIN_SPAN) * PADDING;
-  const lngDelta = Math.max(maxLng - minLng, MIN_SPAN) * PADDING;
+  const latDelta = Math.max(maxLat - minLat, MIN_SPAN) * padding;
+  const lngDelta = Math.max(maxLng - minLng, MIN_SPAN) * padding;
   const centerLat = (minLat + maxLat) / 2;
   const centerLng = (minLng + maxLng) / 2;
   return {
