@@ -16,7 +16,8 @@ import {
   type PlaylistPlaceItem,
 } from '@/api/playlists';
 import { Meta } from '@/components/Meta';
-import { PlaylistTile } from '@/components/playlist/PlaylistTile';
+import { PlaylistIcon } from '@/components/playlist/PlaylistTile';
+import { Divider } from '@/components/Divider';
 import { PlaylistLookFields } from '@/components/playlist/PlaylistLookFields';
 import { CloseGlyph, LinkKindGlyph, NaverMapGlyph } from '@/components/glyphs';
 import { PlaceKindTile } from '@/components/PlaceKindTile';
@@ -227,7 +228,7 @@ export default function CustomPlaylist() {
           수정 중에도 그대로 둔다 — 저장 전에 나가면 이름·색·아이콘 변경은 버려진다 */}
       <Pressable
         onPress={() => router.back()}
-        style={[FLOAT, { position: 'absolute', left: 12, top: insets.top + 8, width: 40, height: 40, borderRadius: 20 }]}
+        style={[FLOAT, { position: 'absolute', left: 12, top: insets.top + 2, width: 40, height: 40, borderRadius: 20 }]}
       >
         <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
           <Path d="M15 5l-7 7 7 7" stroke={color.white} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
@@ -244,50 +245,46 @@ export default function CustomPlaylist() {
         backgroundStyle={{ backgroundColor: color.surface1 }}
         handleIndicatorStyle={{ backgroundColor: color.muted }}
       >
-        {/* 시트 헤더 — 리스트 정체(타일·이름·장소 수)와 수정 버튼. 목록과 함께 스크롤되지 않게
-            FlatList 밖에 고정한다. 지도 위 상단바 대신 여기가 이 화면의 제목 자리다 */}
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 12,
-            paddingHorizontal: 16,
-            paddingBottom: 12,
-          }}
-        >
-          {/* 수정 중엔 draft를 따라가 색·아이콘을 고르는 결과가 여기서 바로 보인다 */}
-          <PlaylistTile
-            colorKey={look ? draft.color : (p?.color ?? null)}
-            icon={look ? draft.icon : (p?.icon ?? null)}
-            name={(look ? draft.name : p?.name) || '?'}
-            size={40}
-            radius={10}
-          />
-          <View style={{ flex: 1, minWidth: 0 }}>
+        {/* 시트 헤더 — 목록과 함께 스크롤되지 않게 FlatList 밖에 고정한다.
+            아래 장소 행과 같은 모양(사각 썸네일 + 제목 + 부제 + 우측 액션)이 되지 않도록
+            일부러 다르게 짠다: 배경 없는 라인 아이콘 + 큰 제목, 그리고 구분선.
+            제목 줄과 장소 수를 위아래로 나눠 목록의 촘촘한 행과 밀도도 다르게 뒀다 */}
+        <View style={{ paddingHorizontal: 16, paddingBottom: 10 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            {/* 타일이 아니라 아이콘만 — 수정 중엔 draft를 따라가 색·아이콘 선택이 여기 바로 보인다 */}
+            <PlaylistIcon name={(look ? draft.icon : (p?.icon ?? null)) ?? 'pin'} color={pinColor} size={22} />
             <Text
               numberOfLines={1}
-              style={{ fontFamily: typeface, fontWeight: '700', fontSize: 17, color: color.white }}
+              style={{
+                flex: 1,
+                fontFamily: typeface,
+                fontWeight: '800',
+                fontSize: 21,
+                letterSpacing: -0.3,
+                color: color.white,
+              }}
             >
               {(look ? draft.name : p?.name) || ''}
             </Text>
-            <Meta style={{ marginTop: 2, fontSize: 12.5 }}>장소 {places.length}곳</Meta>
-          </View>
-          <Pressable
-            onPress={editing ? finishEdit : startEdit}
-            style={{ height: 44, justifyContent: 'center', paddingHorizontal: 4 }}
-          >
-            <Text
-              style={{
-                fontFamily: typeface,
-                fontWeight: '700',
-                fontSize: 14,
-                color: editing ? color.accent : color.sub,
-              }}
+            <Pressable
+              onPress={editing ? finishEdit : startEdit}
+              style={{ height: 44, justifyContent: 'center', paddingLeft: 12 }}
             >
-              {editing ? '완료' : '수정'}
-            </Text>
-          </Pressable>
+              <Text
+                style={{
+                  fontFamily: typeface,
+                  fontWeight: '700',
+                  fontSize: 14,
+                  color: editing ? color.accent : color.sub,
+                }}
+              >
+                {editing ? '완료' : '수정'}
+              </Text>
+            </Pressable>
+          </View>
+          <Meta style={{ marginTop: 2, fontSize: 12.5 }}>장소 {places.length}곳</Meta>
         </View>
+        <Divider style={{ marginBottom: 4 }} />
 
         <BottomSheetFlatList
             ref={listRef}
