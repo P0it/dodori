@@ -24,8 +24,8 @@ export interface DaySpan {
 const BAR_H = 15;
 const BAR_GAP = 2;
 const ROW = BAR_H + BAR_GAP;
-/** 셀 위쪽 padding(5) + 날짜 숫자(24) + 숨(3) */
-const BAR_TOP = 32;
+/** 셀 위쪽 padding(5) + 날짜 숫자(20) + 숨(3) */
+const BAR_TOP = 28;
 /** 셀 아래쪽 여백 — 마지막 줄이 셀 모서리에 붙지 않게 */
 const BAR_BOTTOM = 4;
 
@@ -274,16 +274,13 @@ function DayCellView({
           />
         </View>
       )}
-      {/* 날짜 숫자 */}
+      {/* 날짜 숫자 — 오늘은 배경 원 없이 accent 색으로만 (진입 시 오늘이 선택일이라 테두리로도 강조된다) */}
       <View
         style={{
           alignSelf: 'center',
-          width: 24,
-          height: 24,
-          borderRadius: 12,
+          height: 20,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: cell.isToday ? color.accent : 'transparent',
         }}
       >
         <Text
@@ -293,7 +290,7 @@ function DayCellView({
             color: !cell.inMonth
               ? '#4a4a4a'
               : cell.isToday
-                ? color.bg
+                ? color.accent
                 : holiday
                   ? color.holiday
                   : cell.weekday === 0
