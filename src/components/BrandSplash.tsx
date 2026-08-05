@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import { color, typeface } from '@/theme/tokens';
-import { DodoriMark, MARK_LOWER_DOT } from './DodoriMark';
+import { DodoriMark, MARK_LOWER_DOT, WORD } from './DodoriMark';
 
 type Props = { onDone: () => void };
 
@@ -18,7 +18,8 @@ const LETTERS = ['d', 'o', 'd', 'o', 'r', 'i'] as const;
 const MARK_SIZE = 100;
 const MARK_DOT_D = MARK_SIZE * MARK_LOWER_DOT.d;
 
-const FONT_SIZE = 46;
+/** 워드마크 크기·자간은 DodoriMark와 같은 비율에서 나온다 — 한쪽만 바꾸면 로고가 화면마다 달라진다 */
+const FONT_SIZE = MARK_SIZE * WORD.stackRatio;
 /** 아래 값들은 FONT_SIZE 36에서 눈으로 맞춘 것 — 크기를 바꿔도 관계가 유지되도록 비율로 둔다 */
 const LINE_HEIGHT = FONT_SIZE * 1.22;
 /** 점을 덮는 사각형의 높이 (줄 상단부터) — 점은 가리고 줄기 윗면은 안 건드리는 값 */
@@ -263,7 +264,7 @@ export function BrandSplash({ onDone }: Props) {
               fontWeight: '800',
               fontSize: FONT_SIZE,
               lineHeight: LINE_HEIGHT,
-              letterSpacing: FONT_SIZE * -0.028,
+              letterSpacing: FONT_SIZE * WORD.tracking,
               color: color.white,
             }}
           >

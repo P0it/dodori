@@ -39,13 +39,9 @@ export default function Login() {
 
   return (
     <View style={{ flex: 1, backgroundColor: color.bg, paddingHorizontal: 28 }}>
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 20 }}>
-        <DodoriMark size={54} />
-        <Text
-          style={{ fontFamily: typeface, fontWeight: '800', fontSize: 40, letterSpacing: -0.5, color: color.white }}
-        >
-          dodori
-        </Text>
+      {/* 스플래시가 끝난 자리를 그대로 이어받는다 — 마크·글자 크기가 스플래시 마지막 프레임과 같다 */}
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <DodoriMark size={100} showWord layout="stack" />
       </View>
       <View style={{ gap: 12, paddingBottom: 48 }}>
         <KakaoButton onPress={onKakao} />
