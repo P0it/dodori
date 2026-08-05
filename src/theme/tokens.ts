@@ -52,17 +52,20 @@ export const tintBg = {
  * 아쿠아(청록) 자리는 비워둔다 — color.date가 쓴다. 데이트와 구분되지 않는 일정 색은
  * 캘린더에서 종류를 못 읽게 만든다. blue도 같은 이유로 #4FA8FF에서 살짝 남색 쪽으로 옮겼다.
  * 키를 추가하면 events.color CHECK 제약도 같이 넓혀야 한다 (마이그레이션).
+ *
+ * 세 변주 — fg: 원색(피커 점·얇은 레일), bg: 반투명 틴트(사진 위 등),
+ * solid: 흰 글자가 읽히게 명도를 낮춘 꽉 찬 배경(캘린더 칩·막대). 셋 다 같은 색이어야 한다.
  */
 export const eventColor = {
-  green: { fg: '#1ED760', bg: 'rgba(30,215,96,0.15)' },
-  lime: { fg: '#A3E635', bg: 'rgba(163,230,53,0.16)' },
-  blue: { fg: '#4F8CFF', bg: 'rgba(79,140,255,0.16)' },
-  indigo: { fg: '#818CF8', bg: 'rgba(129,140,248,0.16)' },
-  purple: { fg: '#A78BFA', bg: 'rgba(167,139,250,0.16)' },
-  pink: { fg: '#E8688F', bg: 'rgba(232,104,143,0.15)' },
-  coral: { fg: '#FF8A65', bg: 'rgba(255,138,101,0.16)' },
-  amber: { fg: '#E8B84B', bg: 'rgba(232,184,75,0.16)' },
-  red: { fg: '#FF5C5C', bg: 'rgba(255,92,92,0.16)' },
+  green: { fg: '#1ED760', bg: 'rgba(30,215,96,0.15)', solid: '#17924A' },
+  lime: { fg: '#A3E635', bg: 'rgba(163,230,53,0.16)', solid: '#4E7A16' },
+  blue: { fg: '#4F8CFF', bg: 'rgba(79,140,255,0.16)', solid: '#2E6BE6' },
+  indigo: { fg: '#818CF8', bg: 'rgba(129,140,248,0.16)', solid: '#4B54E0' },
+  purple: { fg: '#A78BFA', bg: 'rgba(167,139,250,0.16)', solid: '#7B45E0' },
+  pink: { fg: '#E8688F', bg: 'rgba(232,104,143,0.15)', solid: '#CE3E68' },
+  coral: { fg: '#FF8A65', bg: 'rgba(255,138,101,0.16)', solid: '#D64D18' },
+  amber: { fg: '#E8B84B', bg: 'rgba(232,184,75,0.16)', solid: '#A66A12' },
+  red: { fg: '#FF5C5C', bg: 'rgba(255,92,92,0.16)', solid: '#D93B3B' },
 } as const;
 
 export type EventColorKey = keyof typeof eventColor;

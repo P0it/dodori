@@ -59,7 +59,7 @@ function markList(m: DayMarks): Mark[] {
   // 형태가 다르니 개인 일정 칩과 색이 비슷해도 헷갈리지 않는다.
   if (m.date) out.push({ kind: 'plain', label: m.date.title });
   for (const e of m.events ?? [])
-    out.push({ kind: 'chip', bg: eventColor[e.color].bg, fg: eventColor[e.color].fg, label: e.title });
+    out.push({ kind: 'chip', bg: eventColor[e.color].solid, fg: color.white, label: e.title });
   return out;
 }
 
@@ -179,7 +179,7 @@ function SpanBars({ spans }: { spans: DaySpan[] }) {
                   flex: endCol - startCol + 1,
                   height: BAR_H,
                   justifyContent: 'center',
-                  backgroundColor: eventColor[s.color].bg,
+                  backgroundColor: eventColor[s.color].solid,
                   // 이어지는 쪽은 모서리를 세워 붙여둔다 — 다음 주로 계속된다는 신호
                   borderTopLeftRadius: continuesLeft ? 0 : 3,
                   borderBottomLeftRadius: continuesLeft ? 0 : 3,
@@ -197,7 +197,7 @@ function SpanBars({ spans }: { spans: DaySpan[] }) {
                     fontSize: 10,
                     fontFamily: typeface,
                     fontWeight: '700',
-                    color: eventColor[s.color].fg,
+                    color: color.white,
                   }}
                 >
                   {s.title}
