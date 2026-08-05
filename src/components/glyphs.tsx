@@ -520,6 +520,10 @@ export function NaverMapGlyph({ size = 16 }: { size?: number }) {
  * 업체 링크 글리프 — places.link가 어디로 나가는지(lib/link의 LinkKind) 보여준다.
  * 인스타·유튜브는 공식 로고(simple-icons, CC0) 실루엣 + 브랜드 고유색 — musicBrand와 같은 예외.
  * 블로그·홈페이지는 도메인이 제각각이라 특정 로고를 못 쓴다 → 체인 링크 글리프.
+ *
+ * 캐치테이블·테이블링은 공식 마크를 구하지 못해 **하는 일**로 그렸다 — 예약(포크·나이프)과
+ * 웨이팅(시계). 색은 브랜드색을 지어내는 대신 토큰(color.sub)을 쓴다.
+ * 공식 자산이 생기면 인스타·유튜브처럼 로고 + 브랜드색으로 바꾸면 된다.
  */
 export function LinkKindGlyph({ kind, size = 16 }: { kind: LinkKind; size?: number }) {
   if (kind === 'instagram') {
@@ -546,6 +550,42 @@ export function LinkKindGlyph({ kind, size = 16 }: { kind: LinkKind; size?: numb
       <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
         <Rect x={1.5} y={5} width={21} height={14} rx={4} fill="#FF0000" />
         <Path d="M10 8.8v6.4L15.5 12 10 8.8z" fill="#FFFFFF" />
+      </Svg>
+    );
+  }
+  if (kind === 'catchtable') {
+    // 예약하고 먹으러 가는 곳 — 포크와 나이프
+    return (
+      <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+        <Path
+          d="M5.6 2.8v6h5.6v-6M8.4 2.8v6M8.4 8.8v12.4"
+          stroke={color.sub}
+          strokeWidth={1.9}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <Path
+          d="M16.6 2.8l3.2 3.8v3.2l-3.2 2.6V2.8zM16.6 12.4v8.8"
+          stroke={color.sub}
+          strokeWidth={1.9}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </Svg>
+    );
+  }
+  if (kind === 'tabling') {
+    // 미리 줄 서고 기다리는 곳 — 시계
+    return (
+      <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+        <Circle cx={12} cy={12} r={8.7} stroke={color.sub} strokeWidth={1.9} />
+        <Path
+          d="M12 6.9V12l3.4 2.3"
+          stroke={color.sub}
+          strokeWidth={1.9}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
       </Svg>
     );
   }

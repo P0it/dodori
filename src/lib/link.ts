@@ -2,12 +2,16 @@
  * places.link는 네이버가 준 **업체 홈페이지** 주소다 — 인스타 계정일 때가 많지만 블로그·자체
  * 홈페이지일 수도 있다. 도메인으로 어디인지 좁히고, 모르면 '홈페이지'로 둔다.
  */
-export type LinkKind = 'instagram' | 'blog' | 'youtube' | 'web';
+export type LinkKind = 'instagram' | 'blog' | 'youtube' | 'catchtable' | 'tabling' | 'web';
 
 export function linkKind(url: string | null | undefined): LinkKind {
   if (!url) return 'web';
   const u = url.toLowerCase();
   if (u.includes('instagram.com')) return 'instagram';
+  // 예약·웨이팅 플랫폼 — '홈페이지'로 뭉뚱그리면 눌러보기 전엔 예약 링크인 줄 모른다.
+  // app.catchtable.co.kr처럼 서브도메인이 붙으므로 도메인만 본다
+  if (u.includes('catchtable.co.kr')) return 'catchtable';
+  if (u.includes('tabling.co.kr')) return 'tabling';
   if (u.includes('blog.naver.com') || u.includes('tistory.com') || u.includes('brunch.co.kr')) {
     return 'blog';
   }
@@ -19,6 +23,8 @@ const LABEL: Record<LinkKind, string> = {
   instagram: '인스타그램',
   blog: '블로그',
   youtube: '유튜브',
+  catchtable: '캐치테이블',
+  tabling: '테이블링',
   web: '홈페이지',
 };
 
