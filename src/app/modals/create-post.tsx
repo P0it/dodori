@@ -19,7 +19,7 @@ import type { CanvasTransform } from '@/components/story/StoryCanvas';
 import { cropToCanvas, pickPhotos, type PickedPhoto } from '@/api/photos';
 import { useCreatePost } from '@/api/posts';
 import { usePhotoQuota } from '@/api/couple';
-import { postFrameRatio } from '@/lib/posts';
+import { isFramed, postFrameRatioOf } from '@/lib/posts';
 import { alertDialog } from '@/components/dialog';
 
 /** 게시물 작성 — 사진 선택 + 캡션 */
@@ -47,6 +47,13 @@ export default function CreatePost() {
     }
   };
 
+  /**
+   * 게시물 하나가 쓰는 프레임 비율 — 첫 사진이 정한다.
+   * 크롭 시트·저장·피드 표시가 전부 이 값을 봐야 "올릴 때 본 그대로" 보인다.
+   */
+  const frameRatio = postFrameRatioOf(photos);
+  const frameH = Math.round(screenW * frameRatio);
+
   /** 캔버스 크기는 PostCropSheet이 쓴 값과 같아야 크롭 좌표가 맞는다 */
   const applyCrop = async (t: CanvasTransform) => {
     const target = cropping;
@@ -55,7 +62,7 @@ export default function CreatePost() {
     try {
       const cropped = await cropToCanvas(target, {
         canvasWidth: screenW,
-        canvasHeight: Math.round(screenW * postFrameRatio(target.width, target.height)),
+        canvasHeight: frameH,
         scale: t.scale,
         tx: t.tx,
         ty: t.ty,
@@ -72,7 +79,16 @@ export default function CreatePost() {
     if (!canSave || saving) return;
     setSaving(true);
     try {
-      await createPost.mutateAsync({ caption, photos });
+      // 크롭 시트를 열지 않은 사진은 여기서 중앙 크롭으로 확정한다 —
+      // 비율이 제각각인 채로 올라가면 피드 캐러셀이 표시하면서 한 번 더 자른다
+      const framed = await Promise.all(
+        photos.map((p) =>
+          isFramed(p, frameRatio)
+            ? p
+            : cropToCanvas(p, { canvasWidth: screenW, canvasHeight: frameH, scale: 1, tx: 0, ty: 0 }),
+        ),
+      );
+      await createPost.mutateAsync({ caption, photos: framed });
       router.dismiss();
     } catch (e) {
       alertDialog('저장 실패', e instanceof Error ? e.message : String(e));
@@ -187,7 +203,12 @@ export default function CreatePost() {
         </Pressable>
       </ScrollView>
 
-      <PostCropSheet photo={cropping} onCancel={() => setCropping(null)} onConfirm={applyCrop} />
+      <PostCropSheet
+        photo={cropping}
+        frameRatio={frameRatio}
+        onCancel={() => setCropping(null)}
+        onConfirm={applyCrop}
+      />
     </View>
   );
 }

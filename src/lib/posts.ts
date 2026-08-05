@@ -19,3 +19,26 @@ export function postFrameRatio(
   const ratio = height / width;
   return Math.min(POST_FRAME_MAX_RATIO, Math.max(POST_FRAME_MIN_RATIO, ratio));
 }
+
+/** 비율 계산에 필요한 최소 모양 — 고른 사진(PickedPhoto)도 올라간 사진(PostPhoto)도 만족한다 */
+export interface PhotoSize {
+  width: number | null | undefined;
+  height: number | null | undefined;
+}
+
+/**
+ * 게시물 하나가 쓰는 프레임 비율 — **첫 사진이 정하고 나머지도 이 비율을 따른다** (인스타 규칙).
+ *
+ * 사진마다 제 비율로 자르면, 첫 장이 정한 캐러셀 프레임에 들어갈 때 표시 시점에
+ * 두 번째 크롭이 몰래 일어난다 (가로 첫 장 + 세로 둘째 장이면 둘째가 절반 넘게 잘렸다).
+ * 그래서 크롭·표시가 전부 이 함수 하나를 봐야 한다.
+ */
+export function postFrameRatioOf(photos: PhotoSize[]): number {
+  return postFrameRatio(photos[0]?.width, photos[0]?.height);
+}
+
+/** 이미 프레임 비율로 잘려 있는가 — 크롭이 픽셀 단위로 반올림되므로 여유를 둔다 */
+export function isFramed(photo: PhotoSize, frameRatio: number): boolean {
+  if (!photo.width || !photo.height) return false;
+  return Math.abs(photo.height / photo.width - frameRatio) < 0.01;
+}

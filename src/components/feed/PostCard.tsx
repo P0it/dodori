@@ -10,7 +10,7 @@ import {
 import { Image } from 'expo-image';
 import { color, radius, space, typeface } from '@/theme/tokens';
 import { formatRelative } from '@/lib/date';
-import { postFrameRatio, REACTIONS } from '@/lib/posts';
+import { isFramed, postFrameRatioOf, REACTIONS } from '@/lib/posts';
 import { Avatar } from '@/components/Avatar';
 import { Meta } from '@/components/Meta';
 import { CommentGlyph, HeartGlyph, MoreGlyph } from '@/components/glyphs';
@@ -50,8 +50,8 @@ export function PostCard({
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) =>
     setPage(Math.round(e.nativeEvent.contentOffset.x / width));
 
-  const first = post.photos[0];
-  const carouselH = Math.round(width * postFrameRatio(first?.width, first?.height));
+  const frameRatio = postFrameRatioOf(post.photos);
+  const carouselH = Math.round(width * frameRatio);
 
   const likedBy = post.reactions.find((r) => r.emoji === HEART)?.userIds ?? [];
   const iLiked = likedBy.includes(myUid);
@@ -87,7 +87,14 @@ export function PostCard({
         )}
       </View>
 
-      {/* 사진 캐러셀 — 인스타 규격(세로 최대 4:5)으로 꽉 채워 크롭, 페이징 */}
+      {/*
+        사진 캐러셀 — 프레임은 첫 사진이 정하고, 나머지도 올릴 때 같은 비율로 잘려 있다.
+        그래서 cover가 실제로 자르는 건 없다.
+
+        예외는 이 규칙 이전에 올라간 게시물이다 — 사진마다 비율이 달라, cover로 그리면
+        여기서 두 번째 크롭이 일어난다(세로 사진이 절반 넘게 날아갔다). 이미 올라간 픽셀은
+        되돌릴 수 없으니 그런 사진만 contain으로 전체를 보여준다.
+      */}
       {post.photos.length > 0 && (
         <View>
           <ScrollView
@@ -103,7 +110,7 @@ export function PostCard({
                 key={p.id}
                 source={{ uri: p.thumbUrl }}
                 style={{ width, height: carouselH, backgroundColor: color.bg }}
-                contentFit="cover"
+                contentFit={isFramed(p, frameRatio) ? 'cover' : 'contain'}
                 transition={160}
               />
             ))}
