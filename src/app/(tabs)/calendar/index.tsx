@@ -118,11 +118,16 @@ export default function Calendar() {
   const { width: screenW } = useWindowDimensions();
   const tx = useSharedValue(0);
   const gridStyle = useAnimatedStyle(() => ({ transform: [{ translateX: tx.value }] }));
+  /**
+   * 달 넘기기 — 새 달을 반대편에 세워두고 제자리로 밀어 넣는다.
+   * 애니메이션 완료 콜백에서 넘기지 않는다: 콜백 안에서 tx에 다시 대입하면 Reanimated가
+   * 직전 애니메이션을 취소로 보고 콜백을 한 번 더 불러 두 달씩 넘어갔다.
+   * onEnd는 제스처당 정확히 한 번이므로 여기서 바로 커밋한다.
+   */
   const goMonth = (delta: number) => {
     setMonth((m) => addMonths(m, delta));
-    // 새 달은 나간 쪽 반대편에서 밀려 들어온다
     tx.value = delta > 0 ? screenW : -screenW;
-    tx.value = withTiming(0, { duration: 180 });
+    tx.value = withTiming(0, { duration: 200 });
   };
   const swipe = Gesture.Pan()
     .activeOffsetX([-14, 14])
@@ -133,10 +138,7 @@ export default function Calendar() {
     .onEnd((e) => {
       // 충분히 끌었거나 빠르게 튕겼으면 넘긴다
       if (Math.abs(e.translationX) > screenW * 0.22 || Math.abs(e.velocityX) > 700) {
-        const delta = e.translationX < 0 ? 1 : -1;
-        tx.value = withTiming(delta > 0 ? -screenW : screenW, { duration: 120 }, () =>
-          runOnJS(goMonth)(delta),
-        );
+        runOnJS(goMonth)(e.translationX < 0 ? 1 : -1);
       } else {
         tx.value = withSpring(0, { damping: 20, stiffness: 220 });
       }
