@@ -9,6 +9,8 @@ import {
   View,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { runOnJS } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { color, heroScrim, HERO_SCRIM_STOPS, typeface } from '@/theme/tokens';
@@ -16,6 +18,7 @@ import { isReleased, formatDday, weekdayKo } from '@/lib/date';
 import { pinnablePlaces } from '@/lib/map';
 import Svg, { Path } from 'react-native-svg';
 import {
+  useAllTracks,
   useTrack,
   useUpdateTrack,
   useDeleteTrack,
@@ -107,6 +110,27 @@ function TrackBody({ t }: { t: TrackDetail }) {
 
   // 좌표 있는 장소가 하나라도 있어야 지도로 볼 수 있다
   const hasPins = useMemo(() => pinnablePlaces(t.places).length >= 1, [t.places]);
+
+  /*
+   * 좌우 스와이프로 옆 앨범 — 순서는 플레이리스트·캐러셀과 같은 최신순(useAllTracks).
+   * 왼쪽으로 밀면 더 과거, 오른쪽으로 밀면 더 최근. push가 아니라 replace라 뒤로가기가 쌓이지 않는다.
+   */
+  const siblings = useAllTracks().data ?? [];
+  const idx = siblings.findIndex((s) => s.id === t.id);
+  const goSibling = (delta: number) => {
+    const next = idx >= 0 ? siblings[idx + delta] : undefined;
+    if (next) router.replace(`/track/${next.id}`);
+  };
+  const swipe = Gesture.Pan()
+    // 수정 중엔 끈다 — 드래그 재정렬·입력 중에 화면이 바뀌면 쓰던 게 날아간다
+    .enabled(!editing && !reordering)
+    .activeOffsetX([-20, 20])
+    .failOffsetY([-16, 16])
+    .onEnd((e) => {
+      if (Math.abs(e.translationX) > screenW * 0.25 || Math.abs(e.velocityX) > 800) {
+        runOnJS(goSibling)(e.translationX < 0 ? 1 : -1);
+      }
+    });
 
   const photoThumbUrls = t.photos.map((p) => p.thumbUrl);
   const nameOf = (userId: string) =>
@@ -477,6 +501,7 @@ function TrackBody({ t }: { t: TrackDetail }) {
         }
       />
       </View>
+      <GestureDetector gesture={swipe}>
       <ScrollView contentContainerStyle={{ paddingBottom: 40 }} scrollEnabled={!reordering}>
         {hero}
 
@@ -593,6 +618,7 @@ function TrackBody({ t }: { t: TrackDetail }) {
           </View>
         )}
       </ScrollView>
+      </GestureDetector>
     </View>
   );
 }
