@@ -21,6 +21,8 @@ type Props = {
   events: VisibleEvent[];
   tracks: MonthTrack[];
   annivs: AnnivItem[];
+  /** 공휴일이면 날짜를 그리드와 같은 빨강으로 (주말보다 우선) */
+  holiday?: boolean;
   /** 일정 주인 표시용 — 화면이 프로필을 알고 있으니 조회 결과만 내려받는다 */
   name: (uid: string) => string;
   avatarUrl: (uid: string) => string | null;
@@ -38,14 +40,20 @@ function kstHHmm(iso: string): string {
 }
 
 /** 선택일 어젠다 — 캘린더 그리드 아래에 상주한다 (목업 18·19 본문) */
-export function DayAgenda({ date, events, tracks, annivs, name, avatarUrl }: Props) {
+export function DayAgenda({ date, events, tracks, annivs, name, avatarUrl, holiday }: Props) {
   const router = useRouter();
 
   const [y, m, d] = date.split('-').map(Number);
   const dow = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
   const weekday = WEEKDAY[dow];
-  // 주말은 그리드와 같은 색으로 — 일=빨강, 토=파랑
-  const weekendTint = dow === 0 ? color.sunday : dow === 6 ? color.saturday : null;
+  // 그리드와 같은 색으로 — 공휴일=빨강(주말보다 우선), 일=빨강, 토=파랑
+  const dateTint = holiday
+    ? color.holiday
+    : dow === 0
+      ? color.sunday
+      : dow === 6
+        ? color.saturday
+        : null;
   const anniv = annivs[0];
   const isToday = date === todayKST();
 
@@ -60,10 +68,10 @@ export function DayAgenda({ date, events, tracks, annivs, name, avatarUrl }: Pro
         }}
       >
         <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8 }}>
-          <Text style={{ fontFamily: typeface, fontWeight: '800', fontSize: 22, color: weekendTint ?? color.white }}>
+          <Text style={{ fontFamily: typeface, fontWeight: '800', fontSize: 22, color: dateTint ?? color.white }}>
             {m}월 {d}일
           </Text>
-          <Text style={{ fontFamily: typeface, fontWeight: '500', fontSize: 13, color: weekendTint ?? color.sub }}>{weekday}</Text>
+          <Text style={{ fontFamily: typeface, fontWeight: '500', fontSize: 13, color: dateTint ?? color.sub }}>{weekday}</Text>
           {isToday && (
             <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 12, color: color.accent }}>오늘</Text>
           )}

@@ -192,6 +192,7 @@ export default function Calendar() {
           annivs={(annivs.data ?? []).filter(
             (a) => occurrenceInMonth(a.date, a.repeatYearly, month) === selected,
           )}
+          holiday={!!holidays[selected]}
           name={(id) => nameOf(id)}
           avatarUrl={(id) => avatarOf(id)}
         />
