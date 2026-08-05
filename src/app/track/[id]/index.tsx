@@ -118,6 +118,8 @@ function TrackBody({ t }: { t: TrackDetail }) {
    * 왼쪽으로 밀면(내용을 왼쪽으로 끌면) 오른쪽에 있던 더 최근 날짜가 온다. 캘린더 스와이프와 같은 방향.
    * push가 아니라 replace라 뒤로가기가 쌓이지 않는다.
    */
+  // 좌우 스와이프 Pan이 이 스크롤과 동시에 동작하도록 연결한다 (아래 simultaneousWithExternalGesture)
+  const scrollRef = useRef<React.ComponentRef<typeof ScrollView>>(null);
   const siblings = useAllTracks().data ?? [];
   const idx = siblings.findIndex((s) => s.id === t.id);
   /** days: +1이면 더 최근 날짜. 목록이 최신순이라 인덱스는 반대로 움직인다 */
@@ -130,6 +132,12 @@ function TrackBody({ t }: { t: TrackDetail }) {
     .enabled(!editing && !reordering)
     .activeOffsetX([-20, 20])
     .failOffsetY([-16, 16])
+    // 스크롤과 동시 허용 — 이게 없으면 Pan과 ScrollView가 배타적으로 싸워
+    // 세로 스크롤·좌우 스와이프 둘 다 (특히 탭 가능한 히어로·코스 위에서) 먹통이 된다.
+    // 캐스팅: RNGH가 외부 제스처 ref를 ComponentType으로 받아 ScrollView 인스턴스 ref와 타입이 어긋난다
+    .simultaneousWithExternalGesture(
+      scrollRef as unknown as React.RefObject<React.ComponentType>,
+    )
     .onEnd((e) => {
       if (Math.abs(e.translationX) > screenW * 0.25 || Math.abs(e.velocityX) > 800) {
         runOnJS(goSibling)(e.translationX < 0 ? 1 : -1);
@@ -516,7 +524,7 @@ function TrackBody({ t }: { t: TrackDetail }) {
       />
       </View>
       <GestureDetector gesture={swipe}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 40 }} scrollEnabled={!reordering}>
+      <ScrollView ref={scrollRef} contentContainerStyle={{ paddingBottom: 40 }} scrollEnabled={!reordering}>
         {hero}
 
         {/*
