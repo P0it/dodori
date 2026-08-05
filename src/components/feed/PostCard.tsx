@@ -1,13 +1,13 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import {
   Pressable,
+  ScrollView,
   Text,
   View,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from 'react-native';
-import Animated from 'react-native-reanimated';
-import { ZoomableImage } from './PhotoZoom';
+import { Image } from 'expo-image';
 import { color, radius, space, typeface } from '@/theme/tokens';
 import { formatRelative } from '@/lib/date';
 import { postContentFit, postFrameRatioOf, REACTIONS } from '@/lib/posts';
@@ -45,8 +45,6 @@ export function PostCard({
   onDelete,
 }: Props) {
   const [page, setPage] = useState(0);
-  // 핀치가 가로 스크롤에 막히지 않게 캐러셀을 제스처에 함께 물린다
-  const scrollRef = useRef<React.ComponentRef<typeof Animated.ScrollView>>(null);
   const [expanded, setExpanded] = useState(false);
   const mine = post.authorId === myUid;
 
@@ -100,8 +98,7 @@ export function PostCard({
       */}
       {post.photos.length > 0 && (
         <View>
-          <Animated.ScrollView
-            ref={scrollRef}
+          <ScrollView
             horizontal
             pagingEnabled
             showsHorizontalScrollIndicator={false}
@@ -110,16 +107,15 @@ export function PostCard({
             style={{ width, height: carouselH }}
           >
             {post.photos.map((p) => (
-              <ZoomableImage
+              <Image
                 key={p.id}
                 source={photoSource(p.thumbUrl)}
                 style={{ width, height: carouselH, backgroundColor: color.bg }}
                 contentFit={postContentFit(p, frameRatio)}
                 transition={160}
-                scrollRef={scrollRef}
               />
             ))}
-          </Animated.ScrollView>
+          </ScrollView>
 
           {/* n/m 카운터 */}
           {post.photos.length > 1 && (
