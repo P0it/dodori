@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import {
   Pressable,
   Text,
@@ -7,7 +7,7 @@ import {
   type NativeSyntheticEvent,
 } from 'react-native';
 import Animated from 'react-native-reanimated';
-import { Gesture, GestureDetector, type GestureType } from 'react-native-gesture-handler';
+import { type GestureType } from 'react-native-gesture-handler';
 import { ZoomableImage } from './PhotoZoom';
 import { color, radius, space, typeface } from '@/theme/tokens';
 import { formatRelative } from '@/lib/date';
@@ -50,13 +50,6 @@ export function PostCard({
 }: Props) {
   const [page, setPage] = useState(0);
   const [expanded, setExpanded] = useState(false);
-  // 캐러셀을 네이티브 제스처로 등록해 핀치와 동시 인식시킨다(핀치가 가로 스크롤을 막지 않게).
-  // 바깥 세로 피드 제스처도 함께 넘겨 세로 스크롤도 공존시킨다.
-  const carouselGesture = useMemo(() => Gesture.Native(), []);
-  const photoGestures = useMemo(
-    () => [carouselGesture, ...(outerGestures ?? [])],
-    [carouselGesture, outerGestures],
-  );
   const mine = post.authorId === myUid;
 
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) =>
@@ -109,27 +102,25 @@ export function PostCard({
       */}
       {post.photos.length > 0 && (
         <View>
-          <GestureDetector gesture={carouselGesture}>
-            <Animated.ScrollView
-              horizontal
-              pagingEnabled
-              showsHorizontalScrollIndicator={false}
-              onScroll={onScroll}
-              scrollEventThrottle={16}
-              style={{ width, height: carouselH }}
-            >
-              {post.photos.map((p) => (
-                <ZoomableImage
-                  key={p.id}
-                  source={photoSource(p.thumbUrl)}
-                  style={{ width, height: carouselH, backgroundColor: color.bg }}
-                  contentFit={postContentFit(p, frameRatio)}
-                  transition={160}
-                  simultaneousGestures={photoGestures}
-                />
-              ))}
-            </Animated.ScrollView>
-          </GestureDetector>
+          <Animated.ScrollView
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onScroll={onScroll}
+            scrollEventThrottle={16}
+            style={{ width, height: carouselH }}
+          >
+            {post.photos.map((p) => (
+              <ZoomableImage
+                key={p.id}
+                source={photoSource(p.thumbUrl)}
+                style={{ width, height: carouselH, backgroundColor: color.bg }}
+                contentFit={postContentFit(p, frameRatio)}
+                transition={160}
+                simultaneousGestures={outerGestures}
+              />
+            ))}
+          </Animated.ScrollView>
 
           {/* n/m 카운터 */}
           {post.photos.length > 1 && (
