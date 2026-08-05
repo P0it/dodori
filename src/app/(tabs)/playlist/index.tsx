@@ -82,7 +82,7 @@ export default function PlaylistRoot() {
 
   return (
     <View style={{ flex: 1, backgroundColor: color.bg }}>
-    <ScrollView style={{ backgroundColor: color.bg }} contentContainerStyle={{ paddingBottom: 132 }}>
+    <ScrollView style={{ backgroundColor: color.bg }} contentContainerStyle={{ paddingBottom: 24 }}>
       {/* 화면 제목("라이브러리")은 달지 않는다 — 탭바가 이미 어느 탭인지 말하고, 섹션 헤더가 바로 이어진다 */}
       {noTracks ? (
         <FirstTrackHero onPress={() => router.push('/modals/create-track')} />
