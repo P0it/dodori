@@ -164,34 +164,31 @@ export function DayAgenda({ date, events, tracks, annivs, name, avatarUrl }: Pro
               <Text numberOfLines={1} style={{ fontFamily: typeface, fontSize: 11, color: color.sub, width: 44 }}>
                 {time}
               </Text>
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 15, color: color.white }}>
+              {/*
+                한 일정이 세로로 길어지면 30%짜리 아젠다에 두 개도 못 들어간다.
+                제목 한 줄 + 장소·설명 한 줄로 접고, 작성자는 우측 여백으로 뺀다.
+                장소와 설명은 둘 다 부차 정보라 같은 줄에서 가운뎃점으로 잇는다.
+              */}
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text
+                  numberOfLines={1}
+                  style={{ fontFamily: typeface, fontWeight: '600', fontSize: 15, color: color.white }}
+                >
                   {e.title}
                 </Text>
-                {e.place?.name ? (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 3 }}>
-                    <PinGlyph size={12} color={color.muted} />
+                {(e.place?.name || e.description) && (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 2 }}>
+                    {e.place?.name ? <PinGlyph size={11} color={color.muted} /> : null}
                     <Meta numberOfLines={1} style={{ flex: 1, fontSize: 12 }}>
-                      {e.place.name}
+                      {[e.place?.name, e.description].filter(Boolean).join(' · ')}
                     </Meta>
-                  </View>
-                ) : null}
-                {e.description ? (
-                  <Text
-                    numberOfLines={1}
-                    style={{ fontFamily: typeface, fontSize: 12, color: color.sub, marginTop: 2 }}
-                  >
-                    {e.description}
-                  </Text>
-                ) : null}
-                {/* 생성자 */}
-                {e.owner_id && (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4 }}>
-                    <Avatar url={avatarUrl(e.owner_id)} name={name(e.owner_id)} size={16} />
-                    <Meta style={{ fontSize: 11.5 }}>{name(e.owner_id)}</Meta>
                   </View>
                 )}
               </View>
+              {/* 작성자 — 아바타만. 두 사람뿐이라 이름을 덧붙이면 폭만 먹는다 */}
+              {e.owner_id && (
+                <Avatar url={avatarUrl(e.owner_id)} name={name(e.owner_id)} size={20} />
+              )}
               <Text style={{ fontFamily: typeface, fontSize: 12, color: color.muted }}>수정</Text>
             </Pressable>
           );
