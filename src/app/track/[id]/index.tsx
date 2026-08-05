@@ -2,14 +2,15 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
-  ScrollView,
   Text,
   TextInput,
   useWindowDimensions,
   View,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+// ScrollView는 RNGH 것을 쓴다 — 좌우 스와이프 GestureDetector가 감싸고 있어서,
+// RN 기본 ScrollView면 세로 스크롤이 제스처 시스템으로 넘어오지 않아 화면 전체가 안 스크롤된다.
+import { Gesture, GestureDetector, ScrollView } from 'react-native-gesture-handler';
 import { runOnJS } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
