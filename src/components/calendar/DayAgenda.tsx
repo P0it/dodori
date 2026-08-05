@@ -157,7 +157,14 @@ export function DayAgenda({ date, events, tracks, annivs, name, avatarUrl }: Pro
             <Pressable
               key={e.id}
               onPress={() => router.push({ pathname: '/modals/add-event', params: { id: e.id! } })}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 11 }}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 10,
+                paddingVertical: 11,
+                // 장소·설명이 없는 일정은 한 줄이라 42px까지 내려간다 — 손가락이 닿는 최소치를 지킨다
+                minHeight: 44,
+              }}
             >
               {/* 일정 색 — 사람이 아니라 이 일정의 색 */}
               <View style={{ width: 3, alignSelf: 'stretch', borderRadius: 2, backgroundColor: tint.fg }} />
@@ -185,11 +192,13 @@ export function DayAgenda({ date, events, tracks, annivs, name, avatarUrl }: Pro
                   </View>
                 )}
               </View>
-              {/* 작성자 — 아바타만. 두 사람뿐이라 이름을 덧붙이면 폭만 먹는다 */}
+              {/*
+                작성자 — 아바타만. 두 사람뿐이라 이름을 덧붙이면 폭만 먹는다.
+                "수정" 글자는 뺐다 — 행 전체가 이미 눌러서 편집으로 들어가는 중복 어포던스였다.
+              */}
               {e.owner_id && (
                 <Avatar url={avatarUrl(e.owner_id)} name={name(e.owner_id)} size={20} />
               )}
-              <Text style={{ fontFamily: typeface, fontSize: 12, color: color.muted }}>수정</Text>
             </Pressable>
           );
         })
