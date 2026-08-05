@@ -94,8 +94,15 @@ function RootLayout() {
       <AuthBridge />
       <StatusBar style="light" />
       <View style={{ flex: 1, backgroundColor: color.bg }}>
-        {/* 모든 화면이 시스템 상태바 아래에서 시작하도록 — 없으면 헤더가 상태바에 가려 터치도 먹지 않는다 */}
-        <View style={{ flex: 1, paddingTop: insets.top }}>
+        {/*
+          모든 화면이 시스템 상태바 아래에서 시작하도록 — 없으면 헤더가 상태바에 가려 터치도 먹지 않는다.
+          웹은 인라인 padding 대신 index.html의 `[data-safe-top]`이 CSS env()로 그린다
+          (JS 인셋은 마운트 시점 값에서 잘 갱신되지 않는다 — CoupleTabBar 주석 참고)
+        */}
+        <View
+          style={{ flex: 1, paddingTop: Platform.OS === 'web' ? undefined : insets.top }}
+          {...(Platform.OS === 'web' ? { dataSet: { safeTop: '' } } : {})}
+        >
           <Stack
             screenOptions={{
               headerShown: false,
