@@ -93,10 +93,12 @@ export default function Today() {
         onPress={() => router.push(`/topic/${topic.data!.id}`)}
         style={({ pressed }) => ({
           marginTop: 16,
-          borderRadius: 14,
+          borderRadius: 20,
           paddingHorizontal: 16,
           paddingVertical: 14,
           backgroundColor: color.surface1,
+          borderWidth: 1,
+          borderColor: color.surface2,
           opacity: pressed ? 0.9 : 1,
         })}
       >

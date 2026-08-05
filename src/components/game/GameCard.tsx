@@ -23,9 +23,11 @@ export function GameCard({
       onPress={onPress}
       style={({ pressed }) => ({
         marginTop: space[4],
-        borderRadius: 14,
+        borderRadius: 20,
         padding: space[4],
         backgroundColor: color.surface1,
+        borderWidth: 1,
+        borderColor: color.surface2,
         opacity: pressed ? 0.9 : 1,
       })}
     >
