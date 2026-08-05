@@ -521,9 +521,9 @@ export function NaverMapGlyph({ size = 16 }: { size?: number }) {
  * 인스타·유튜브는 공식 로고(simple-icons, CC0) 실루엣 + 브랜드 고유색 — musicBrand와 같은 예외.
  * 블로그·홈페이지는 도메인이 제각각이라 특정 로고를 못 쓴다 → 체인 링크 글리프.
  *
- * 캐치테이블·테이블링은 공식 마크를 구하지 못해 **하는 일**로 그렸다 — 예약(포크·나이프)과
- * 웨이팅(시계). 색은 브랜드색을 지어내는 대신 토큰(color.sub)을 쓴다.
- * 공식 자산이 생기면 인스타·유튜브처럼 로고 + 브랜드색으로 바꾸면 된다.
+ * 캐치테이블은 흰 C + 주황 타일이라 패스로 그린다. 테이블링은 얼굴 일러스트라 패스로
+ * 옮길 수 없어 로고 파일을 쓴다 (MusicServiceIcon의 멜론과 같은 갈래 — 기하학적 마크는
+ * 패스, 그림은 파일). 두 브랜드색은 로고 원본에서 뽑았다.
  */
 export function LinkKindGlyph({ kind, size = 16 }: { kind: LinkKind; size?: number }) {
   if (kind === 'instagram') {
@@ -554,39 +554,26 @@ export function LinkKindGlyph({ kind, size = 16 }: { kind: LinkKind; size?: numb
     );
   }
   if (kind === 'catchtable') {
-    // 예약하고 먹으러 가는 곳 — 포크와 나이프
+    // 주황 타일 위 흰 C — 오른쪽이 트인 굵은 호(터미널은 자른 단면 그대로 butt cap)
     return (
       <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+        <Rect width={24} height={24} rx={5} fill="#FF3D00" />
         <Path
-          d="M5.6 2.8v6h5.6v-6M8.4 2.8v6M8.4 8.8v12.4"
-          stroke={color.sub}
-          strokeWidth={1.9}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <Path
-          d="M16.6 2.8l3.2 3.8v3.2l-3.2 2.6V2.8zM16.6 12.4v8.8"
-          stroke={color.sub}
-          strokeWidth={1.9}
-          strokeLinecap="round"
-          strokeLinejoin="round"
+          d="M15.27 15.89A5.08 5.08 0 1 1 15.27 8.11"
+          stroke="#FFFFFF"
+          strokeWidth={3.77}
         />
       </Svg>
     );
   }
   if (kind === 'tabling') {
-    // 미리 줄 서고 기다리는 곳 — 시계
+    // 얼굴 일러스트 — 흰 바탕이 로고의 일부라 타일째 그린다 (멜론과 같은 처리)
     return (
-      <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-        <Circle cx={12} cy={12} r={8.7} stroke={color.sub} strokeWidth={1.9} />
-        <Path
-          d="M12 6.9V12l3.4 2.3"
-          stroke={color.sub}
-          strokeWidth={1.9}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </Svg>
+      <Image
+        source={require('../../assets/brand/tabling.png')}
+        style={{ width: size, height: size, borderRadius: size * 0.28 }}
+        contentFit="contain"
+      />
     );
   }
   return <LinkGlyph size={size} color={color.sub} />;
