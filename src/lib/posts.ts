@@ -42,3 +42,18 @@ export function isFramed(photo: PhotoSize, frameRatio: number): boolean {
   if (!photo.width || !photo.height) return false;
   return Math.abs(photo.height / photo.width - frameRatio) < 0.01;
 }
+
+/**
+ * 이 사진을 프레임에 어떻게 놓을지 — 옛 게시물 대비.
+ *
+ * 게시물 비율 규칙 이전에 올라간 사진은 비율이 제각각이라 cover로 그리면 표시 시점에
+ * 크롭이 한 번 더 일어난다. 다만 **클램프에 걸려 잘리는 것은 원래 의도된 크롭**이다
+ * (3:4 폰 사진 → 4:5 프레임). 그래서 원본 비율이 아니라 **클램프까지 적용한 비율**을 본다.
+ *
+ * 같으면 cover(설계대로 꽉 채워 자름), 다르면 contain(전체를 보여줌) —
+ * 가로 첫 장 + 세로 둘째 장처럼 프레임 자체가 어긋난 경우만 여백이 생긴다.
+ */
+export function postContentFit(photo: PhotoSize, frameRatio: number): 'cover' | 'contain' {
+  const clamped = postFrameRatio(photo.width, photo.height);
+  return Math.abs(clamped - frameRatio) < 0.01 ? 'cover' : 'contain';
+}

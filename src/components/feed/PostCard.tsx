@@ -10,7 +10,7 @@ import {
 import { Image } from 'expo-image';
 import { color, radius, space, typeface } from '@/theme/tokens';
 import { formatRelative } from '@/lib/date';
-import { isFramed, postFrameRatioOf, REACTIONS } from '@/lib/posts';
+import { postContentFit, postFrameRatioOf, REACTIONS } from '@/lib/posts';
 import { Avatar } from '@/components/Avatar';
 import { Meta } from '@/components/Meta';
 import { CommentGlyph, HeartGlyph, MoreGlyph } from '@/components/glyphs';
@@ -92,8 +92,8 @@ export function PostCard({
         그래서 cover가 실제로 자르는 건 없다.
 
         예외는 이 규칙 이전에 올라간 게시물이다 — 사진마다 비율이 달라, cover로 그리면
-        여기서 두 번째 크롭이 일어난다(세로 사진이 절반 넘게 날아갔다). 이미 올라간 픽셀은
-        되돌릴 수 없으니 그런 사진만 contain으로 전체를 보여준다.
+        여기서 두 번째 크롭이 일어난다(세로 사진이 절반 넘게 날아갔다). 원본 비율 그대로
+        저장돼 있으므로(업로드는 축소만 한다) 그런 사진만 contain으로 돌리면 전체가 보인다.
       */}
       {post.photos.length > 0 && (
         <View>
@@ -110,7 +110,7 @@ export function PostCard({
                 key={p.id}
                 source={{ uri: p.thumbUrl }}
                 style={{ width, height: carouselH, backgroundColor: color.bg }}
-                contentFit={isFramed(p, frameRatio) ? 'cover' : 'contain'}
+                contentFit={postContentFit(p, frameRatio)}
                 transition={160}
               />
             ))}

@@ -1,4 +1,4 @@
-import { isFramed, postFrameRatio, postFrameRatioOf } from '../posts';
+import { isFramed, postContentFit, postFrameRatio, postFrameRatioOf } from '../posts';
 
 describe('postFrameRatio', () => {
   it('범위 안의 비율은 그대로 쓴다', () => {
@@ -66,5 +66,35 @@ describe('isFramed', () => {
   it('크기를 모르면 잘라야 하는 것으로 본다', () => {
     expect(isFramed({ width: null, height: null }, 1)).toBe(false);
     expect(isFramed({ width: 1000, height: undefined }, 1)).toBe(false);
+  });
+});
+
+describe('postContentFit (옛 게시물 표시)', () => {
+  it('클램프에 걸려 잘리는 건 의도된 크롭이라 cover를 유지한다', () => {
+    // 3:4 폰 사진(1.333)이 4:5 프레임에 — 원본 비율은 다르지만 클램프 결과가 프레임과 같다
+    expect(postContentFit({ width: 3000, height: 4000 }, 1.25)).toBe('cover');
+    // 9:16 세로 사진도 마찬가지
+    expect(postContentFit({ width: 1080, height: 1920 }, 1.25)).toBe('cover');
+    // 21:9 초광각이 16:9 프레임에
+    expect(postContentFit({ width: 4000, height: 1000 }, 0.5625)).toBe('cover');
+  });
+
+  it('프레임 자체가 어긋난 사진은 contain으로 전체를 보여준다', () => {
+    // 가로 첫 장이 정한 16:9 프레임에 세로 사진이 들어오는 경우 — 이게 두 번 잘리던 사진
+    expect(postContentFit({ width: 1080, height: 1350 }, 0.5625)).toBe('contain');
+    // 세로 프레임에 가로 사진
+    expect(postContentFit({ width: 1920, height: 1080 }, 1.25)).toBe('contain');
+    // 정사각이 4:5 프레임에
+    expect(postContentFit({ width: 1000, height: 1000 }, 1.25)).toBe('contain');
+  });
+
+  it('올릴 때 프레임 비율로 구운 사진은 항상 cover', () => {
+    expect(postContentFit({ width: 1080, height: 608 }, 0.5625)).toBe('cover');
+    expect(postContentFit({ width: 1080, height: 1350 }, 1.25)).toBe('cover');
+  });
+
+  it('크기를 모르면 정사각으로 보고 판정한다', () => {
+    expect(postContentFit({ width: null, height: null }, 1)).toBe('cover');
+    expect(postContentFit({ width: null, height: null }, 1.25)).toBe('contain');
   });
 });
