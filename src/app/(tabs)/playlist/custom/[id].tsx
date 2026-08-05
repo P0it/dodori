@@ -1,10 +1,13 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Linking, Pressable, Text, View } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import BottomSheet, { BottomSheetFlatList } from '@gorhom/bottom-sheet';
-import { color, typeface, DEFAULT_EVENT_COLOR } from '@/theme/tokens';
-import { withCoords, boundsOf } from '@/lib/map';
+import { color, typeface, eventColor, toEventColor, DEFAULT_EVENT_COLOR } from '@/theme/tokens';
+import { withCoords, boundsOf, naverMapUrl } from '@/lib/map';
+import { linkKind } from '@/lib/link';
 import {
   usePlaylistDetail,
   useDeletePlaylist,
@@ -12,11 +15,10 @@ import {
   useUpdatePlaylist,
   type PlaylistPlaceItem,
 } from '@/api/playlists';
-import { TopBar } from '@/components/TopBar';
 import { Meta } from '@/components/Meta';
 import { PlaylistTile } from '@/components/playlist/PlaylistTile';
 import { PlaylistLookFields } from '@/components/playlist/PlaylistLookFields';
-import { ChevronGlyph, CloseGlyph } from '@/components/glyphs';
+import { CloseGlyph, LinkKindGlyph, NaverMapGlyph } from '@/components/glyphs';
 import { PlaceKindTile } from '@/components/PlaceKindTile';
 import { PlaceMap, type MapPin, type PlaceMapHandle } from '@/components/map/PlaceMap';
 import { confirmDialog } from '@/components/dialog';
@@ -27,6 +29,38 @@ const COLLAPSED = 0;
 const EXPANDED = 1;
 // 행 높이 고정 (사진/타일 52 + 상하 패딩 9씩)
 const ROW_H = 70;
+
+/** 지도 위에 뜨는 컨트롤 공통 — 밝은 지도 위에서도 읽히게 어두운 불투명 배경 + 그림자 */
+const FLOAT = {
+  backgroundColor: color.surface1,
+  alignItems: 'center' as const,
+  justifyContent: 'center' as const,
+  shadowColor: '#000',
+  shadowOpacity: 0.3,
+  shadowRadius: 6,
+  shadowOffset: { width: 0, height: 2 },
+  elevation: 4,
+};
+
+/** 장소 행 오른쪽의 작은 아이콘 버튼 (네이버 지도·홈페이지) */
+function RowAction({ onPress, children }: { onPress: () => void; children: React.ReactNode }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => ({
+        width: 38,
+        height: 38,
+        borderRadius: 19,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: color.surface2,
+        opacity: pressed ? 0.6 : 1,
+      })}
+    >
+      {children}
+    </Pressable>
+  );
+}
 
 /**
  * 테마(커스텀)·찜 플레이리스트 상세 — 담은 장소를 지도 핀으로 보여준다 (네이버 지도식).
@@ -48,7 +82,10 @@ export default function CustomPlaylist() {
   const [editing, setEditing] = useState(false);
   // 이름·색·아이콘은 '완료'를 눌러야 저장된다 (장소 ×는 지금도 즉시 반영)
   const [draft, setDraft] = useState({ name: '', color: DEFAULT_EVENT_COLOR as string, icon: null as string | null });
+  /** 이름·색·아이콘 입력을 여는가 (찜은 커플당 하나뿐인 고정 목록이라 열지 않는다) */
+  const look = editing && !isSaved;
 
+  const insets = useSafeAreaInsets();
   const sheetRef = useRef<BottomSheet>(null);
   const listRef = useRef<React.ComponentRef<typeof BottomSheetFlatList>>(null);
   const mapRef = useRef<PlaceMapHandle>(null);
@@ -69,6 +106,11 @@ export default function CustomPlaylist() {
     [places],
   );
   const region = useMemo(() => boundsOf(pins.map((pin) => ({ lat: pin.lat, lng: pin.lng }))), [pins]);
+
+  // 핀은 그 리스트의 색·아이콘을 쓴다 — 지도만 봐도 어느 리스트를 보고 있는지 알 수 있게.
+  // 수정 중엔 draft를 따라가 색·아이콘을 고르는 결과가 지도에도 바로 보인다
+  const pinColor = eventColor[toEventColor(look ? draft.color : (p?.color ?? null))].fg;
+  const pinIcon = look ? draft.icon : (p?.icon ?? null);
 
   // 핀 탭 — 그 핀으로 카메라를 옮기고, 시트를 접어 지도를 넓게 두고, 목록에서 그 행으로 스크롤·강조.
   // 목록 스크롤은 반대로 카메라를 움직이지 않는다 (스크롤마다 지도가 흔들리면 어지럽다)
@@ -92,9 +134,6 @@ export default function CustomPlaylist() {
     sheetRef.current?.snapToIndex(EXPANDED);
   };
 
-  /** 이름·색·아이콘 입력을 여는가 (찜은 열지 않는다) */
-  const look = editing && !isSaved;
-
   const finishEdit = () => {
     const name = draft.name.trim();
     if (p && !isSaved && name && (name !== p.name || draft.color !== p.color || draft.icon !== p.icon)) {
@@ -111,8 +150,10 @@ export default function CustomPlaylist() {
   const renderPlace = useCallback(
     ({ item: pl }: { item: PlaylistPlaceItem }) => (
       <Pressable
-        onPress={() => router.push(`/place/${pl.placeId}`)}
-        // 수정 중엔 행 탭으로 화면을 뜨지 않는다 — ×를 겨냥하다 빗나가면 편집이 끊긴다
+        // 행 탭은 화면을 뜨지 않고 지도에서 그 장소를 가리킨다 — 장소 상세로 가는 대신
+        // 네이버 지도·홈페이지를 오른쪽 버튼으로 바로 연다
+        onPress={() => onPinPress(pl.placeId)}
+        // 수정 중엔 행 탭을 막는다 — ×를 겨냥하다 빗나가면 편집이 끊긴다
         disabled={editing}
         style={{
           flexDirection: 'row',
@@ -143,11 +184,21 @@ export default function CustomPlaylist() {
             <CloseGlyph />
           </Pressable>
         ) : (
-          <ChevronGlyph size={22} color={color.sub} />
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            {/* 네이버 지도는 좌표가 없어도 이름 검색으로 열리므로 항상 보인다 */}
+            <RowAction onPress={() => Linking.openURL(naverMapUrl(pl))}>
+              <NaverMapGlyph size={18} />
+            </RowAction>
+            {pl.link ? (
+              <RowAction onPress={() => Linking.openURL(pl.link!)}>
+                <LinkKindGlyph kind={linkKind(pl.link)} size={18} />
+              </RowAction>
+            ) : null}
+          </View>
         )}
       </Pressable>
     ),
-    [editing, selectedId, removePlace, router],
+    [editing, selectedId, removePlace, onPinPress],
   );
 
   return (
@@ -155,7 +206,15 @@ export default function CustomPlaylist() {
       {/* 지도 — 화면 전체를 채우고 그 위에 TopBar·시트가 얹힌다 */}
       <View style={{ flex: 1 }}>
         {region ? (
-          <PlaceMap ref={mapRef} region={region} pins={pins} onPinPress={onPinPress} selectedId={selectedId} />
+          <PlaceMap
+            ref={mapRef}
+            region={region}
+            pins={pins}
+            onPinPress={onPinPress}
+            selectedId={selectedId}
+            pinColor={pinColor}
+            pinIcon={pinIcon}
+          />
         ) : (
           <View style={{ flex: 1, backgroundColor: color.surface1, alignItems: 'center', justifyContent: 'center' }}>
             <Meta>지도에 표시할 장소가 없어요</Meta>
@@ -163,31 +222,50 @@ export default function CustomPlaylist() {
         )}
       </View>
 
-      {/* TopBar는 지도 위 오버레이 — 배경색이 없어 그대로 얹힌다 */}
-      <View style={{ position: 'absolute', left: 0, right: 0, top: 0 }}>
-        <TopBar
-          title={editing ? '리스트 수정' : (p?.name ?? '')}
-          // 좌측은 수정 중에도 뒤로가기 그대로 — 저장 전에 나가면 이름·색·아이콘 변경은 버려진다
-          right={
-            // hitSlop으로 키우면 부모(폭 22) 밖으로 나간 영역이 안드로이드에서 잘려 눌리지 않는다.
-            // 실제 크기를 44로 준다.
-            <Pressable
-              onPress={editing ? finishEdit : startEdit}
-              style={{ height: 44, justifyContent: 'center', paddingLeft: 12 }}
-            >
-              <Text
-                style={{
-                  fontFamily: typeface,
-                  fontWeight: '700',
-                  fontSize: 14,
-                  color: editing ? color.accent : color.sub,
-                }}
-              >
-                {editing ? '완료' : '수정'}
-              </Text>
-            </Pressable>
-          }
-        />
+      {/* 지도 위에 떠 있는 컨트롤 — 기본 TopBar는 배경이 없어 밝은 지도 위에서 흰 글씨가 사라진다.
+          네이버 지도처럼 불투명한 알약·원형 버튼으로 띄운다. 상태바를 피해 safe-area만큼 내린다 */}
+      <View
+        style={{
+          position: 'absolute',
+          left: 12,
+          right: 12,
+          top: insets.top + 8,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 8,
+        }}
+      >
+        {/* 좌측은 수정 중에도 뒤로가기 그대로 — 저장 전에 나가면 이름·색·아이콘 변경은 버려진다 */}
+        <Pressable onPress={() => router.back()} style={[FLOAT, { width: 40, height: 40, borderRadius: 20 }]}>
+          <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+            <Path d="M15 5l-7 7 7 7" stroke={color.white} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+          </Svg>
+        </Pressable>
+
+        <View style={[FLOAT, { flex: 1, height: 40, borderRadius: 20, paddingHorizontal: 14, alignItems: 'flex-start' }]}>
+          <Text
+            numberOfLines={1}
+            style={{ fontFamily: typeface, fontWeight: '700', fontSize: 15, color: color.white, lineHeight: 40 }}
+          >
+            {editing ? '리스트 수정' : (p?.name ?? '')}
+          </Text>
+        </View>
+
+        <Pressable
+          onPress={editing ? finishEdit : startEdit}
+          style={[FLOAT, { height: 40, borderRadius: 20, paddingHorizontal: 16 }]}
+        >
+          <Text
+            style={{
+              fontFamily: typeface,
+              fontWeight: '700',
+              fontSize: 14,
+              color: editing ? color.accent : color.white,
+            }}
+          >
+            {editing ? '완료' : '수정'}
+          </Text>
+        </Pressable>
       </View>
 
       <BottomSheet

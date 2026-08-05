@@ -76,6 +76,20 @@ describe('boundsOf', () => {
     expect(r.longitudeDelta).toBeGreaterThan(0);
   });
 
+  it('핀이 하나여도 주변 동네가 보일 만큼은 범위를 준다 (위도 0.015° ≈ 1.7km 이상)', () => {
+    const r = boundsOf([{ lat: 37.5, lng: 127.0 }])!;
+    expect(r.latitudeDelta).toBeGreaterThanOrEqual(0.015);
+    expect(r.longitudeDelta).toBeGreaterThanOrEqual(0.015);
+  });
+
+  it('아주 가까운 두 점도 최소 범위 아래로는 좁히지 않는다', () => {
+    const r = boundsOf([
+      { lat: 37.5, lng: 127.0 },
+      { lat: 37.5005, lng: 127.0005 },
+    ])!;
+    expect(r.latitudeDelta).toBeGreaterThanOrEqual(0.015);
+  });
+
   it('두 점이면 중심은 중점, 범위는 간격을 패딩만큼 감싼다', () => {
     const r = boundsOf([
       { lat: 37.4, lng: 127.0 },
