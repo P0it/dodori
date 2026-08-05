@@ -1,4 +1,4 @@
-import { Pressable, Text, View } from 'react-native';
+import { Platform, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { color } from '@/theme/tokens';
@@ -25,7 +25,16 @@ export function CoupleTabBar({ state, navigation }: TabBarProps) {
     <LinearGradient
       colors={['rgba(13,13,13,0)', '#0d0d0d']}
       locations={[0, 0.45]}
-      style={{ paddingBottom: Math.max(insets.bottom, 12) }}
+      /*
+        웹은 인라인 padding을 주지 않는다 — index.html의 `[data-safe-bottom]`이 CSS
+        env(safe-area-inset-bottom)로 직접 그린다. useSafeAreaInsets는 웹에서 마운트 시점에 한 번,
+        그리고 값이 바뀔 때 transitionend가 올 때만 갱신돼서(react-native-safe-area-context의
+        NativeSafeAreaProvider.web) 사파리 주소창이 접히고 펴질 때 옛 값이 그대로 남는다 —
+        탭바 아래 여백이 생겼다 없어졌다 하던 원인. 인라인 스타일은 CSS를 이기므로 비워야 한다.
+      */
+      {...(Platform.OS === 'web'
+        ? { dataSet: { safeBottom: '' } }
+        : { style: { paddingBottom: Math.max(insets.bottom, 12) } })}
     >
       <View
         style={{

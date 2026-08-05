@@ -44,6 +44,16 @@
         height: 100dvh;
         flex: 1;
       }
+      /*
+        하단 안전영역은 JS(useSafeAreaInsets)가 아니라 CSS가 그린다.
+        웹의 safe-area-context는 마운트 때 한 번 + padding transitionend에서만 값을 갱신해서,
+        사파리 주소창이 접히고 펴지며 inset이 바뀌면 옛 값이 그대로 남는다(탭바 아래 여백).
+        env()는 브라우저가 매 프레임 맞춰 준다. max()로 최소 여백 12px을 지킨다.
+      */
+      [data-safe-bottom] {
+        padding-bottom: 12px;
+        padding-bottom: max(12px, env(safe-area-inset-bottom));
+      }
     </style>
   </head>
 
