@@ -15,7 +15,7 @@ export function useCoupleRealtime() {
   useEffect(() => {
     if (!coupleId) return;
     const filter = `couple_id=eq.${coupleId}`;
-    const channel = supabase
+    let builder = supabase
       .channel(`couple-${coupleId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'events', filter }, () =>
         qc.invalidateQueries({ queryKey: ['events'] }),
@@ -72,8 +72,22 @@ export function useCoupleRealtime() {
       )
       .on('postgres_changes', { event: '*', schema: 'public', table: 'post_comments' }, () =>
         qc.invalidateQueries({ queryKey: ['posts'] }),
-      )
-      .subscribe();
+      );
+
+    // 구독이 실제로 붙는지·이벤트가 도착하는지 눈으로 보기 위한 계측 (개발 빌드 전용).
+    // RLS가 막으면 이벤트 자체가 안 온다 — 조용한 실패라 로그 없이는 구분이 안 된다.
+    if (__DEV__) {
+      builder = builder.on(
+        'postgres_changes',
+        { event: '*', schema: 'public' },
+        (payload: { table: string; eventType: string }) =>
+          console.log('[realtime] 수신', payload.table, payload.eventType),
+      );
+    }
+
+    const channel = builder.subscribe((status, err) => {
+      if (__DEV__) console.log('[realtime] 구독', status, err?.message ?? '');
+    });
     return () => {
       supabase.removeChannel(channel);
     };
