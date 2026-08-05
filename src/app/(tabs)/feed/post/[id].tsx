@@ -14,6 +14,7 @@ import {
 } from '@/api/posts';
 import { TopBar } from '@/components/TopBar';
 import { PostCard } from '@/components/feed/PostCard';
+import { PhotoZoomHost } from '@/components/feed/PhotoZoom';
 import { confirmDialog } from '@/components/dialog';
 
 /** 게시물 피드 — 그리드에서 탭한 게시물 위치부터 세로 스크롤 (인스타 동일) */
@@ -48,6 +49,7 @@ export default function PostFeed() {
   };
 
   return (
+    <PhotoZoomHost>
     <View style={{ flex: 1, backgroundColor: color.bg }}>
       <TopBar title="피드" />
       <FlashList
@@ -78,5 +80,6 @@ export default function PostFeed() {
         )}
       />
     </View>
+    </PhotoZoomHost>
   );
 }
