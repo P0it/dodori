@@ -1,5 +1,6 @@
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import {
+  Platform,
   ScrollView,
   Text,
   View,
@@ -64,6 +65,11 @@ export function TimePicker({ value, onChange }: { value: HHmm; onChange: (t: HHm
   );
 }
 
+/** 스크롤 위치 → 가운데 칸 번호 (범위 밖은 끝 칸으로) */
+function rowAt(y: number, count: number): number {
+  return Math.min(count - 1, Math.max(0, Math.round(y / ROW)));
+}
+
 function Wheel({
   items,
   value,
@@ -79,9 +85,26 @@ function Wheel({
   const index = Math.max(0, items.indexOf(value));
 
   const commit = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const i = Math.round(e.nativeEvent.contentOffset.y / ROW);
-    const next = items[Math.min(items.length - 1, Math.max(0, i))];
+    const next = items[rowAt(e.nativeEvent.contentOffset.y, items.length)];
     if (next !== value) onSelect(next);
+  };
+
+  /**
+   * 웹(react-native-web)은 onScrollEndDrag·onMomentumScrollEnd를 아예 발생시키지 않는다
+   * (ScrollViewBase가 DOM에 onScroll만 연결한다) — 굴려도 값이 영영 확정되지 않았다.
+   * 그래서 onScroll이 멎는 것을 스크롤 끝으로 보고 확정한다. snapToInterval도 웹엔 없어
+   * 여기서 직접 칸에 맞춘다.
+   */
+  const idle = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (idle.current) clearTimeout(idle.current); }, []);
+  const settle = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const y = e.nativeEvent.contentOffset.y;
+    if (idle.current) clearTimeout(idle.current);
+    idle.current = setTimeout(() => {
+      const i = rowAt(y, items.length);
+      ref.current?.scrollTo({ y: i * ROW, animated: true });
+      if (items[i] !== value) onSelect(items[i]);
+    }, 140);
   };
 
   return (
@@ -95,6 +118,7 @@ function Wheel({
       // 스크롤이 멈춘 뒤에만 확정 — 굴리는 중에 값이 바뀌면 리렌더가 휠을 잡아챈다
       onMomentumScrollEnd={commit}
       onScrollEndDrag={commit}
+      {...(Platform.OS === 'web' ? { onScroll: settle, scrollEventThrottle: 16 } : null)}
       contentOffset={{ x: 0, y: index * ROW }}
       // 마운트 시점엔 콘텐츠가 아직 안 깔려 contentOffset이 0으로 잘릴 수 있다
       onContentSizeChange={() => ref.current?.scrollTo({ y: index * ROW, animated: false })}
