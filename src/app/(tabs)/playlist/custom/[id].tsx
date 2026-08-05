@@ -222,51 +222,17 @@ export default function CustomPlaylist() {
         )}
       </View>
 
-      {/* 지도 위에 떠 있는 컨트롤 — 기본 TopBar는 배경이 없어 밝은 지도 위에서 흰 글씨가 사라진다.
-          네이버 지도처럼 불투명한 알약·원형 버튼으로 띄운다. 상태바를 피해 safe-area만큼 내린다 */}
-      <View
-        style={{
-          position: 'absolute',
-          left: 12,
-          right: 12,
-          top: insets.top + 8,
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 8,
-        }}
+      {/* 지도 위엔 뒤로가기 하나만 띄운다 — 리스트명·수정은 시트 헤더가 맡는다.
+          기본 TopBar는 배경이 없어 밝은 네이버 지도 위에서 흰 글씨가 사라지므로 불투명 원형 버튼으로.
+          수정 중에도 그대로 둔다 — 저장 전에 나가면 이름·색·아이콘 변경은 버려진다 */}
+      <Pressable
+        onPress={() => router.back()}
+        style={[FLOAT, { position: 'absolute', left: 12, top: insets.top + 8, width: 40, height: 40, borderRadius: 20 }]}
       >
-        {/* 좌측은 수정 중에도 뒤로가기 그대로 — 저장 전에 나가면 이름·색·아이콘 변경은 버려진다 */}
-        <Pressable onPress={() => router.back()} style={[FLOAT, { width: 40, height: 40, borderRadius: 20 }]}>
-          <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
-            <Path d="M15 5l-7 7 7 7" stroke={color.white} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-          </Svg>
-        </Pressable>
-
-        <View style={[FLOAT, { flex: 1, height: 40, borderRadius: 20, paddingHorizontal: 14, alignItems: 'flex-start' }]}>
-          <Text
-            numberOfLines={1}
-            style={{ fontFamily: typeface, fontWeight: '700', fontSize: 15, color: color.white, lineHeight: 40 }}
-          >
-            {editing ? '리스트 수정' : (p?.name ?? '')}
-          </Text>
-        </View>
-
-        <Pressable
-          onPress={editing ? finishEdit : startEdit}
-          style={[FLOAT, { height: 40, borderRadius: 20, paddingHorizontal: 16 }]}
-        >
-          <Text
-            style={{
-              fontFamily: typeface,
-              fontWeight: '700',
-              fontSize: 14,
-              color: editing ? color.accent : color.white,
-            }}
-          >
-            {editing ? '완료' : '수정'}
-          </Text>
-        </Pressable>
-      </View>
+        <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+          <Path d="M15 5l-7 7 7 7" stroke={color.white} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+        </Svg>
+      </Pressable>
 
       <BottomSheet
         ref={sheetRef}
@@ -278,6 +244,51 @@ export default function CustomPlaylist() {
         backgroundStyle={{ backgroundColor: color.surface1 }}
         handleIndicatorStyle={{ backgroundColor: color.muted }}
       >
+        {/* 시트 헤더 — 리스트 정체(타일·이름·장소 수)와 수정 버튼. 목록과 함께 스크롤되지 않게
+            FlatList 밖에 고정한다. 지도 위 상단바 대신 여기가 이 화면의 제목 자리다 */}
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 12,
+            paddingHorizontal: 16,
+            paddingBottom: 12,
+          }}
+        >
+          {/* 수정 중엔 draft를 따라가 색·아이콘을 고르는 결과가 여기서 바로 보인다 */}
+          <PlaylistTile
+            colorKey={look ? draft.color : (p?.color ?? null)}
+            icon={look ? draft.icon : (p?.icon ?? null)}
+            name={(look ? draft.name : p?.name) || '?'}
+            size={40}
+            radius={10}
+          />
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text
+              numberOfLines={1}
+              style={{ fontFamily: typeface, fontWeight: '700', fontSize: 17, color: color.white }}
+            >
+              {(look ? draft.name : p?.name) || ''}
+            </Text>
+            <Meta style={{ marginTop: 2, fontSize: 12.5 }}>장소 {places.length}곳</Meta>
+          </View>
+          <Pressable
+            onPress={editing ? finishEdit : startEdit}
+            style={{ height: 44, justifyContent: 'center', paddingHorizontal: 4 }}
+          >
+            <Text
+              style={{
+                fontFamily: typeface,
+                fontWeight: '700',
+                fontSize: 14,
+                color: editing ? color.accent : color.sub,
+              }}
+            >
+              {editing ? '완료' : '수정'}
+            </Text>
+          </Pressable>
+        </View>
+
         <BottomSheetFlatList
             ref={listRef}
             data={places}
@@ -290,19 +301,10 @@ export default function CustomPlaylist() {
             }
             ListHeaderComponent={
               // 수정 모드(찜 제외)에선 이름·색·아이콘 입력이 목록 위에 함께 스크롤된다 —
-              // 여기서만 편집 UI를 열면 장소 빼기(×)·리스트 삭제까지 한 화면에 남는다
+              // 여기서만 편집 UI를 열면 장소 빼기(×)·리스트 삭제까지 한 화면에 남는다.
+              // 고른 결과의 미리보기는 시트 헤더의 타일이 대신하므로 여기 따로 두지 않는다
               look ? (
                 <View style={{ paddingHorizontal: 24, paddingBottom: 20 }}>
-                  {/* 조회 화면에서 큰 타일이 사라졌으므로 고르는 결과는 이 미리보기로 본다 */}
-                  <View style={{ alignItems: 'center', paddingBottom: 16 }}>
-                    <PlaylistTile
-                      colorKey={draft.color}
-                      icon={draft.icon}
-                      name={draft.name || '?'}
-                      size={64}
-                      radius={12}
-                    />
-                  </View>
                   <PlaylistLookFields
                     name={draft.name}
                     onChangeName={(name) => setDraft((d) => ({ ...d, name }))}
@@ -313,11 +315,7 @@ export default function CustomPlaylist() {
                     onSubmitEditing={finishEdit}
                   />
                 </View>
-              ) : (
-                <Meta style={{ paddingHorizontal: 16, paddingBottom: 8, fontSize: 12.5 }}>
-                  장소 {places.length}곳
-                </Meta>
-              )
+              ) : null
             }
             ListFooterComponent={
               // 담기 진입점은 시트 안에만 있다 — 빈 리스트에서도 시트가 뜨는 이유
