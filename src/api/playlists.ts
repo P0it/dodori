@@ -72,6 +72,25 @@ export function useCreatePlaylist() {
   });
 }
 
+/** 리스트 이름·색·아이콘 수정 (상세의 '수정' 모드) */
+export function useUpdatePlaylist() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { id: string; name: string; color: string | null; icon: string | null }) => {
+      const { error } = await supabase
+        .from('playlists')
+        .update({ name: input.name.trim(), color: input.color, icon: input.icon })
+        .eq('id', input.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['playlists'] });
+      // savedPlaces가 리스트 이름을 들고 있다 — 안 지우면 장소 피커에 옛 이름이 남는다
+      qc.invalidateQueries({ queryKey: ['savedPlaces'] });
+    },
+  });
+}
+
 export function useDeletePlaylist() {
   const qc = useQueryClient();
   return useMutation({

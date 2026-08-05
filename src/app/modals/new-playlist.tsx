@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { color, typeface, eventColor, EVENT_COLOR_KEYS, DEFAULT_EVENT_COLOR } from '@/theme/tokens';
+import { color, typeface, DEFAULT_EVENT_COLOR } from '@/theme/tokens';
 import { useCreatePlaylist } from '@/api/playlists';
 import { Meta } from '@/components/Meta';
-import { PlaylistTile, PLAYLIST_ICON_KEYS } from '@/components/playlist/PlaylistTile';
+import { PlaylistTile } from '@/components/playlist/PlaylistTile';
+import { PlaylistLookFields } from '@/components/playlist/PlaylistLookFields';
 
 /** 새 테마 플레이리스트 (목업 P3) — 이름 + 색·아이콘으로 타일을 꾸민다 */
 export default function NewPlaylist() {
@@ -59,75 +60,16 @@ export default function NewPlaylist() {
           <PlaylistTile colorKey={colorKey} icon={icon} name={name || '?'} size={92} radius={14} />
         </View>
 
-        <TextInput
-          value={name}
-          onChangeText={setName}
+        <PlaylistLookFields
+          name={name}
+          onChangeName={setName}
+          colorKey={colorKey}
+          onChangeColor={setColorKey}
+          icon={icon}
+          onChangeIcon={setIcon}
           autoFocus
-          placeholder="Cafe"
-          placeholderTextColor={color.muted}
           onSubmitEditing={submit}
-          style={{
-            textAlign: 'center',
-            fontFamily: typeface, fontWeight: '800',
-            fontSize: 26,
-            letterSpacing: -0.4,
-            color: color.white,
-            paddingBottom: 16,
-            borderBottomWidth: 1.5,
-            borderBottomColor: color.surface3,
-          }}
         />
-
-        {/* 색 */}
-        <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 13, color: color.sub, marginTop: 26, marginBottom: 12 }}>
-          색
-        </Text>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 14 }}>
-          {EVENT_COLOR_KEYS.map((k) => {
-            const selected = k === colorKey;
-            return (
-              <Pressable
-                key={k}
-                onPress={() => setColorKey(k)}
-                style={{
-                  width: 34,
-                  height: 34,
-                  borderRadius: 17,
-                  backgroundColor: eventColor[k].fg,
-                  borderWidth: 3,
-                  borderColor: selected ? color.white : 'transparent',
-                }}
-              />
-            );
-          })}
-        </View>
-
-        {/* 아이콘 */}
-        <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 13, color: color.sub, marginTop: 24, marginBottom: 12 }}>
-          아이콘
-        </Text>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-          {PLAYLIST_ICON_KEYS.map((key) => {
-            const selected = key === icon;
-            return (
-              <Pressable
-                key={key}
-                onPress={() => setIcon(selected ? null : key)}
-                style={{
-                  width: 52,
-                  height: 52,
-                  borderRadius: 12,
-                  borderWidth: 2,
-                  borderColor: selected ? color.accent : 'transparent',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <PlaylistTile colorKey={colorKey} icon={key} name="" size={44} radius={10} />
-              </Pressable>
-            );
-          })}
-        </View>
 
         <Meta style={{ fontSize: 11.5, lineHeight: 19, marginTop: 24, textAlign: 'center' }}>
           리스트는 데이트가 아니라 <Text style={{ fontFamily: typeface, color: color.white }}>장소</Text>를 모아요.{'\n'}

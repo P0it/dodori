@@ -2,15 +2,17 @@ import { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
-import { color, typeface } from '@/theme/tokens';
+import { color, typeface, DEFAULT_EVENT_COLOR } from '@/theme/tokens';
 import {
   usePlaylistDetail,
   useDeletePlaylist,
   useRemovePlaylistPlace,
+  useUpdatePlaylist,
 } from '@/api/playlists';
 import { TopBar } from '@/components/TopBar';
 import { Meta } from '@/components/Meta';
 import { PlaylistTile } from '@/components/playlist/PlaylistTile';
+import { PlaylistLookFields } from '@/components/playlist/PlaylistLookFields';
 import { ChevronGlyph, CloseGlyph } from '@/components/glyphs';
 import { PlaceKindTile } from '@/components/PlaceKindTile';
 import { confirmDialog } from '@/components/dialog';
@@ -22,13 +24,32 @@ export default function CustomPlaylist() {
   const detail = usePlaylistDetail(id);
   const removePlace = useRemovePlaylistPlace(id!);
   const delPlaylist = useDeletePlaylist();
+  const updatePlaylist = useUpdatePlaylist();
 
   const p = detail.data;
   // 찜은 커플당 하나뿐이고 다시 만들 수 없다 — 리스트 삭제 진입점만 감춘다(DB 트리거가 최종 방어).
   // 담은 곳 빼기는 찜에서도 돼야 하므로 수정 모드 자체는 막지 않는다
   const isSaved = p?.kind === 'saved';
-  // 조회가 기본, "수정"을 눌러야 편집 어포던스(장소 ×·리스트 삭제)가 열린다 — 앨범 상세와 같은 규칙
+  // 조회가 기본, "수정"을 눌러야 편집 어포던스(이름·색·아이콘, 장소 ×, 리스트 삭제)가 열린다 — 앨범 상세와 같은 규칙
   const [editing, setEditing] = useState(false);
+  // 이름·색·아이콘은 '완료'를 눌러야 저장된다 (장소 ×는 지금도 즉시 반영)
+  const [draft, setDraft] = useState({ name: '', color: DEFAULT_EVENT_COLOR as string, icon: null as string | null });
+
+  const startEdit = () => {
+    setDraft({ name: p?.name ?? '', color: p?.color ?? DEFAULT_EVENT_COLOR, icon: p?.icon ?? null });
+    setEditing(true);
+  };
+
+  /** 이름·색·아이콘 입력을 여는가 (찜은 열지 않는다) */
+  const look = editing && !isSaved;
+
+  const finishEdit = () => {
+    const name = draft.name.trim();
+    if (p && !isSaved && name && (name !== p.name || draft.color !== p.color || draft.icon !== p.icon)) {
+      updatePlaylist.mutate({ id: id!, name, color: draft.color, icon: draft.icon });
+    }
+    setEditing(false);
+  };
 
   const onDelete = async () => {
     if (!(await confirmDialog('리스트 삭제', '장소 목록만 삭제되고 기록은 남아요.', '삭제'))) return;
@@ -39,12 +60,12 @@ export default function CustomPlaylist() {
     <View style={{ flex: 1, backgroundColor: color.bg }}>
       <TopBar
         title={editing ? '리스트 수정' : (p?.name ?? '')}
-        // 좌측은 수정 중에도 뒤로가기 그대로 — ×는 즉시 반영이라 되돌릴 "취소"가 없다
+        // 좌측은 수정 중에도 뒤로가기 그대로 — 저장 전에 나가면 이름·색·아이콘 변경은 버려진다
         right={
           // hitSlop으로 키우면 부모(폭 22) 밖으로 나간 영역이 안드로이드에서 잘려 눌리지 않는다.
           // 실제 크기를 44로 준다.
           <Pressable
-            onPress={() => setEditing((v) => !v)}
+            onPress={editing ? finishEdit : startEdit}
             style={{ height: 44, justifyContent: 'center', paddingLeft: 12 }}
           >
             <Text
@@ -62,12 +83,38 @@ export default function CustomPlaylist() {
       />
       <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
         <View style={{ alignItems: 'center', paddingTop: 4 }}>
-          <PlaylistTile colorKey={p?.color ?? null} icon={p?.icon ?? null} name={p?.name ?? '?'} size={140} radius={16} />
-          <Text style={{ fontFamily: typeface, fontWeight: '800', fontSize: 24, color: color.white, marginTop: 16 }}>
-            {p?.name}
-          </Text>
-          <Meta style={{ marginTop: 6 }}>리스트 · 장소 {p?.places.length ?? 0}곳</Meta>
+          {/* 수정 중엔 타일이 고르는 대로 바뀌는 미리보기가 된다 */}
+          <PlaylistTile
+            colorKey={look ? draft.color : (p?.color ?? null)}
+            icon={look ? draft.icon : (p?.icon ?? null)}
+            name={(look ? draft.name : p?.name) || '?'}
+            size={140}
+            radius={16}
+          />
+          {!look && (
+            <>
+              <Text style={{ fontFamily: typeface, fontWeight: '800', fontSize: 24, color: color.white, marginTop: 16 }}>
+                {p?.name}
+              </Text>
+              <Meta style={{ marginTop: 6 }}>리스트 · 장소 {p?.places.length ?? 0}곳</Meta>
+            </>
+          )}
         </View>
+
+        {/* 찜은 이름·꾸밈을 바꾸지 않는다 (커플당 하나뿐인 고정 목록) */}
+        {look && (
+          <View style={{ paddingHorizontal: 24, paddingTop: 20 }}>
+            <PlaylistLookFields
+              name={draft.name}
+              onChangeName={(name) => setDraft((d) => ({ ...d, name }))}
+              colorKey={draft.color}
+              onChangeColor={(c) => setDraft((d) => ({ ...d, color: c }))}
+              icon={draft.icon}
+              onChangeIcon={(icon) => setDraft((d) => ({ ...d, icon }))}
+              onSubmitEditing={finishEdit}
+            />
+          </View>
+        )}
 
         <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
           {(p?.places ?? []).map((pl) => (
