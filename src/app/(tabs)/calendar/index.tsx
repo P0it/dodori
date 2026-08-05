@@ -22,17 +22,13 @@ import { useAnniversaries } from '@/api/anniversaries';
 import { useCoupleProfiles } from '@/api/couple';
 import { useHolidayExtras } from '@/api/holidays';
 import { useSession } from '@/api/auth';
-import { FilterChip } from '@/components/FilterChip';
 import { MonthGrid, type DayMarks, type DaySpan } from '@/components/calendar/MonthGrid';
 import { DayAgenda } from '@/components/calendar/DayAgenda';
-
-type Filter = 'us' | 'me' | 'partner';
 
 /** 캘린더 탭 — 월간 뷰 (목업 17·20) */
 export default function Calendar() {
   const router = useRouter();
   const [month, setMonth] = useState(() => toMonthKey(todayKST()));
-  const [filter, setFilter] = useState<Filter>('us');
   const [selected, setSelected] = useState(() => todayKST());
 
   const session = useSession();
@@ -50,15 +46,10 @@ export default function Calendar() {
     [month, holidayExtras.data],
   );
 
-  /** 필터를 통과한 일정 — 셀 칩과 막대가 같은 목록을 본다 */
+  /** 표시할 일정 — 셀 칩과 막대가 같은 목록을 본다 */
   const visibleEvents = useMemo(
-    () =>
-      (events.data ?? []).filter((e) => {
-        if (!e.starts_at || !e.owner_id) return false;
-        const who: Filter = e.owner_id === uid ? 'me' : 'partner';
-        return filter === 'us' || filter === who;
-      }),
-    [events.data, filter, uid],
+    () => (events.data ?? []).filter((e) => !!e.starts_at),
+    [events.data],
   );
 
   /** 여러 날 일정 → 주별 막대. 이르게 시작하고 긴 것부터 위 칸을 잡는다 */
@@ -178,17 +169,6 @@ export default function Calendar() {
               </Pressable>
               <NavBtn dir="next" onPress={() => setMonth((m) => addMonths(m, 1))} />
             </View>
-          </View>
-          <View style={{ flexDirection: 'row', gap: 8 }}>
-            <FilterChip selected={filter === 'us'} onPress={() => setFilter('us')}>
-              우리
-            </FilterChip>
-            <FilterChip selected={filter === 'me'} onPress={() => setFilter('me')}>
-              {myName}
-            </FilterChip>
-            <FilterChip selected={filter === 'partner'} onPress={() => setFilter('partner')}>
-              {partnerName}
-            </FilterChip>
           </View>
         </View>
 
