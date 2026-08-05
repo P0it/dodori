@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { User } from '@supabase/supabase-js';
 import { supabase } from './supabase';
+import { clearSignCache } from './signCache';
 
 /**
  * 첫 로그인 시 프로필 행 보장 (닉네임·프로필 사진은 소셜 메타데이터에서).
@@ -115,5 +116,7 @@ export function useAuthListener() {
 }
 
 export async function signOut() {
+  // 서명 URL은 로그아웃 뒤에도 유효기간 동안 사진을 열 수 있는 주소다 — 기기에 남기지 않는다
+  await clearSignCache();
   await supabase.auth.signOut();
 }

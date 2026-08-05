@@ -4,6 +4,7 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import * as Crypto from 'expo-crypto';
 import { coverScale, cropRect } from '@/lib/stories';
 import { supabase } from './supabase';
+import { cachedSign, putSign, readySigns, SIGN_TTL_SEC } from './signCache';
 import { useMyCouple } from './couple';
 
 /**
@@ -20,6 +21,15 @@ export const RENDITION = {
 } as const;
 
 export type RenditionKind = keyof typeof RENDITION;
+
+/**
+ * 사진 파일의 Cache-Control (초).
+ *
+ * 경로가 uuid라 같은 주소의 내용이 바뀌는 일이 없다 — 기본값(storage-js `DEFAULT_FILE_OPTIONS`의
+ * 3600초)을 두면 한 시간마다 브라우저가 재검증 왕복을 한 번씩 한다. 1년으로 늘려 그걸 없앤다.
+ * 이미 올라간 사진에는 적용되지 않는다(파일 메타데이터라 새 업로드부터).
+ */
+const PHOTO_CACHE_SEC = String(365 * 24 * 60 * 60);
 
 /** 목록 렌디션의 경로 — 본체가 `{uuid}.jpg`면 `{uuid}_360.jpg` */
 export function renditionPath(storagePath: string, kind: RenditionKind): string {
@@ -49,8 +59,9 @@ export async function signedThumbUrl(
   kind: RenditionKind,
   renditions = false,
 ): Promise<string> {
+  await readySigns();
   const path = renditions ? renditionPath(storagePath, kind) : storagePath;
-  const cached = cachedSign(kind, path);
+  const cached = cachedSign(`${kind}:${path}`);
   if (cached) return cached;
   const options = renditions
     ? undefined
@@ -59,30 +70,7 @@ export async function signedThumbUrl(
     .from('photos')
     .createSignedUrl(path, SIGN_TTL_SEC, options);
   if (error) throw error;
-  return putSign(kind, path, data.signedUrl);
-}
-
-/**
- * 유효기간이 남은 서명은 다시 발급받지 않는다.
- *
- * 화면을 다시 열 때마다(staleTime 60초) 사진 전부를 재서명하면 진입 때마다 왕복이 한 번씩
- * 더 붙는다 — 사진이 한 박자 늦게 뜨는 원인. 서명은 1시간짜리이므로 그 안에서는 그대로 쓴다.
- * 앱을 끄면 비는 메모리 캐시다(사진 100장 기준 수십 KB).
- */
-const SIGN_TTL_SEC = 60 * 60;
-/** 만료 직전 URL을 쥐여주면 화면에 떠 있는 동안 깨진다 — 5분 남으면 새로 받는다 */
-const SIGN_REUSE_MARGIN_MS = 5 * 60_000;
-const signCache = new Map<string, { url: string; expiresAt: number }>();
-
-function cachedSign(kind: RenditionKind, path: string): string | undefined {
-  const hit = signCache.get(`${kind}:${path}`);
-  if (!hit) return undefined;
-  return hit.expiresAt - Date.now() > SIGN_REUSE_MARGIN_MS ? hit.url : undefined;
-}
-
-function putSign(kind: RenditionKind, path: string, url: string): string {
-  signCache.set(`${kind}:${path}`, { url, expiresAt: Date.now() + SIGN_TTL_SEC * 1000 });
-  return url;
+  return putSign(`${kind}:${path}`, data.signedUrl);
 }
 
 /** 서명 배치가 받는 최소 형태 — 어느 테이블에서 왔든 이 둘만 있으면 된다 */
@@ -107,6 +95,7 @@ export async function signedThumbUrls(
   photos: PhotoRef[],
   kind: RenditionKind,
 ): Promise<Map<string, string>> {
+  await readySigns();
   const out = new Map<string, string>();
   const baked = photos.filter((p) => p.renditions);
   const legacy = photos.filter((p) => !p.renditions);
@@ -116,7 +105,7 @@ export async function signedThumbUrls(
     const byRendition = new Map<string, string>();
     for (const p of baked) {
       const path = renditionPath(p.storagePath, kind);
-      const cached = cachedSign(kind, path);
+      const cached = cachedSign(`${kind}:${path}`);
       // 아직 유효한 서명이 있으면 요청에 넣지 않는다 — 전부 캐시면 왕복 자체가 없다
       if (cached) out.set(p.storagePath, cached);
       else byRendition.set(path, p.storagePath);
@@ -128,7 +117,7 @@ export async function signedThumbUrls(
       if (error) throw error;
       for (const item of data) {
         const origin = item.path ? byRendition.get(item.path) : undefined;
-        if (origin && item.signedUrl) out.set(origin, putSign(kind, item.path!, item.signedUrl));
+        if (origin && item.signedUrl) out.set(origin, putSign(`${kind}:${item.path!}`, item.signedUrl));
       }
     }
   }
@@ -362,7 +351,7 @@ export async function uploadPhotos(
       const body = await (await fetch(out.uri)).arrayBuffer();
       const { error: upError } = await supabase.storage
         .from('photos')
-        .upload(p, body, { contentType: 'image/jpeg' });
+        .upload(p, body, { contentType: 'image/jpeg', cacheControl: PHOTO_CACHE_SEC });
       if (upError) throw upError;
     }
 
