@@ -10,6 +10,7 @@ import { usePlaceDetail } from '@/api/playlists';
 import { TopBar } from '@/components/TopBar';
 import { Meta } from '@/components/Meta';
 import { Eyebrow } from '@/components/Eyebrow';
+import { photoSource } from '@/lib/photoSource';
 
 /** 장소 상세 — 우리 데이터만 (목업 P2) */
 export default function PlaceDetail() {
@@ -23,7 +24,7 @@ export default function PlaceDetail() {
       {/* 히어로 */}
       <View style={{ height: 200 }}>
         {p?.photoThumbs[0] ? (
-          <Image source={p.photoThumbs[0]} style={{ position: 'absolute', width: '100%', height: '100%' }} contentFit="cover" />
+          <Image source={photoSource(p.photoThumbs[0])} style={{ position: 'absolute', width: '100%', height: '100%' }} contentFit="cover" />
         ) : (
           <View style={{ position: 'absolute', width: '100%', height: '100%', backgroundColor: color.surface1 }} />
         )}
@@ -101,7 +102,7 @@ export default function PlaceDetail() {
           </View>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4 }}>
             {(p?.photoThumbs ?? []).map((u, i) => (
-              <Image key={i} source={u} style={{ width: '32%', aspectRatio: 1, borderRadius: 4 }} contentFit="cover" />
+              <Image key={i} source={photoSource(u)} style={{ width: '32%', aspectRatio: 1, borderRadius: 4 }} contentFit="cover" />
             ))}
             {(p?.photoThumbs.length ?? 0) === 0 && <Meta>아직 이 장소의 사진이 없어요</Meta>}
           </View>

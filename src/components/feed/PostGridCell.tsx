@@ -3,6 +3,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { color, radius, typeface } from '@/theme/tokens';
 import { StackGlyph } from '@/components/glyphs';
+import { photoSource } from '@/lib/photoSource';
 
 type Props = {
   thumbUrl: string | null;
@@ -28,7 +29,7 @@ export function PostGridCell({ thumbUrl, caption, multiple, onPress }: Props) {
     >
       {thumbUrl ? (
         <Image
-          source={thumbUrl}
+          source={photoSource(thumbUrl)}
           style={{ width: '100%', height: '100%' }}
           contentFit="cover"
           transition={160}

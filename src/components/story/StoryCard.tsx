@@ -1,6 +1,7 @@
 import { Pressable, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { color, radius, typeface } from '@/theme/tokens';
+import { photoSource } from '@/lib/photoSource';
 
 type Props = {
   thumbUrl: string | null;
@@ -25,7 +26,7 @@ export function StoryCard({ thumbUrl, caption, onPress }: Props) {
     >
       {thumbUrl ? (
         <Image
-          source={thumbUrl}
+          source={photoSource(thumbUrl)}
           style={{ width: '100%', height: '100%' }}
           contentFit="cover"
           transition={160}

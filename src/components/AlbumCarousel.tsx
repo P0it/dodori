@@ -14,6 +14,7 @@ import { color, typeface } from '@/theme/tokens';
 import { formatDday, isReleased, weekdayKo } from '@/lib/date';
 import { AlbumJacket } from '@/components/AlbumJacket';
 import { Dday } from '@/components/Dday';
+import { photoSource } from '@/lib/photoSource';
 
 export type CarouselAlbum = {
   id: string;
@@ -118,7 +119,7 @@ export function AlbumCarousel({
               >
                 <View style={{ width: '100%', height: '100%', borderRadius: 6, overflow: 'hidden' }}>
                   {a.coverThumbUrl ? (
-                    <Image source={a.coverThumbUrl} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+                    <Image source={photoSource(a.coverThumbUrl)} style={{ width: '100%', height: '100%' }} contentFit="cover" />
                   ) : (
                     <AlbumJacket seed={a.id} />
                   )}

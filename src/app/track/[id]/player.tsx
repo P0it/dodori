@@ -7,6 +7,7 @@ import { useTrack } from '@/api/tracks';
 import { signedThumbUrl } from '@/api/photos';
 import { Eyebrow } from '@/components/Eyebrow';
 import { Meta } from '@/components/Meta';
+import { photoSource } from '@/lib/photoSource';
 
 const SLIDE_MS = 3000;
 
@@ -82,7 +83,7 @@ export default function Player() {
       {/* 사진 — 탭 좌/우 내비 */}
       <View style={{ flex: 1, marginHorizontal: 16, marginVertical: 10, borderRadius: 10, overflow: 'hidden' }}>
         <Image
-          source={fullUrl ?? current.thumbUrl}
+          source={photoSource(fullUrl ?? current.thumbUrl)}
           style={{ width: '100%', height: '100%' }}
           contentFit="cover"
           transition={300}

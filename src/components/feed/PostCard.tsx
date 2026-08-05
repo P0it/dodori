@@ -16,6 +16,7 @@ import { Meta } from '@/components/Meta';
 import { CommentGlyph, HeartGlyph, MoreGlyph } from '@/components/glyphs';
 import { CommentList } from './CommentList';
 import type { Post } from '@/api/posts';
+import { photoSource } from '@/lib/photoSource';
 
 type Props = {
   post: Post;
@@ -108,7 +109,7 @@ export function PostCard({
             {post.photos.map((p) => (
               <Image
                 key={p.id}
-                source={{ uri: p.thumbUrl }}
+                source={photoSource(p.thumbUrl)}
                 style={{ width, height: carouselH, backgroundColor: color.bg }}
                 contentFit={postContentFit(p, frameRatio)}
                 transition={160}

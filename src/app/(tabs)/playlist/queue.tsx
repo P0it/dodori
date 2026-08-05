@@ -12,6 +12,7 @@ import { Eyebrow } from '@/components/Eyebrow';
 import { Divider } from '@/components/Divider';
 import { Dday } from '@/components/Dday';
 import { AnnivCover } from '@/components/AnnivCover';
+import { photoSource } from '@/lib/photoSource';
 
 /** Queue — 다가오는 데이트·기념일 (목업 10) */
 export default function Queue() {
@@ -61,7 +62,7 @@ export default function Queue() {
               >
                 <View style={{ width: 50, height: 50, borderRadius: 8, overflow: 'hidden', backgroundColor: color.surface2 }}>
                   {t.coverThumbUrl && (
-                    <Image source={t.coverThumbUrl} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+                    <Image source={photoSource(t.coverThumbUrl)} style={{ width: '100%', height: '100%' }} contentFit="cover" />
                   )}
                 </View>
                 <View style={{ flex: 1 }}>

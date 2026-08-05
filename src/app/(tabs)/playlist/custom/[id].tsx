@@ -16,6 +16,7 @@ import { PlaylistLookFields } from '@/components/playlist/PlaylistLookFields';
 import { ChevronGlyph, CloseGlyph } from '@/components/glyphs';
 import { PlaceKindTile } from '@/components/PlaceKindTile';
 import { confirmDialog } from '@/components/dialog';
+import { photoSource } from '@/lib/photoSource';
 
 /** 테마(커스텀) 플레이리스트 상세 (목업 P1) — 데이트가 아니라 장소를 모은다 */
 export default function CustomPlaylist() {
@@ -127,7 +128,7 @@ export default function CustomPlaylist() {
             >
               {pl.photoThumbs[0] ? (
                 <Image
-                  source={pl.photoThumbs[0]}
+                  source={photoSource(pl.photoThumbs[0])}
                   style={{ width: 52, height: 52, borderRadius: 8 }}
                   contentFit="cover"
                 />

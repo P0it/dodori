@@ -14,6 +14,7 @@ import { Avatar } from '@/components/Avatar';
 import { Dday } from '@/components/Dday';
 import { PinGlyph } from '@/components/glyphs';
 import { AnnivCover } from '@/components/AnnivCover';
+import { photoSource } from '@/lib/photoSource';
 
 type Props = {
   date: string;
@@ -119,7 +120,7 @@ export function DayAgenda({ date, events, tracks, annivs, name, avatarUrl }: Pro
             >
               {t.coverThumbUrl ? (
                 <Image
-                  source={t.coverThumbUrl}
+                  source={photoSource(t.coverThumbUrl)}
                   style={{ width: 44, height: 44, borderRadius: 8, backgroundColor: color.surface2 }}
                   contentFit="cover"
                   transition={160}

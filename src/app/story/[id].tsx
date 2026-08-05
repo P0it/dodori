@@ -36,6 +36,7 @@ import { HeartGlyph } from '@/components/glyphs';
 import { StoryProgress } from '@/components/story/StoryProgress';
 import { StoryTextLayer } from '@/components/story/StoryTextLayer';
 import { StoryCommentBubble } from '@/components/story/StoryCommentBubble';
+import { photoSource } from '@/lib/photoSource';
 
 /** 한 칸이 머무는 시간 */
 const STEP_MS = 5000;
@@ -234,7 +235,7 @@ export default function StoryViewer() {
             // key가 없으면 컴포넌트가 재사용돼 새 사진을 받는 동안 '이전 스토리 사진'이 그대로 남는다
             <Image
               key={current.photo.id}
-              source={current.photo.thumbUrl}
+              source={photoSource(current.photo.thumbUrl)}
               style={{ width: '100%', height: '100%' }}
               contentFit="contain"
               transition={120}

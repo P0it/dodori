@@ -9,6 +9,7 @@ import { useSession } from '@/api/auth';
 import { TopBar } from '@/components/TopBar';
 import { Meta } from '@/components/Meta';
 import { chooseDialog } from '@/components/dialog';
+import { photoSource } from '@/lib/photoSource';
 
 /** 사진 전체 갤러리 (목업 15) — 탭: 슬라이드쇼, 길게: 커버 지정/삭제 */
 export default function Gallery() {
@@ -62,7 +63,7 @@ export default function Gallery() {
             onLongPress={() => onLongPress(p)}
             style={{ flex: 1, aspectRatio: 1, margin: 2, borderRadius: 3, overflow: 'hidden' }}
           >
-            <Image source={p.thumbUrl} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+            <Image source={photoSource(p.thumbUrl)} style={{ width: '100%', height: '100%' }} contentFit="cover" />
             {track.data?.coverPhotoId === p.id && (
               <View
                 style={{

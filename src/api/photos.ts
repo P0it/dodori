@@ -50,14 +50,39 @@ export async function signedThumbUrl(
   renditions = false,
 ): Promise<string> {
   const path = renditions ? renditionPath(storagePath, kind) : storagePath;
+  const cached = cachedSign(kind, path);
+  if (cached) return cached;
   const options = renditions
     ? undefined
     : { transform: { width: RENDITION[kind].width, quality: 72 } };
   const { data, error } = await supabase.storage
     .from('photos')
-    .createSignedUrl(path, 60 * 60, options);
+    .createSignedUrl(path, SIGN_TTL_SEC, options);
   if (error) throw error;
-  return data.signedUrl;
+  return putSign(kind, path, data.signedUrl);
+}
+
+/**
+ * 유효기간이 남은 서명은 다시 발급받지 않는다.
+ *
+ * 화면을 다시 열 때마다(staleTime 60초) 사진 전부를 재서명하면 진입 때마다 왕복이 한 번씩
+ * 더 붙는다 — 사진이 한 박자 늦게 뜨는 원인. 서명은 1시간짜리이므로 그 안에서는 그대로 쓴다.
+ * 앱을 끄면 비는 메모리 캐시다(사진 100장 기준 수십 KB).
+ */
+const SIGN_TTL_SEC = 60 * 60;
+/** 만료 직전 URL을 쥐여주면 화면에 떠 있는 동안 깨진다 — 5분 남으면 새로 받는다 */
+const SIGN_REUSE_MARGIN_MS = 5 * 60_000;
+const signCache = new Map<string, { url: string; expiresAt: number }>();
+
+function cachedSign(kind: RenditionKind, path: string): string | undefined {
+  const hit = signCache.get(`${kind}:${path}`);
+  if (!hit) return undefined;
+  return hit.expiresAt - Date.now() > SIGN_REUSE_MARGIN_MS ? hit.url : undefined;
+}
+
+function putSign(kind: RenditionKind, path: string, url: string): string {
+  signCache.set(`${kind}:${path}`, { url, expiresAt: Date.now() + SIGN_TTL_SEC * 1000 });
+  return url;
 }
 
 /** 서명 배치가 받는 최소 형태 — 어느 테이블에서 왔든 이 둘만 있으면 된다 */
@@ -89,14 +114,22 @@ export async function signedThumbUrls(
   if (baked.length) {
     // 같은 사진이 여러 번 들어와도 서명은 한 번만
     const byRendition = new Map<string, string>();
-    for (const p of baked) byRendition.set(renditionPath(p.storagePath, kind), p.storagePath);
-    const { data, error } = await supabase.storage
-      .from('photos')
-      .createSignedUrls([...byRendition.keys()], 60 * 60);
-    if (error) throw error;
-    for (const item of data) {
-      const origin = item.path ? byRendition.get(item.path) : undefined;
-      if (origin && item.signedUrl) out.set(origin, item.signedUrl);
+    for (const p of baked) {
+      const path = renditionPath(p.storagePath, kind);
+      const cached = cachedSign(kind, path);
+      // 아직 유효한 서명이 있으면 요청에 넣지 않는다 — 전부 캐시면 왕복 자체가 없다
+      if (cached) out.set(p.storagePath, cached);
+      else byRendition.set(path, p.storagePath);
+    }
+    if (byRendition.size) {
+      const { data, error } = await supabase.storage
+        .from('photos')
+        .createSignedUrls([...byRendition.keys()], SIGN_TTL_SEC);
+      if (error) throw error;
+      for (const item of data) {
+        const origin = item.path ? byRendition.get(item.path) : undefined;
+        if (origin && item.signedUrl) out.set(origin, putSign(kind, item.path!, item.signedUrl));
+      }
     }
   }
 
