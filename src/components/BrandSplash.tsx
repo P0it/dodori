@@ -22,6 +22,15 @@ const MARK_DOT_D = MARK_SIZE * MARK_LOWER_DOT.d;
 const FONT_SIZE = MARK_SIZE * WORD.stackRatio;
 /** 아래 값들은 FONT_SIZE 36에서 눈으로 맞춘 것 — 크기를 바꿔도 관계가 유지되도록 비율로 둔다 */
 const LINE_HEIGHT = FONT_SIZE * 1.22;
+/** 마크와 워드마크 사이 — DodoriMark의 세로 락업과 같은 값이라 로그인 화면과 간격이 맞는다 */
+const WORD_GAP = MARK_SIZE * WORD.stackGap;
+/**
+ * 마크만 화면 정중앙에 두면 아래 붙는 글자만큼 락업 전체가 아래로 치우친다.
+ * 락업(마크+간격+글자)의 중심을 화면 중심에 맞추려면 이만큼 올려야 한다.
+ * 처음부터 올려두지는 않는다 — 네이티브 스플래시가 마크를 정중앙에 그려서, 이어받는 순간엔
+ * 같은 자리에 있어야 안 튄다. 워드마크가 떠오르는 동안 같이 올라가며 자리를 잡는다.
+ */
+const LOCKUP_LIFT = (WORD_GAP + LINE_HEIGHT) / 2;
 /** 점을 덮는 사각형의 높이 (줄 상단부터) — 점은 가리고 줄기 윗면은 안 건드리는 값 */
 const DOT_MASK_H = FONT_SIZE * 0.44;
 /** 공이 튀는 바닥 — 글자 윗면. 줄 상단 기준 중심 y */
@@ -67,6 +76,8 @@ type LetterBox = { x: number; width: number };
 export function BrandSplash({ onDone }: Props) {
   const word = useRef(new Animated.Value(0)).current;
   const fade = useRef(new Animated.Value(1)).current;
+  /** 0=네이티브와 같은 마크 정중앙 → 1=락업 중심 정렬 */
+  const lift = useRef(new Animated.Value(0)).current;
   const dotX = useRef(new Animated.Value(0)).current;
   const dotY = useRef(new Animated.Value(0)).current;
   const dotScale = useRef(new Animated.Value(1)).current;
@@ -150,12 +161,20 @@ export function BrandSplash({ onDone }: Props) {
 
     Animated.sequence([
       Animated.delay(100),
-      Animated.timing(word, {
-        toValue: 1,
-        duration: 420,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
+      Animated.parallel([
+        Animated.timing(word, {
+          toValue: 1,
+          duration: 420,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(lift, {
+          toValue: 1,
+          duration: 420,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+      ]),
       // 마크에서 이탈 — 제자리에서 수직 낙하. 떨어지며 굴러다닐 크기로 줄고 그린 → 흰색
       // (마크에서 떼어졌으니 마크 색을 들고 있을 이유가 없다)
       Animated.parallel([
@@ -221,7 +240,7 @@ export function BrandSplash({ onDone }: Props) {
         if (r.finished) onDone();
       });
     });
-  }, [mark, row, boxes, word, fade, dotX, dotY, dotScale, dotFade, settle, onDone]);
+  }, [mark, row, boxes, word, lift, fade, dotX, dotY, dotScale, dotFade, settle, onDone]);
 
   // 실측이 끝나기 전에는 마크가 자기 점을 그대로 그린다 — 교대하는 순간 좌표가 같아 이음매가 없다
   const ready = mark !== null && row !== null && boxes !== null;
@@ -229,21 +248,39 @@ export function BrandSplash({ onDone }: Props) {
   return (
     <Animated.View
       pointerEvents="none"
-      style={[
-        StyleSheet.absoluteFill,
-        { backgroundColor: color.bg, alignItems: 'center', justifyContent: 'center', opacity: fade },
-      ]}
+      style={[StyleSheet.absoluteFill, { backgroundColor: color.bg, opacity: fade }]}
     >
-      <View onLayout={(e) => setMark(e.nativeEvent.layout)}>
-        <DodoriMark size={MARK_SIZE} hideLowerDot={ready} />
-      </View>
+      {/*
+        마크·워드마크·점을 한 덩어리로 올린다. 셋이 같은 좌표계의 형제라 함께 움직여야
+        실측(onLayout)으로 만든 점의 궤적이 어긋나지 않는다 — 하나만 옮기면 점이 헛돈다.
+      */}
+      <Animated.View
+        style={[
+          StyleSheet.absoluteFill,
+          {
+            alignItems: 'center',
+            justifyContent: 'center',
+            transform: [
+              {
+                translateY: lift.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, -LOCKUP_LIFT],
+                }),
+              },
+            ],
+          },
+        ]}
+      >
+        <View onLayout={(e) => setMark(e.nativeEvent.layout)}>
+          <DodoriMark size={MARK_SIZE} hideLowerDot={ready} />
+        </View>
 
       <Animated.View
         onLayout={(e) => setRow(e.nativeEvent.layout)}
         style={{
           position: 'absolute',
           top: '50%',
-          marginTop: MARK_SIZE / 2 + 20,
+          marginTop: MARK_SIZE / 2 + WORD_GAP,
           flexDirection: 'row',
           opacity: word,
           transform: [{ translateY: word.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }],
@@ -314,6 +351,7 @@ export function BrandSplash({ onDone }: Props) {
           />
         </Animated.View>
       )}
+      </Animated.View>
     </Animated.View>
   );
 }
