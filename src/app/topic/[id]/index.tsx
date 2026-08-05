@@ -46,6 +46,8 @@ export default function TopicDetail() {
 
   const myName = profiles.data?.me?.nickname || '나';
   const partnerName = profiles.data?.partner?.nickname || '상대';
+  const avatarUrl = (authorId: string): string | null =>
+    (authorId === uid ? profiles.data?.me?.avatar_url : profiles.data?.partner?.avatar_url) ?? null;
 
   const mine = votes.data?.mine ?? null;
   const partner = votes.data?.partner ?? null;
@@ -178,6 +180,7 @@ export default function TopicDetail() {
               uid={uid}
               myName={myName}
               partnerName={partnerName}
+              avatarUrl={avatarUrl}
               onReply={setReplyTo}
             />
 

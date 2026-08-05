@@ -2,6 +2,7 @@ import { Pressable, Text, View } from 'react-native';
 import { color, typeface } from '@/theme/tokens';
 import { formatRelative } from '@/lib/date';
 import { Meta } from '@/components/Meta';
+import { Avatar } from '@/components/Avatar';
 import type { TopicComment } from '@/api/topics';
 
 type Props = {
@@ -9,6 +10,7 @@ type Props = {
   uid: string | undefined;
   myName: string;
   partnerName: string;
+  avatarUrl: (authorId: string) => string | null;
   /** 답글 대상 지정 — 답글에는 다시 답글을 달지 않는다 */
   onReply: (comment: TopicComment) => void;
 };
@@ -17,7 +19,7 @@ type Props = {
  * 주제 대화 — 전체 폭 스레드 + 1단계 답글.
  * 토론이라 한 사람이 여러 줄을 쓴다. 말풍선(좁은 폭·좌우 정렬)은 긴 글에 부적합해 쓰지 않는다.
  */
-export function CommentList({ comments, uid, myName, partnerName, onReply }: Props) {
+export function CommentList({ comments, uid, myName, partnerName, avatarUrl, onReply }: Props) {
   const roots = comments.filter((c) => c.parentId === null);
   const repliesOf = (id: string) => comments.filter((c) => c.parentId === id);
 
@@ -41,7 +43,7 @@ export function CommentList({ comments, uid, myName, partnerName, onReply }: Pro
             borderTopColor: color.surface1,
           }}
         >
-          <Body comment={c} uid={uid} myName={myName} partnerName={partnerName} />
+          <Body comment={c} uid={uid} myName={myName} partnerName={partnerName} avatarUrl={avatarUrl} />
 
           <Pressable onPress={() => onReply(c)} hitSlop={6} style={{ alignSelf: 'flex-start', marginTop: 8 }}>
             <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 12.5, color: color.sub }}>
@@ -60,7 +62,7 @@ export function CommentList({ comments, uid, myName, partnerName, onReply }: Pro
                 borderLeftColor: color.surface2,
               }}
             >
-              <Body comment={r} uid={uid} myName={myName} partnerName={partnerName} />
+              <Body comment={r} uid={uid} myName={myName} partnerName={partnerName} avatarUrl={avatarUrl} />
             </View>
           ))}
         </View>
@@ -74,16 +76,20 @@ function Body({
   uid,
   myName,
   partnerName,
+  avatarUrl,
 }: {
   comment: TopicComment;
   uid: string | undefined;
   myName: string;
   partnerName: string;
+  avatarUrl: (authorId: string) => string | null;
 }) {
   const mine = comment.authorId === uid;
+  const name = mine ? myName : partnerName;
   return (
     <View>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+        <Avatar url={avatarUrl(comment.authorId)} name={name} size={22} />
         <Text
           style={{
             fontFamily: typeface,
@@ -92,7 +98,7 @@ function Body({
             color: color.white,
           }}
         >
-          {mine ? myName : partnerName}
+          {name}
         </Text>
         <Meta style={{ fontSize: 11.5 }}>{formatRelative(comment.createdAt)}</Meta>
       </View>
