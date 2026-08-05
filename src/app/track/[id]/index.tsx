@@ -328,8 +328,18 @@ function TrackBody({ t }: { t: TrackDetail }) {
       {/* 순서 바꾸기는 수정 모드에서만 — 조회 중 스크롤하다 코스가 끌려가지 않게 */}
       {!editing ? (
         <View style={{ marginTop: 4 }}>
+          {/*
+            조회 중엔 눌러서 장소 상세로(네이버 지도·업체 링크·그 장소의 사진과 데이트).
+            수정 중엔 같은 행이 드래그 재정렬을 맡으므로 탭을 얹지 않는다 — 제스처가 겹친다.
+          */}
           {t.places.map((p) => (
-            <View key={p.placeId}>{courseRow(p, { draggable: false })}</View>
+            <Pressable
+              key={p.placeId}
+              onPress={() => router.push(`/place/${p.placeId}`)}
+              style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+            >
+              {courseRow(p, { draggable: false })}
+            </Pressable>
           ))}
         </View>
       ) : (
