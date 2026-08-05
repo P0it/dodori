@@ -196,7 +196,7 @@ function TrackBody({ t }: { t: TrackDetail }) {
           <GripGlyph />
         </View>
       )}
-      {editing && !released && (
+      {editing && (
         <Pressable
           onPress={() => removePlace.mutate(p.placeId)}
           style={{ width: 40, height: 44, alignItems: 'center', justifyContent: 'center' }}
@@ -302,7 +302,7 @@ function TrackBody({ t }: { t: TrackDetail }) {
         )}
       </View>
       {/* 순서 바꾸기는 수정 모드에서만 — 조회 중 스크롤하다 코스가 끌려가지 않게 */}
-      {released || !editing ? (
+      {!editing ? (
         <View style={{ marginTop: 4 }}>
           {t.places.map((p) => (
             <View key={p.placeId}>{courseRow(p, { draggable: false })}</View>
@@ -322,29 +322,28 @@ function TrackBody({ t }: { t: TrackDetail }) {
           />
         </View>
       )}
-      {!released && (
-        <Pressable
-          onPress={() =>
-            router.push({
-              pathname: '/modals/place-search',
-              params: { trackId: t.id },
-            })
-          }
-          style={({ pressed }) => ({
-            marginTop: 8,
-            height: 44,
-            borderRadius: 10,
-            borderWidth: 1,
-            borderStyle: 'dashed',
-            borderColor: 'rgba(255,255,255,0.2)',
-            alignItems: 'center',
-            justifyContent: 'center',
-            opacity: pressed ? 0.7 : 1,
-          })}
-        >
-          <Text style={{ color: color.accent, fontFamily: typeface, fontWeight: '600', fontSize: 13.5 }}>+ 장소 담기</Text>
-        </Pressable>
-      )}
+      {/* 지난 데이트도 담을 수 있다 — 다녀온 뒤에 코스를 기록하는 쓰임이 실제로 있다 */}
+      <Pressable
+        onPress={() =>
+          router.push({
+            pathname: '/modals/place-search',
+            params: { trackId: t.id },
+          })
+        }
+        style={({ pressed }) => ({
+          marginTop: 8,
+          height: 44,
+          borderRadius: 10,
+          borderWidth: 1,
+          borderStyle: 'dashed',
+          borderColor: 'rgba(255,255,255,0.2)',
+          alignItems: 'center',
+          justifyContent: 'center',
+          opacity: pressed ? 0.7 : 1,
+        })}
+      >
+        <Text style={{ color: color.accent, fontFamily: typeface, fontWeight: '600', fontSize: 13.5 }}>+ 장소 담기</Text>
+      </Pressable>
     </View>
   );
 
