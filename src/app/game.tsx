@@ -1,28 +1,63 @@
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from 'react-native';
 import { useRouter } from 'expo-router';
-import { color, space, tintBg, typeface } from '@/theme/tokens';
+import { color, space, typeface } from '@/theme/tokens';
 import { todayKST } from '@/lib/date';
 import { outcome, pickTodayGame, type GameDef } from '@/lib/games';
+import { useSession } from '@/api/auth';
 import { useCoupleProfiles } from '@/api/couple';
-import { useSubmitRound, useTodayGameScores, type Score } from '@/api/games';
+import {
+  useAddGameComment,
+  useDeleteGameComment,
+  useGameComments,
+  usePastGames,
+  useSubmitRound,
+  useTodayGameScores,
+  type Score,
+} from '@/api/games';
 import { GameHost } from '@/components/game/GameHost';
+import { GameCommentList } from '@/components/game/GameCommentList';
+import { PastGameCard } from '@/components/game/PastGameCard';
+import { PlayerCard } from '@/components/game/PlayerCard';
 import { Meta } from '@/components/Meta';
 import { Eyebrow } from '@/components/Eyebrow';
 import { ChevronGlyph } from '@/components/glyphs';
 
 type Phase = 'intro' | 'play' | 'result';
 
+/** 되돌아보기는 2주씩 늘린다 — 무한 스크롤은 지금 데이터 양에 과하다 */
+const PAST_STEP = 14;
+
 /** 오늘의 게임 — 인트로 → 종목 플레이 → 결과(상대 공개). 3판 소진 후 재진입 시 결과만. */
 export default function GameScreen() {
   const router = useRouter();
-  const game = pickTodayGame(todayKST());
+  const today = todayKST();
+  const game = pickTodayGame(today);
   const scores = useTodayGameScores();
   const submit = useSubmitRound();
+  const session = useSession();
+  const uid = session.data?.user.id ?? '';
   const profiles = useCoupleProfiles();
+  const myName = profiles.data?.me?.nickname || '나';
   const partnerName = profiles.data?.partner?.nickname || '상대';
+  const avatarUrl = (authorId: string): string | null =>
+    (authorId === uid ? profiles.data?.me?.avatar_url : profiles.data?.partner?.avatar_url) ?? null;
 
   const [phase, setPhase] = useState<Phase>('intro');
+  const [pastDays, setPastDays] = useState(PAST_STEP);
+
+  const comments = useGameComments(today);
+  const past = usePastGames(pastDays);
+  const addComment = useAddGameComment();
+  const deleteComment = useDeleteGameComment();
 
   if (!scores.data) {
     return (
@@ -44,89 +79,149 @@ export default function GameScreen() {
     setPhase('result');
   }
 
+  const pastDaysList = past.data ?? [];
+
   return (
-    <ScrollView
-      style={{ backgroundColor: color.bg }}
-      contentContainerStyle={{ padding: space[4], paddingTop: space[6] }}
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: color.bg }}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <Pressable
-        onPress={() => router.back()}
-        hitSlop={10}
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          alignSelf: 'flex-start',
-          gap: 4,
-          marginBottom: space[4],
-          paddingVertical: space[1],
-        }}
+      <ScrollView
+        style={{ backgroundColor: color.bg }}
+        contentContainerStyle={{ padding: space[4], paddingTop: space[6] }}
       >
-        {/* 오른쪽 꺾쇠를 돌려 왼쪽(‹)으로 — 홈으로 돌아가는 표시 */}
-        <View style={{ transform: [{ rotate: '180deg' }] }}>
-          <ChevronGlyph size={24} color={color.sub} />
-        </View>
-        <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 16, color: color.sub }}>홈</Text>
-      </Pressable>
+        <Pressable
+          onPress={() => router.back()}
+          hitSlop={10}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            alignSelf: 'flex-start',
+            gap: 4,
+            marginBottom: space[4],
+            paddingVertical: space[1],
+          }}
+        >
+          {/* 오른쪽 꺾쇠를 돌려 왼쪽(‹)으로 — 홈으로 돌아가는 표시 */}
+          <View style={{ transform: [{ rotate: '180deg' }] }}>
+            <ChevronGlyph size={24} color={color.sub} />
+          </View>
+          <Text style={{ fontFamily: typeface, fontWeight: '600', fontSize: 16, color: color.sub }}>
+            홈
+          </Text>
+        </Pressable>
 
-      <Eyebrow>오늘의 게임</Eyebrow>
-      <Text
-        style={{
-          fontFamily: typeface,
-          fontWeight: '800',
-          fontSize: 24,
-          color: color.white,
-          marginTop: space[1],
-        }}
-      >
-        {game.name}
-      </Text>
-      <Meta style={{ marginTop: space[2] }}>{game.blurb}</Meta>
+        <Eyebrow>오늘의 게임</Eyebrow>
+        <Text
+          style={{
+            fontFamily: typeface,
+            fontWeight: '800',
+            fontSize: 24,
+            color: color.white,
+            marginTop: space[1],
+          }}
+        >
+          {game.name}
+        </Text>
+        <Meta style={{ marginTop: space[2] }}>{game.blurb}</Meta>
 
-      {!showResult && phase === 'intro' && (
-        <View style={{ marginTop: space[6], alignItems: 'center' }}>
-          <Meta>{attempts}/3 판</Meta>
-          <Pressable
-            onPress={() => setPhase('play')}
-            style={({ pressed }) => ({
-              marginTop: space[3],
-              paddingHorizontal: space[6],
-              paddingVertical: space[3],
-              borderRadius: 999,
-              backgroundColor: pressed ? color.greenPress : color.greenCore,
-            })}
-          >
-            <Text
-              style={{
-                fontFamily: typeface,
-                fontWeight: '800',
-                fontSize: 16,
-                color: color.onPrimary,
-              }}
+        {!showResult && phase === 'intro' && (
+          <View style={{ marginTop: space[6], alignItems: 'center' }}>
+            <Meta>{attempts}/3 판</Meta>
+            <Pressable
+              onPress={() => setPhase('play')}
+              style={({ pressed }) => ({
+                marginTop: space[3],
+                paddingHorizontal: space[6],
+                paddingVertical: space[3],
+                borderRadius: 999,
+                backgroundColor: pressed ? color.greenPress : color.greenCore,
+              })}
             >
-              {attempts === 0 ? '시작' : '다시 도전'}
-            </Text>
-          </Pressable>
-        </View>
-      )}
+              <Text
+                style={{
+                  fontFamily: typeface,
+                  fontWeight: '800',
+                  fontSize: 16,
+                  color: color.onPrimary,
+                }}
+              >
+                {attempts === 0 ? '시작' : '다시 도전'}
+              </Text>
+            </Pressable>
+          </View>
+        )}
 
-      {!showResult && phase === 'play' && (
-        <View style={{ marginTop: space[5] }}>
-          {/* key로 판마다 새 인스턴스 — 두 번째 판이 첫 판의 타이머·상태를 물려받지 않게 */}
-          <GameHost key={attempts} gameKey={game.key} onFinish={playRound} />
-        </View>
-      )}
+        {!showResult && phase === 'play' && (
+          <View style={{ marginTop: space[5] }}>
+            {/* key로 판마다 새 인스턴스 — 두 번째 판이 첫 판의 타이머·상태를 물려받지 않게 */}
+            <GameHost key={attempts} gameKey={game.key} onFinish={playRound} />
+          </View>
+        )}
 
-      {showResult && (
-        <ResultCard
-          game={game}
-          mine={mine}
-          partner={scores.data.partner}
-          partnerName={partnerName}
-          canRetry={!capped}
-          onRetry={() => setPhase('intro')}
-        />
-      )}
-    </ScrollView>
+        {showResult && (
+          <ResultCard
+            game={game}
+            mine={mine}
+            partner={scores.data.partner}
+            partnerName={partnerName}
+            canRetry={!capped}
+            onRetry={() => setPhase('intro')}
+          />
+        )}
+
+        {/* 결과 카드를 띄우는지와는 별개 — 한 판이라도 마쳤으면 대화는 열려 있다 */}
+        {mine && phase !== 'play' && (
+          <View style={{ marginTop: space[6] }}>
+            <GameCommentList
+              comments={comments.data ?? []}
+              myUid={uid}
+              name={(authorId) => (authorId === uid ? myName : partnerName)}
+              avatarUrl={avatarUrl}
+              onAdd={(body) => addComment.mutate({ date: today, body })}
+              onDelete={(id) => deleteComment.mutate(id)}
+            />
+          </View>
+        )}
+
+        {pastDaysList.length > 0 && phase !== 'play' && (
+          <View style={{ marginTop: space[6] }}>
+            <Eyebrow>지난 게임</Eyebrow>
+            {pastDaysList.map((day) => (
+              <PastGameCard
+                key={day.date}
+                day={day}
+                myUid={uid}
+                myName={myName}
+                partnerName={partnerName}
+                avatarUrl={avatarUrl}
+                onAdd={(body) => addComment.mutate({ date: day.date, body })}
+                onDelete={(id) => deleteComment.mutate(id)}
+              />
+            ))}
+            <Pressable
+              onPress={() => setPastDays((d) => d + PAST_STEP)}
+              style={({ pressed }) => ({
+                marginTop: space[5],
+                height: 46,
+                borderRadius: 999,
+                borderWidth: 1,
+                borderColor: color.surface4,
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: pressed ? 0.7 : 1,
+              })}
+            >
+              <Text
+                style={{ fontFamily: typeface, fontWeight: '700', fontSize: 14, color: color.sub }}
+              >
+                더 보기
+              </Text>
+            </Pressable>
+          </View>
+        )}
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -195,75 +290,6 @@ function ResultCard({
         </Pressable>
       ) : (
         <Meta style={{ textAlign: 'center', marginTop: space[2] }}>오늘 3판을 다 썼어요</Meta>
-      )}
-    </View>
-  );
-}
-
-/** 한 사람의 3판 — 이름 옆에 최고 기록, 아래에 차시별로 편다 */
-function PlayerCard({
-  label,
-  game,
-  score,
-  placeholder,
-}: {
-  label: string;
-  game: GameDef;
-  score: Score | null;
-  placeholder: string;
-}) {
-  const rounds = score?.rounds ?? [];
-  // 같은 점수가 두 번 나오면 앞선 판을 최고로 친다
-  const bestIndex = score ? rounds.indexOf(score.bestScore) : -1;
-
-  return (
-    <View style={{ borderRadius: 14, padding: space[4], backgroundColor: color.surface1 }}>
-      {/* 최고 기록은 아래 차시 줄의 하이라이트가 말해준다 — 위에 또 쓰면 같은 값이 두 번 */}
-      <Text
-        numberOfLines={1}
-        style={{ fontFamily: typeface, fontWeight: '700', fontSize: 15, color: color.white }}
-      >
-        {label}
-      </Text>
-
-      {!score ? (
-        <Meta style={{ marginTop: space[3] }}>{placeholder}</Meta>
-      ) : (
-        [0, 1, 2].map((i) => {
-          const value = rounds[i];
-          const isBest = i === bestIndex;
-          return (
-            <View
-              key={i}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                marginTop: space[2],
-                paddingHorizontal: space[3],
-                paddingVertical: space[3],
-                borderRadius: 10,
-                backgroundColor: isBest ? tintBg.accent : color.surface2,
-                // 테두리는 항상 있고 색만 바뀐다 — 최고 줄에만 넣으면 그 줄만 1px씩 커진다
-                borderWidth: 1,
-                borderColor: isBest ? color.accent : 'transparent',
-              }}
-            >
-              <Meta style={{ fontSize: 13 }}>{i + 1}차시</Meta>
-              <Text
-                style={{
-                  fontFamily: typeface,
-                  fontWeight: isBest ? '800' : '600',
-                  fontSize: 15,
-                  color:
-                    value === undefined ? color.muted : isBest ? color.accent : color.white,
-                }}
-              >
-                {value === undefined ? '—' : game.format(value)}
-              </Text>
-            </View>
-          );
-        })
       )}
     </View>
   );

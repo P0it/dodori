@@ -197,6 +197,41 @@ export type Database = {
           },
         ]
       }
+      game_comments: {
+        Row: {
+          author_id: string
+          body: string
+          couple_id: string
+          created_at: string
+          game_date: string
+          id: string
+        }
+        Insert: {
+          author_id: string
+          body: string
+          couple_id: string
+          created_at?: string
+          game_date: string
+          id?: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          couple_id?: string
+          created_at?: string
+          game_date?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_comments_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       game_scores: {
         Row: {
           attempts: number

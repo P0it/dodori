@@ -58,6 +58,13 @@ export function useCoupleRealtime() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'game_scores', filter }, () => {
         qc.invalidateQueries({ queryKey: ['gameScores'] });
         qc.invalidateQueries({ queryKey: ['gameWeek'] });
+        // 상대가 마치면 그날 댓글도 같이 열린다
+        qc.invalidateQueries({ queryKey: ['gameComments'] });
+        qc.invalidateQueries({ queryKey: ['pastGames'] });
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'game_comments', filter }, () => {
+        qc.invalidateQueries({ queryKey: ['gameComments'] });
+        qc.invalidateQueries({ queryKey: ['pastGames'] });
       })
       // post_reactions·post_comments는 couple_id 컬럼이 없어 필터 없이 구독 (photos·notes와 동일)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'post_reactions' }, () =>
