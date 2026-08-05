@@ -1,13 +1,14 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Pressable,
-  ScrollView,
   Text,
   View,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from 'react-native';
-import { Image } from 'expo-image';
+import Animated from 'react-native-reanimated';
+import { Gesture, GestureDetector, type GestureType } from 'react-native-gesture-handler';
+import { ZoomableImage } from './PhotoZoom';
 import { color, radius, space, typeface } from '@/theme/tokens';
 import { formatRelative } from '@/lib/date';
 import { postContentFit, postFrameRatioOf, REACTIONS } from '@/lib/posts';
@@ -28,6 +29,8 @@ type Props = {
   onAddComment: (body: string, parentId: string | null) => void;
   onDeleteComment: (commentId: string) => void;
   onDelete: () => void;
+  /** 피드 세로 리스트를 Gesture.Native()로 감싼 제스처 — 핀치와 동시 인식해 세로 스크롤을 살린다 */
+  outerGestures?: GestureType[];
 };
 
 const HEART = REACTIONS[0];
@@ -43,9 +46,17 @@ export function PostCard({
   onAddComment,
   onDeleteComment,
   onDelete,
+  outerGestures,
 }: Props) {
   const [page, setPage] = useState(0);
   const [expanded, setExpanded] = useState(false);
+  // 캐러셀을 네이티브 제스처로 등록해 핀치와 동시 인식시킨다(핀치가 가로 스크롤을 막지 않게).
+  // 바깥 세로 피드 제스처도 함께 넘겨 세로 스크롤도 공존시킨다.
+  const carouselGesture = useMemo(() => Gesture.Native(), []);
+  const photoGestures = useMemo(
+    () => [carouselGesture, ...(outerGestures ?? [])],
+    [carouselGesture, outerGestures],
+  );
   const mine = post.authorId === myUid;
 
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) =>
@@ -98,24 +109,27 @@ export function PostCard({
       */}
       {post.photos.length > 0 && (
         <View>
-          <ScrollView
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            onScroll={onScroll}
-            scrollEventThrottle={16}
-            style={{ width, height: carouselH }}
-          >
-            {post.photos.map((p) => (
-              <Image
-                key={p.id}
-                source={photoSource(p.thumbUrl)}
-                style={{ width, height: carouselH, backgroundColor: color.bg }}
-                contentFit={postContentFit(p, frameRatio)}
-                transition={160}
-              />
-            ))}
-          </ScrollView>
+          <GestureDetector gesture={carouselGesture}>
+            <Animated.ScrollView
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onScroll={onScroll}
+              scrollEventThrottle={16}
+              style={{ width, height: carouselH }}
+            >
+              {post.photos.map((p) => (
+                <ZoomableImage
+                  key={p.id}
+                  source={photoSource(p.thumbUrl)}
+                  style={{ width, height: carouselH, backgroundColor: color.bg }}
+                  contentFit={postContentFit(p, frameRatio)}
+                  transition={160}
+                  simultaneousGestures={photoGestures}
+                />
+              ))}
+            </Animated.ScrollView>
+          </GestureDetector>
 
           {/* n/m 카운터 */}
           {post.photos.length > 1 && (
