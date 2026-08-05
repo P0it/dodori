@@ -41,7 +41,10 @@ export function DayAgenda({ date, events, tracks, annivs, name, avatarUrl }: Pro
   const router = useRouter();
 
   const [y, m, d] = date.split('-').map(Number);
-  const weekday = WEEKDAY[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
+  const dow = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+  const weekday = WEEKDAY[dow];
+  // 주말은 그리드와 같은 색으로 — 일=빨강, 토=파랑
+  const weekendTint = dow === 0 ? color.sunday : dow === 6 ? color.saturday : null;
   const anniv = annivs[0];
   const isToday = date === todayKST();
 
@@ -56,10 +59,10 @@ export function DayAgenda({ date, events, tracks, annivs, name, avatarUrl }: Pro
         }}
       >
         <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8 }}>
-          <Text style={{ fontFamily: typeface, fontWeight: '800', fontSize: 22, color: color.white }}>
+          <Text style={{ fontFamily: typeface, fontWeight: '800', fontSize: 22, color: weekendTint ?? color.white }}>
             {m}월 {d}일
           </Text>
-          <Text style={{ fontFamily: typeface, fontWeight: '500', fontSize: 13, color: color.sub }}>{weekday}</Text>
+          <Text style={{ fontFamily: typeface, fontWeight: '500', fontSize: 13, color: weekendTint ?? color.sub }}>{weekday}</Text>
           {isToday && (
             <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 12, color: color.accent }}>오늘</Text>
           )}
