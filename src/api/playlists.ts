@@ -111,6 +111,9 @@ export interface PlaylistPlaceItem {
   category: string | null;
   address: string | null;
   link: string | null;
+  /** 지도 핀용 — 네이버 검색으로 담은 곳은 채워져 있지만 컬럼은 nullable이다 */
+  lat: number | null;
+  lng: number | null;
   visitCount: number;
   photoThumbs: string[];
 }
@@ -134,7 +137,7 @@ export function usePlaylistDetail(id: string | undefined) {
     queryFn: async (): Promise<PlaylistDetail> => {
       const { data: pl, error } = await supabase
         .from('playlists')
-        .select('id, name, kind, color, icon, playlist_places(place_id, places(id, name, category, address, link))')
+        .select('id, name, kind, color, icon, playlist_places(place_id, places(id, name, category, address, link, lat, lng))')
         .eq('id', id!)
         .single();
       if (error) throw error;
@@ -152,6 +155,8 @@ export function usePlaylistDetail(id: string | undefined) {
           category: pp.places?.category ?? null,
           address: pp.places?.address ?? null,
           link: pp.places?.link ?? null,
+          lat: pp.places?.lat ?? null,
+          lng: pp.places?.lng ?? null,
           visitCount: visits.get(pp.place_id)?.count ?? 0,
           photoThumbs: visits.get(pp.place_id)?.thumbs ?? [],
         })),

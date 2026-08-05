@@ -1,15 +1,19 @@
 // 코스 동선 지도용 순수 로직 — 좌표 필터/정렬과 카메라 범위 계산.
 // lib/ 규칙: React·Supabase·RN import 금지. 유일한 단위 테스트 대상.
 
-/** 좌표를 가질 수 있는 최소 장소 형태 (TrackPlace의 부분집합) */
-export interface Pinnable {
+/** 좌표를 가질 수 있는 최소 장소 형태 */
+export interface Coordinate {
   lat: number | null;
   lng: number | null;
+}
+
+/** 좌표를 가질 수 있고 코스 순서가 있는 장소 (TrackPlace의 부분집합) */
+export interface Pinnable extends Coordinate {
   sortOrder: number;
 }
 
 /** 지도에 찍을 수 있게 좌표가 확정된 장소 */
-export type Pinned<T extends Pinnable> = T & { lat: number; lng: number };
+export type Pinned<T extends Coordinate> = T & { lat: number; lng: number };
 
 export interface LatLng {
   lat: number;
@@ -29,11 +33,14 @@ const MIN_SPAN = 0.005;
 // 핀이 화면 가장자리에 붙지 않게 범위를 넉넉히 감싸는 배율.
 const PADDING = 1.5;
 
+/** 좌표(lat·lng 둘 다 유효)가 있는 장소만. 순서는 넘어온 그대로 — 찜 목록처럼 코스 순서가 없는 쪽이 쓴다 */
+export function withCoords<T extends Coordinate>(places: T[]): Pinned<T>[] {
+  return places.filter((p): p is Pinned<T> => Number.isFinite(p.lat) && Number.isFinite(p.lng));
+}
+
 /** 좌표(lat·lng 둘 다 유효)가 있는 장소만, sortOrder 오름차순으로 */
 export function pinnablePlaces<T extends Pinnable>(places: T[]): Pinned<T>[] {
-  return places
-    .filter((p): p is Pinned<T> => Number.isFinite(p.lat) && Number.isFinite(p.lng))
-    .sort((a, b) => a.sortOrder - b.sortOrder);
+  return withCoords(places).sort((a, b) => a.sortOrder - b.sortOrder);
 }
 
 /**

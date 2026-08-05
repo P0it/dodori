@@ -6,7 +6,7 @@ import { pinnablePlaces, boundsOf } from '@/lib/map';
 import { useTrack } from '@/api/tracks';
 import { TopBar } from '@/components/TopBar';
 import { Meta } from '@/components/Meta';
-import { TrackCourseMap, type MapPin, type TrackCourseMapHandle } from '@/components/track/TrackCourseMap';
+import { PlaceMap, type MapPin, type PlaceMapHandle } from '@/components/map/PlaceMap';
 import { CourseCardStrip } from '@/components/track/CourseCardStrip';
 
 /** 코스 동선 지도 — 트랙 장소를 순번 핀 + 직선으로 잇는다 (좌표 있는 장소만).
@@ -15,7 +15,7 @@ import { CourseCardStrip } from '@/components/track/CourseCardStrip';
 export default function TrackMapScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const track = useTrack(id);
-  const mapRef = useRef<TrackCourseMapHandle>(null);
+  const mapRef = useRef<PlaceMapHandle>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   // 좌표 있는 장소만, sortOrder 순. 순번/시간 라벨은 코스 목록과 같은 규칙.
@@ -53,11 +53,12 @@ export default function TrackMapScreen() {
       <TopBar title="코스 지도" />
       {region ? (
         <View style={{ flex: 1 }}>
-          <TrackCourseMap
+          <PlaceMap
             ref={mapRef}
             region={region}
             pins={pins}
             onPinPress={select}
+            showPath
           />
           {/* 하단 카드 스트립 — 핀 탭 시 그 카드로 스크롤, 카드 넘기면 그 핀으로 카메라 이동 */}
           <View style={{ position: 'absolute', left: 0, right: 0, bottom: 16 }}>

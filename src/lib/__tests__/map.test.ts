@@ -1,4 +1,4 @@
-import { pinnablePlaces, boundsOf, naverMapUrl, type Pinnable } from '../map';
+import { withCoords, pinnablePlaces, boundsOf, naverMapUrl, type Coordinate, type Pinnable } from '../map';
 
 const place = (over: Partial<Pinnable> & { sortOrder: number }): Pinnable => ({
   lat: 37.5,
@@ -28,6 +28,37 @@ describe('pinnablePlaces', () => {
 
   it('좌표가 다 없으면 빈 배열', () => {
     expect(pinnablePlaces([place({ sortOrder: 0, lat: null, lng: null })])).toEqual([]);
+  });
+});
+
+describe('withCoords', () => {
+  // 찜 목록처럼 sortOrder가 없는 장소 — 좌표 유무만 본다
+  const saved = (over: Partial<Coordinate> & { name: string }) => ({ lat: 37.5, lng: 127.0, ...over });
+
+  it('lat 또는 lng가 null인 장소는 제외한다', () => {
+    const out = withCoords([
+      saved({ name: 'a', lat: null }),
+      saved({ name: 'b' }),
+      saved({ name: 'c', lng: null }),
+    ]);
+    expect(out.map((p) => p.name)).toEqual(['b']);
+  });
+
+  it('NaN 좌표도 제외한다', () => {
+    expect(withCoords([saved({ name: 'a', lat: NaN })])).toEqual([]);
+  });
+
+  it('넘어온 순서를 그대로 유지한다 (정렬하지 않는다)', () => {
+    const out = withCoords([
+      saved({ name: 'c', lat: 37.3 }),
+      saved({ name: 'a', lat: 37.1 }),
+      saved({ name: 'b', lat: 37.2 }),
+    ]);
+    expect(out.map((p) => p.name)).toEqual(['c', 'a', 'b']);
+  });
+
+  it('빈 배열이면 빈 배열', () => {
+    expect(withCoords([])).toEqual([]);
   });
 });
 

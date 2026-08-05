@@ -9,7 +9,7 @@ import {
   type NativeSyntheticEvent,
 } from 'react-native';
 import { color, typeface } from '@/theme/tokens';
-import type { MapPin } from './TrackCourseMap';
+import type { MapPin } from '@/components/map/PlaceMap';
 
 const CARD_W = 200;
 const GAP = 10;
