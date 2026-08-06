@@ -329,6 +329,7 @@ export type Database = {
       photos: {
         Row: {
           couple_id: string
+          cover_only: boolean
           created_at: string
           height: number | null
           id: string
@@ -343,6 +344,7 @@ export type Database = {
         }
         Insert: {
           couple_id: string
+          cover_only?: boolean
           created_at?: string
           height?: number | null
           id?: string
@@ -357,6 +359,7 @@ export type Database = {
         }
         Update: {
           couple_id?: string
+          cover_only?: boolean
           created_at?: string
           height?: number | null
           id?: string

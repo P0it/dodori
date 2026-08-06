@@ -1,7 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from './supabase';
 import { useMyCouple } from './couple';
-import { signedThumbUrl, signedThumbUrls, uploadPhotos, type PickedPhoto } from './photos';
+import {
+  signedThumbUrl,
+  signedThumbUrls,
+  storagePathsFor,
+  uploadPhotos,
+  type PickedPhoto,
+} from './photos';
 import { todayKST, type ISODate } from '@/lib/date';
 
 export interface MonthTrack {
@@ -26,7 +32,7 @@ export function useMonthTracks(monthKey: string) {
         .select(
           `id, title, date,
            cover:photos!tracks_cover_photo_fk(storage_path, renditions),
-           photos!photos_track_id_fkey(storage_path, renditions, created_at),
+           photos!photos_track_id_fkey(storage_path, renditions, created_at, cover_only),
            stories(photos!photos_story_id_fkey(storage_path, renditions, created_at))`,
         )
         .gte('date', from)
@@ -36,8 +42,10 @@ export function useMonthTracks(monthKey: string) {
       // 커버를 먼저 다 고른 뒤 서명은 한 번에 — 트랙마다 낱개로 서명하면 그 달 트랙 수만큼 왕복이 된다
       const picked = data.map((t) => {
         // 지정 커버가 없으면 가장 이른 사진으로 — 그날 담긴 스토리 사진도 후보에 넣는다
+        // 표지 전용은 폴백 후보가 아니다 — 커버로 지정된 상태라 여기까지 오지도 않지만,
+        // 커버가 해제된 뒤에도 그날 사진인 척 대표가 되면 안 된다
         const fallback = [
-          ...(t.photos ?? []),
+          ...(t.photos ?? []).filter((p) => !p.cover_only),
           ...(t.stories ?? []).flatMap((s) => s.photos ?? []),
         ].sort((a, b) => a.created_at.localeCompare(b.created_at))[0];
         return { id: t.id, title: t.title, date: t.date, cover: t.cover ?? fallback ?? null };
@@ -76,12 +84,16 @@ export function useAllTracks() {
         .select(
           `id, title, date,
            cover:photos!tracks_cover_photo_fk(storage_path, renditions),
-           photos!photos_track_id_fkey(id, storage_path, renditions),
+           photos!photos_track_id_fkey(id, storage_path, renditions, cover_only),
            notes(id), track_places(place_id)`,
         )
         .order('date', { ascending: false });
       if (error) throw error;
-      const picked = data.map((t) => ({ row: t, cover: t.cover ?? t.photos?.[0] ?? null }));
+      // 표지 전용은 그날의 사진이 아니다 — 사진 수에도, 커버 폴백 후보에도 넣지 않는다
+      const picked = data.map((t) => {
+        const own = (t.photos ?? []).filter((p) => !p.cover_only);
+        return { row: t, own, cover: t.cover ?? own[0] ?? null };
+      });
       // 캐러셀 자켓이 화면 폭의 2/3까지 커져서 grid(360)로는 확대돼 보인다 — 커버만 feed(1080)
       const urls = await signedThumbUrls(
         picked.flatMap((p) =>
@@ -89,12 +101,12 @@ export function useAllTracks() {
         ),
         'feed',
       );
-      return picked.map(({ row: t, cover }) => ({
+      return picked.map(({ row: t, own, cover }) => ({
         id: t.id,
         title: t.title,
         date: t.date,
         coverThumbUrl: cover ? (urls.get(cover.storage_path) ?? null) : null,
-        photoCount: t.photos?.length ?? 0,
+        photoCount: own.length,
         noteCount: t.notes?.length ?? 0,
         placeCount: t.track_places?.length ?? 0,
       }));
@@ -191,7 +203,7 @@ export function useTrack(id: string | undefined) {
         .select(
           `id, title, date, cover_photo_id, created_by,
            cover:photos!tracks_cover_photo_fk(storage_path, renditions),
-           photos!photos_track_id_fkey(id, storage_path, renditions, uploader_id, taken_at, created_at, width, height),
+           photos!photos_track_id_fkey(id, storage_path, renditions, uploader_id, taken_at, created_at, width, height, cover_only),
            track_places(place_id, visit_time, sort_order, added_by, done, places(name, category, address, link, lat, lng)),
            notes(id, author_id, body, created_at)`,
         )
@@ -209,8 +221,12 @@ export function useTrack(id: string | undefined) {
       const storyPhotos = (stories ?? []).flatMap((s) =>
         (s.photos ?? []).map((p) => ({ ...p, storyId: s.id })),
       );
+      // 표지 전용(자켓으로 구해 온 이미지)은 그날의 사진이 아니라 아카이브·갤러리에서 뺀다.
+      // 커버 자체는 t.cover로 따로 읽으므로 히어로는 그대로 나온다.
       const sorted = [
-        ...(t.photos ?? []).map((p) => ({ ...p, storyId: null as string | null })),
+        ...(t.photos ?? [])
+          .filter((p) => !p.cover_only)
+          .map((p) => ({ ...p, storyId: null as string | null })),
         ...storyPhotos,
       ].sort((a, b) => (a.taken_at ?? a.created_at).localeCompare(b.taken_at ?? b.created_at));
       const gridUrls = await signedThumbUrls(
@@ -285,6 +301,26 @@ export function useCreateTrack() {
   });
 }
 
+/**
+ * 지금 커버가 표지 전용 사진이면 지운다 (행 + 스토리지).
+ *
+ * 표지 전용은 아카이브에 안 보이므로 사용자가 지울 길이 없다 — 커버가 바뀌거나 해제되는
+ * 순간 쓰임이 사라지니 여기서 함께 치운다. 그날 사진을 커버로 쓰던 경우는 건드리지 않는다.
+ */
+async function discardCoverOnlyPhoto(trackId: string) {
+  const { data: t } = await supabase
+    .from('tracks')
+    .select('cover:photos!tracks_cover_photo_fk(id, storage_path, renditions, cover_only)')
+    .eq('id', trackId)
+    .single();
+  const old = t?.cover;
+  if (!old?.cover_only) return;
+  await supabase.from('photos').delete().eq('id', old.id);
+  await supabase.storage
+    .from('photos')
+    .remove(storagePathsFor({ storagePath: old.storage_path, renditions: old.renditions }));
+}
+
 export function useUpdateTrack(id: string) {
   const qc = useQueryClient();
   return useMutation({
@@ -293,6 +329,9 @@ export function useUpdateTrack(id: string) {
       coverPhotoId?: string | null;
       date?: ISODate;
     }) => {
+      // 커버가 바뀌는 갱신이면 먼저 옛 표지를 치운다 (cover_photo_id는 on delete set null이 아니라
+      // 지운 뒤에 새 값을 넣어야 순서가 안전하다)
+      if (patch.coverPhotoId !== undefined) await discardCoverOnlyPhoto(id);
       const { error } = await supabase
         .from('tracks')
         .update({
@@ -306,11 +345,19 @@ export function useUpdateTrack(id: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['track', id] });
       qc.invalidateQueries({ queryKey: ['tracks'] });
+      qc.invalidateQueries({ queryKey: ['photoQuota'] });
     },
   });
 }
 
-/** 앨범 커버 지정 — 사진 1장 업로드 후 그 photo id를 cover_photo_id로. 계획·발매 양쪽 */
+/**
+ * 앨범 커버 지정 — 이미지 1장 업로드 후 그 photo id를 cover_photo_id로. 계획·발매 양쪽.
+ *
+ * 여기로 올라오는 건 **표지 전용**이다 (cover_only). 사진이 아직 없는 앞으로의 데이트에
+ * 커버부터 정하는 흐름이라, 그날 찍은 사진이 아니라 자켓으로 구해 온 이미지다 —
+ * 아카이브·갤러리·장소의 '우리 사진'에 섞이면 안 된다.
+ * 그날 사진 하나를 커버로 삼는 건 갤러리에서 길게 눌러 지정하는 쪽(useUpdateTrack)이다.
+ */
 export function useSetTrackCover(trackId: string) {
   const qc = useQueryClient();
   const couple = useMyCouple();
@@ -318,7 +365,8 @@ export function useSetTrackCover(trackId: string) {
     mutationFn: async (photo: PickedPhoto) => {
       const coupleId = couple.data?.coupleId;
       if (!coupleId) throw new Error('연결이 필요해요');
-      const [photoId] = await uploadPhotos({ trackId }, coupleId, [photo]);
+      await discardCoverOnlyPhoto(trackId);
+      const [photoId] = await uploadPhotos({ trackId }, coupleId, [photo], { coverOnly: true });
       const { error } = await supabase
         .from('tracks')
         .update({ cover_photo_id: photoId })
@@ -328,6 +376,7 @@ export function useSetTrackCover(trackId: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['track', trackId] });
       qc.invalidateQueries({ queryKey: ['tracks'] });
+      qc.invalidateQueries({ queryKey: ['photoQuota'] });
     },
   });
 }

@@ -332,6 +332,8 @@ export async function uploadPhotos(
   parent: PhotoParent,
   coupleId: string,
   photos: PickedPhoto[],
+  /** 표지 전용 — 앨범 커버로 쓰려고 구해 온 이미지. 그날의 사진이 아니라 아카이브에서 감춘다 */
+  options?: { coverOnly?: boolean },
 ): Promise<string[]> {
   const { data: userData } = await supabase.auth.getUser();
   const uid = userData.user?.id;
@@ -365,6 +367,7 @@ export async function uploadPhotos(
         couple_id: coupleId,
         storage_path: path,
         renditions: true,
+        cover_only: options?.coverOnly ?? false,
         width: main.width,
         height: main.height,
         taken_at: photo.takenAt,

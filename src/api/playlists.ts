@@ -171,7 +171,9 @@ async function visitStats(placeIds: string[]) {
   if (!placeIds.length) return map;
   const { data } = await supabase
     .from('track_places')
-    .select('place_id, tracks(date, photos!photos_track_id_fkey(storage_path, renditions))')
+    .select(
+      'place_id, tracks(date, photos!photos_track_id_fkey(storage_path, renditions, cover_only))',
+    )
     .in('place_id', placeIds);
   // 먼저 장소별로 쓸 사진을 고르고, 서명은 마지막에 한 번에 — 예전엔 for 안에서 await라
   // 요청이 순차로 나갔다(장소 20개면 최대 80건이 줄줄이 대기)
@@ -179,7 +181,8 @@ async function visitStats(placeIds: string[]) {
   for (const row of data ?? []) {
     const entry = picked.get(row.place_id) ?? { count: 0, photos: [] };
     entry.count++;
-    for (const ph of row.tracks?.photos ?? []) {
+    // 표지 전용은 그 데이트의 자켓이지 이 장소에서 찍은 사진이 아니다
+    for (const ph of (row.tracks?.photos ?? []).filter((p) => !p.cover_only)) {
       if (entry.photos.length < 4) {
         entry.photos.push({ storagePath: ph.storage_path, renditions: ph.renditions });
       }
@@ -266,14 +269,16 @@ export function usePlaceDetail(id: string | undefined) {
       if (error) throw error;
       const { data: tps } = await supabase
         .from('track_places')
-        .select('tracks(id, title, date, photos!photos_track_id_fkey(storage_path, renditions))')
+        .select(
+          'tracks(id, title, date, photos!photos_track_id_fkey(storage_path, renditions, cover_only))',
+        )
         .eq('place_id', id!);
       const tracks = (tps ?? [])
         .map((tp) => tp.tracks)
         .filter((t): t is NonNullable<typeof t> => !!t)
         .sort((a, b) => b.date.localeCompare(a.date));
       const heroPhotos = tracks
-        .flatMap((t) => t.photos ?? [])
+        .flatMap((t) => (t.photos ?? []).filter((p) => !p.cover_only))
         .slice(0, 6)
         .map((ph) => ({ storagePath: ph.storage_path, renditions: ph.renditions }));
       const heroUrls = await signedThumbUrls(heroPhotos, 'grid');
