@@ -15,10 +15,49 @@ export interface Song {
   appleUrl: string;
 }
 
-/** seq 순으로 하루 하나씩 소진 — 풀을 다 쓰면 처음으로 돌아온다 */
+/**
+ * 같은 가수가 며칠씩 연달아 나오지 않도록 풀을 한 번 재배열한다.
+ * 시드가 가수별로 묶여 들어와 seq 순 그대로 소진하면 3~5일 내리 같은 가수였다.
+ * 남은 곡이 가장 많은 가수에서 하나씩 꺼내되 직전 가수는 건너뛴다 — 순수·결정적이라
+ * 두 사람이 여전히 같은 날 같은 곡을 본다.
+ */
+export function spreadByArtist(pool: Song[]): Song[] {
+  const groups = new Map<string, Song[]>();
+  for (const s of [...pool].sort((a, b) => a.seq - b.seq)) {
+    const g = groups.get(s.artist);
+    if (g) g.push(s);
+    else groups.set(s.artist, [s]);
+  }
+
+  const out: Song[] = [];
+  let prev: string | null = null;
+  while (out.length < pool.length) {
+    // 남은 곡이 가장 많은 가수 (동수면 seq가 앞선 쪽 — Map은 삽입 순서를 지킨다)
+    let pick: string | null = null;
+    for (const [artist, songs] of groups) {
+      if (songs.length === 0 || artist === prev) continue;
+      if (pick === null || songs.length > groups.get(pick)!.length) pick = artist;
+    }
+    if (pick === null) pick = prev!; // 남은 게 직전 가수뿐 — 어쩔 수 없이 연달아
+    out.push(groups.get(pick)!.shift()!);
+    prev = pick;
+  }
+
+  // 마지막 날 다음은 다시 첫날 — 양 끝이 같은 가수면 마지막 곡을 안전한 자리로 옮긴다
+  if (out.length > 2 && out[0].artist === out[out.length - 1].artist) {
+    const tail = out.pop()!;
+    const i = out.findIndex(
+      (s, idx) => idx > 0 && s.artist !== tail.artist && out[idx - 1].artist !== tail.artist,
+    );
+    out.splice(i < 0 ? out.length : i, 0, tail);
+  }
+  return out;
+}
+
+/** 하루 하나씩 소진 — 풀을 다 쓰면 처음으로 돌아온다 */
 export function pickTodaySong(pool: Song[], today: ISODate): Song | null {
   if (pool.length === 0) return null;
-  const ordered = [...pool].sort((a, b) => a.seq - b.seq);
+  const ordered = spreadByArtist(pool);
   const i = ((toEpochDay(today) % ordered.length) + ordered.length) % ordered.length;
   return ordered[i];
 }

@@ -1,4 +1,4 @@
-import { MUSIC_SERVICES, pickTodaySong, type MusicService, type Song } from '../song';
+import { MUSIC_SERVICES, pickTodaySong, spreadByArtist, type MusicService, type Song } from '../song';
 
 const song = (seq: number): Song => ({
   id: `id-${seq}`,
@@ -36,6 +36,45 @@ describe('pickTodaySong', () => {
   it('풀 순서가 섞여 들어와도 seq 기준으로 고른다', () => {
     const shuffled = [song(2), song(0), song(1)];
     expect(pickTodaySong(shuffled, '2026-07-16')!.seq).toBe(pickTodaySong(pool, '2026-07-16')!.seq);
+  });
+});
+
+describe('spreadByArtist', () => {
+  const byArtist = (artist: string, n: number, from: number): Song[] =>
+    Array.from({ length: n }, (_, i) => ({ ...song(from + i), artist }));
+
+  // 시드 그대로의 모양 — 가수별로 뭉쳐 들어온다
+  const grouped = [
+    ...byArtist('뉴진스', 5, 0),
+    ...byArtist('아이브', 3, 5),
+    ...byArtist('TWICE', 3, 8),
+    ...byArtist('BIGBANG', 2, 11),
+    ...byArtist('EXO', 1, 13),
+  ];
+
+  it('같은 가수가 이틀 연속 나오지 않는다', () => {
+    const out = spreadByArtist(grouped);
+    for (let i = 1; i < out.length; i++) expect(out[i].artist).not.toBe(out[i - 1].artist);
+  });
+
+  it('한 바퀴 돌아 첫날로 이어질 때도 연속되지 않는다', () => {
+    const out = spreadByArtist(grouped);
+    expect(out[out.length - 1].artist).not.toBe(out[0].artist);
+  });
+
+  it('곡을 잃거나 중복시키지 않는다', () => {
+    const out = spreadByArtist(grouped);
+    expect(out.map((s) => s.seq).sort((a, b) => a - b)).toEqual(grouped.map((s) => s.seq));
+  });
+
+  it('입력 순서가 달라도 결과는 같다 (두 사람이 같은 곡을 본다)', () => {
+    const shuffled = [...grouped].reverse();
+    expect(spreadByArtist(shuffled).map((s) => s.seq)).toEqual(spreadByArtist(grouped).map((s) => s.seq));
+  });
+
+  it('한 가수가 절반을 넘으면 연속을 피할 수 없다 — 그래도 최대한 벌린다', () => {
+    const out = spreadByArtist([...byArtist('뉴진스', 4, 0), ...byArtist('EXO', 1, 4)]);
+    expect(out.map((s) => s.artist)).toEqual(['뉴진스', 'EXO', '뉴진스', '뉴진스', '뉴진스']);
   });
 });
 
