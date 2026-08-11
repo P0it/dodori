@@ -59,12 +59,43 @@ export default function GameScreen() {
   const addComment = useAddGameComment();
   const deleteComment = useDeleteGameComment();
 
+  // 점수를 못 받으면 화면 전체가 이것뿐이다 — 실패를 말없이 삼키면 캄캄한 화면만 남는다.
+  // 세션이 아직 없어 쿼리가 꺼져 있는 동안(uid 빈 값)에도 여기 머문다는 걸 화면에 드러낸다.
   if (!scores.data) {
     return (
       <View
-        style={{ flex: 1, backgroundColor: color.bg, alignItems: 'center', justifyContent: 'center' }}
+        style={{
+          flex: 1,
+          backgroundColor: color.bg,
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: space[3],
+        }}
       >
-        <ActivityIndicator color={color.sub} />
+        {scores.isError || (session.isSuccess && !uid) ? (
+          <>
+            <Meta>{scores.isError ? '점수를 불러오지 못했어요' : '로그인이 풀렸어요'}</Meta>
+            <Pressable
+              onPress={() => (uid ? scores.refetch() : router.replace('/'))}
+              style={({ pressed }) => ({
+                paddingHorizontal: space[5],
+                paddingVertical: space[2],
+                borderRadius: 999,
+                borderWidth: 1,
+                borderColor: color.surface4,
+                opacity: pressed ? 0.7 : 1,
+              })}
+            >
+              <Text
+                style={{ fontFamily: typeface, fontWeight: '700', fontSize: 14, color: color.white }}
+              >
+                {uid ? '다시 시도' : '홈으로'}
+              </Text>
+            </Pressable>
+          </>
+        ) : (
+          <ActivityIndicator color={color.sub} />
+        )}
       </View>
     );
   }
