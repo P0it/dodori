@@ -49,7 +49,7 @@ const EDIT_DIM = 'rgba(0,0,0,0.35)';
  * 흐린 사본을 덮어씌우지 않는 게 요점이다 — cover로 그리는 순간 고른 비율이 무시되고
  * 사진이 확대돼 버린다.
  * 상자를 그리지 않으니 몇 줄이 되든 화면이 곧 입력 칸이고, 길어지면 세로로 스크롤된다.
- * 끝내는 길은 상단의 완료·삭제뿐이다 (아무 데나 탭하면 계속 친다).
+ * 화면을 한 번 더 탭하면 편집이 끝난다 — 상단의 완료·삭제와 같은 길이다.
  */
 export function StoryTextInput({ initial, canvasWidth, onDelete, onDone }: Props) {
   const [text, setText] = useState(initial.text);
@@ -112,6 +112,14 @@ export function StoryTextInput({ initial, canvasWidth, onDelete, onDone }: Props
             textShadowOffset: { width: 0, height: 1 },
           }}
         />
+
+        {/*
+          입력 칸 위에 덮은 투명한 한 겹 — 한 번 더 탭하면 편집에서 빠져나온다.
+          입력 칸이 화면을 다 먹으니 "글자 밖" 이라는 자리가 없어서, 나가는 길을
+          이 겹이 대신 맡는다. 커서를 탭으로 옮기지는 못하지만 인스타도 같다.
+          색 고르기 줄은 이 뒤에 그려서 여전히 눌린다
+        */}
+        <Pressable onPress={done} style={StyleSheet.absoluteFill} />
 
         {/* 색 — 키보드 바로 위 */}
         <View
