@@ -74,7 +74,7 @@ export default function OddColorGame({ onFinish }: GameProps) {
         {Array.from({ length: count }, (_, i) => (
           <Pressable
             key={i}
-            onPress={() => pick(i)}
+            onPressIn={() => pick(i)}
             style={{
               width: 52,
               height: 52,

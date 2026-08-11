@@ -46,7 +46,8 @@ export default function TenSecGame({ onFinish }: GameProps) {
 
   return (
     <Pressable
-      onPress={toggle}
+      // 정지 판정은 닿는 순간 — 릴리스까지 기다리면 그만큼이 오차로 얹힌다
+      onPressIn={toggle}
       style={{
         height: 300,
         borderRadius: 16,

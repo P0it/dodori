@@ -96,7 +96,7 @@ export default function StroopGame({ onFinish }: GameProps) {
         {WORDS.map((w) => (
           <Pressable
             key={w.key}
-            onPress={() => choose(w.key)}
+            onPressIn={() => choose(w.key)}
             style={({ pressed }) => ({
               paddingHorizontal: space[5],
               paddingVertical: space[3],

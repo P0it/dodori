@@ -83,7 +83,7 @@ function Cell({
   }));
 
   return (
-    <Pressable onPress={onPress}>
+    <Pressable onPressIn={onPress}>
       <Animated.View
         style={[
           {

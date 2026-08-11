@@ -42,7 +42,9 @@ export default function TapRushGame({ onFinish }: GameProps) {
       {started && <CountdownRing durationMs={DURATION} label={`${(left / 1000).toFixed(1)}`} caption="초" />}
 
       <Pressable
-        onPress={() => {
+        // 연타는 닿는 순간 세야 한다 — onPress는 릴리스까지 기다리는 데다
+        // 바깥 ScrollView가 responder를 가져가면 그 탭이 통째로 사라진다
+        onPressIn={() => {
           if (!started) {
             setStarted(true);
             setTaps(1); // 시작 탭도 한 번으로 친다

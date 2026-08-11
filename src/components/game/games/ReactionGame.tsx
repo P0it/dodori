@@ -67,7 +67,9 @@ export default function ReactionGame({ onFinish }: GameProps) {
   return (
     <Animated.View style={surface}>
       <Pressable
-        onPress={tap}
+        // 손을 뗄 때가 아니라 닿는 순간 — onPress는 반응속도에 릴리스 시간이 얹히고,
+        // 손가락이 조금이라도 밀리면 바깥 ScrollView가 responder를 가져가 아예 취소된다
+        onPressIn={tap}
         style={{
           height: 300,
           borderRadius: 16,

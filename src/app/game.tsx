@@ -72,7 +72,8 @@ export default function GameScreen() {
   const mine = scores.data.mine;
   const attempts = mine?.attempts ?? 0;
   const capped = attempts >= 3;
-  const showResult = phase === 'result' || capped;
+  // 한 판이라도 냈으면 재진입해도 결과가 보여야 한다 — phase는 화면을 나가면 초기화된다
+  const showResult = phase !== 'play' && (phase === 'result' || capped || !!mine);
 
   async function playRound(score: number) {
     await submit.mutateAsync(score);
@@ -146,7 +147,7 @@ export default function GameScreen() {
                   color: color.onPrimary,
                 }}
               >
-                {attempts === 0 ? '시작' : '다시 도전'}
+                시작
               </Text>
             </Pressable>
           </View>
@@ -166,7 +167,7 @@ export default function GameScreen() {
             partner={scores.data.partner}
             partnerName={partnerName}
             canRetry={!capped}
-            onRetry={() => setPhase('intro')}
+            onRetry={() => setPhase('play')}
           />
         )}
 
