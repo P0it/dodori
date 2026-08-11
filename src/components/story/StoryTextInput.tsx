@@ -1,9 +1,8 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -53,7 +52,6 @@ const EDIT_DIM = 'rgba(0,0,0,0.35)';
  * 끝내는 길은 상단의 완료·삭제뿐이다 (아무 데나 탭하면 계속 친다).
  */
 export function StoryTextInput({ initial, canvasWidth, onDelete, onDone }: Props) {
-  const input = useRef<TextInput>(null);
   const [text, setText] = useState(initial.text);
   const [textColor, setTextColor] = useState<StoryTextColorKey>(initial.color);
   const [size, setSize] = useState(initial.size);
@@ -86,49 +84,34 @@ export function StoryTextInput({ initial, canvasWidth, onDelete, onDone }: Props
         pointerEvents="box-none"
       >
         {/*
-          글자 — 키보드를 피해 위쪽에. 짧으면 가운데, 길어지면 스크롤된다.
-          예전엔 가운데 정렬한 고정 높이 상자라 세 줄이 넘어가면 첫 줄이
-          위로 밀려 나가 사라진 것처럼 보였다
+          입력 칸이 곧 화면이다 — 높이를 내용에 맡기지 않고 남은 자리를 통째로 차지한다.
+          내용에 맡기면(자동 높이) 웹의 textarea가 기본 두어 줄로 서서 세 줄만 넘어도
+          첫 줄이 밀려 나가 사라졌다. 넘치는 줄은 입력 칸 안에서 스크롤된다
         */}
-        <ScrollView
-          style={{ flex: 1 }}
-          contentContainerStyle={{
-            flexGrow: 1,
+        <TextInput
+          value={text}
+          onChangeText={setText}
+          autoFocus
+          multiline
+          textAlignVertical="center"
+          placeholder="사진 위에 남길 말"
+          placeholderTextColor="rgba(255,255,255,0.45)"
+          style={{
+            flex: 1,
             paddingTop: TOP_BAR_HEIGHT,
             paddingBottom: space[4],
+            paddingHorizontal: 62,
+            fontFamily: typeface,
+            fontWeight: '800',
+            fontSize,
+            lineHeight: fontSize * 1.25,
+            color: storyTextColor[textColor],
+            textAlign: 'center',
+            textShadowColor: 'rgba(0,0,0,0.45)',
+            textShadowRadius: 6,
+            textShadowOffset: { width: 0, height: 1 },
           }}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="none"
-          showsVerticalScrollIndicator={false}
-        >
-          {/* 글자 옆 빈 곳을 탭해도 계속 친다 — 화면 전체가 입력 칸이라 */}
-          <Pressable
-            onPress={() => input.current?.focus()}
-            style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 62 }}
-          >
-            <TextInput
-              ref={input}
-              value={text}
-              onChangeText={setText}
-              autoFocus
-              multiline
-              scrollEnabled={false}
-              placeholder="사진 위에 남길 말"
-              placeholderTextColor="rgba(255,255,255,0.45)"
-              style={{
-                fontFamily: typeface,
-                fontWeight: '800',
-                fontSize,
-                lineHeight: fontSize * 1.25,
-                color: storyTextColor[textColor],
-                textAlign: 'center',
-                textShadowColor: 'rgba(0,0,0,0.45)',
-                textShadowRadius: 6,
-                textShadowOffset: { width: 0, height: 1 },
-              }}
-            />
-          </Pressable>
-        </ScrollView>
+        />
 
         {/* 색 — 키보드 바로 위 */}
         <View
