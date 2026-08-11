@@ -4,6 +4,7 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   View,
@@ -39,11 +40,15 @@ const TRACK_HEIGHT = 190;
 /** 상단 삭제·완료 줄이 먹는 높이 — 글자가 그 아래에서 시작하게 */
 const TOP_BAR_HEIGHT = 52;
 
+/** 입력 중 사진을 한 겹 누르는 정도 — 사진이 뭔지 알아볼 만큼만 */
+const EDIT_DIM = 'rgba(0,0,0,0.35)';
+
 /**
  * 텍스트 편집 — 화면 전체가 입력 칸이다.
  *
- * 배경은 아무것도 그리지 않는다. 뒤에 깔린 편집 캔버스(고른 비율 그대로의 사진)가
- * 그대로 비쳐야 어디에 얹히는 글자인지 보이기 때문이다 — 딤도, 흐린 사본도 깔지 않는다.
+ * 뒤에 깔린 편집 캔버스(고른 비율 그대로의 사진)를 한 겹 어둡게만 누른다.
+ * 흐린 사본을 덮어씌우지 않는 게 요점이다 — cover로 그리는 순간 고른 비율이 무시되고
+ * 사진이 확대돼 버린다.
  * 상자를 그리지 않으니 몇 줄이 되든 화면이 곧 입력 칸이고, 길어지면 세로로 스크롤된다.
  * 끝내는 길은 상단의 완료·삭제뿐이다 (아무 데나 탭하면 계속 친다).
  */
@@ -69,6 +74,12 @@ export function StoryTextInput({ initial, canvasWidth, onDelete, onDone }: Props
 
   return (
     <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
+      {/*
+        사진을 한 겹 눌러 둔다 — 지금은 글자를 치는 시간이라는 표시다.
+        사진 자체는 그대로다: 흐리게도, 키우지도 않는다. 이 겹은 터치를 먹지 않는다
+      */}
+      <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: EDIT_DIM }]} />
+
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={{ flex: 1 }}
