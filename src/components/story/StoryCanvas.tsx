@@ -8,7 +8,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
-import { CANVAS_ZOOM_MAX, clampPan, coverScale } from '@/lib/stories';
+import { CANVAS_ZOOM_MAX, clampPan, coverScale, fitScale } from '@/lib/stories';
 
 /** 캔버스에 보이는 만큼만 저장된다 — 올릴 때 이 값으로 원본을 자른다 */
 export interface CanvasTransform {
@@ -43,6 +43,8 @@ type Props = {
 /**
  * 편집 캔버스의 사진 — 오므려 키우거나 줄이고, 끌어서 구도를 잡는다.
  *
+ * **처음 구도는 사진 전체가 보이는 배율(`fitScale`)이다** — 화면을 채우려고 확대해서
+ * 원본을 잘라 놓고 시작하지 않는다. 채우고 싶으면 그 자리에서 오므려 키운다.
  * 배율의 범위는 `minScale` ~ cover×4다. 1(=cover) 밑으로 내려가면 사진이 캔버스를 다 덮지 못해
  * 뒤가 비치는데, 그건 사고가 아니라 고른 구도다 — 뒤를 무엇으로 채울지는 부르는 쪽이 정한다
  * (편집 화면은 같은 사진의 흐린 배경을 깐다).
@@ -58,18 +60,22 @@ export function StoryCanvas({
   onChange,
   gestureRefs,
 }: Props) {
-  const scale = useSharedValue(1);
-  const saved = useSharedValue(1);
+  /** 처음 구도 = 사진 전체가 보이는 배율. 아주 긴 사진이면 minScale보다도 작을 수 있다 */
+  const initial = fitScale(photoWidth, photoHeight, width, height);
+  const floor = Math.min(minScale, initial);
+
+  const scale = useSharedValue(initial);
+  const saved = useSharedValue(initial);
   const tx = useSharedValue(0);
   const ty = useSharedValue(0);
 
   // 사진을 바꾸면 구도도 처음부터
   useEffect(() => {
-    scale.value = 1;
-    saved.value = 1;
+    scale.value = initial;
+    saved.value = initial;
     tx.value = 0;
     ty.value = 0;
-    onChange({ scale: 1, tx: 0, ty: 0 });
+    onChange({ scale: initial, tx: 0, ty: 0 });
     // onChange는 매 렌더 새 함수 — 사진이 바뀔 때만 되돌린다
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [uri]);
@@ -98,7 +104,7 @@ export function StoryCanvas({
       saved.value = scale.value;
     })
     .onChange((e) => {
-      scale.value = Math.min(CANVAS_ZOOM_MAX, Math.max(minScale, saved.value * e.scale));
+      scale.value = Math.min(CANVAS_ZOOM_MAX, Math.max(floor, saved.value * e.scale));
       fit();
     })
     .onEnd(() => runOnJS(commit)());
@@ -108,10 +114,10 @@ export function StoryCanvas({
     .withRef(gestureRefs?.reset ?? { current: undefined })
     .numberOfTaps(2)
     .onEnd(() => {
-      scale.value = withTiming(1);
+      scale.value = withTiming(initial);
       tx.value = withTiming(0);
       ty.value = withTiming(0);
-      runOnJS(onChange)({ scale: 1, tx: 0, ty: 0 });
+      runOnJS(onChange)({ scale: initial, tx: 0, ty: 0 });
     });
 
   const base = coverScale(photoWidth, photoHeight, width, height);

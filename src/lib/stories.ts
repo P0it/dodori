@@ -195,6 +195,24 @@ export function coverScale(
 }
 
 /**
+ * 사진 전체가 보이는 배율 — **cover 대비**라 그대로 캔버스 `scale`에 넣을 수 있다.
+ *
+ * 처음 보여 주는 구도가 이것이다. cover(=1)로 열면 세로 사진이든 가로 사진이든
+ * 화면을 채우려고 확대돼 원본이 잘려 나간다 — 고른 사진은 고른 비율 그대로 먼저 보여 주고,
+ * 채우고 싶으면 그때 오므려 키운다. 남는 자리는 같은 사진의 흐린 배경이 받는다.
+ */
+export function fitScale(
+  photoW: number,
+  photoH: number,
+  canvasW: number,
+  canvasH: number,
+): number {
+  if (photoW <= 0 || photoH <= 0) return 1;
+  const contain = Math.min(canvasW / photoW, canvasH / photoH);
+  return contain / coverScale(photoW, photoH, canvasW, canvasH);
+}
+
+/**
  * 이동량을 사진이 캔버스를 계속 덮는 범위로 자른다.
  * 여기서 자르지 않으면 끌어낸 자리에 검은 여백이 생기고 그 여백이 그대로 구워진다.
  * `scale`은 cover 대비 배율(1이면 딱 덮는 상태)이라 1일 때 여유는 축마다 0 이상이다.
