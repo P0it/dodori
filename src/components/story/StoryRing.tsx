@@ -18,7 +18,7 @@ type Props = {
 const RING_WIDTH = 2.5;
 
 /**
- * 홈 상단 스토리 링 — 새 스토리 무지개 / 다 봤으면 hairline / 없으면 흐림.
+ * 홈 상단 스토리 링 — 새 스토리 그라디언트(연두→파랑) / 다 봤으면 hairline / 없으면 흐림.
  * 링은 24시간 내 스토리가 없어도 자리를 비우지 않는다 (홈 레이아웃이 흔들리지 않게).
  */
 export function StoryRing({ name, avatarUrl, state, size = 62, onPress, onPressAdd }: Props) {
@@ -41,7 +41,7 @@ export function StoryRing({ name, avatarUrl, state, size = 62, onPress, onPressA
           borderRadius: size / 2,
           alignItems: 'center',
           justifyContent: 'center',
-          // 무지개 링은 그라디언트 자체가 테두리 — 단색일 때만 border로 그린다
+          // 새 스토리 링은 그라디언트 자체가 테두리 — 단색일 때만 border로 그린다
           ...(state === 'new'
             ? null
             : {

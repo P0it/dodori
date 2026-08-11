@@ -78,12 +78,17 @@ export function toEventColor(value: string | null | undefined): EventColorKey {
 }
 
 /**
- * 스토리 링 — 24시간 내 새 스토리가 있을 때만.
- * accent(그린)를 쓰면 화면의 다른 강조와 섞여 "새 게 있다"가 안 읽힌다.
- * 노랑→주황→빨강→분홍→보라로 도는 난색 스윕. #121212 배경에서 튀지 않게 한 톤씩 낮춰 잡았다.
- * 링에서만 쓴다.
+ * 스토리 링 — 24시간 내 새 스토리가 있을 때만. 링에서만 쓴다.
+ * 연두→청록→파랑 한랭 스윕. 난색 무지개는 인스타 링을 그대로 베낀 것으로 보여 걷어냈다(2026-08).
+ * 시작을 accent(#1ED760)가 아니라 라임으로 잡는 건 브랜드 그린 강조와 링이 섞이지 않게 하려는 것.
  */
-export const storyRing = ['#F7C948', '#F58529', '#E4443C', '#DD2A7B', '#9B3EAF'] as const;
+export const storyRing = ['#A3E635', '#34D399', '#22D3EE', '#4F8CFF'] as const;
+
+/**
+ * 스토리 텍스트 스티커의 유채색 — 사진 위에 얹히는 글자용이라 링과 별개로 둔다.
+ * 아래 storyTextColor의 키가 DB에 저장되므로 **hex를 바꾸면 기존 스토리 글자색이 바뀐다**.
+ */
+const storyTextHue = ['#F7C948', '#F58529', '#E4443C', '#DD2A7B', '#9B3EAF'] as const;
 
 /**
  * 스토리 텍스트 스티커 색 — DB(stories.overlays[].color)에는 이 **키**가 들어간다 (hex 저장 금지).
@@ -92,11 +97,11 @@ export const storyRing = ['#F7C948', '#F58529', '#E4443C', '#DD2A7B', '#9B3EAF']
 export const storyTextColor = {
   white: color.white,
   black: color.bg,
-  yellow: storyRing[0],
-  orange: storyRing[1],
-  red: storyRing[2],
-  pink: storyRing[3],
-  purple: storyRing[4],
+  yellow: storyTextHue[0],
+  orange: storyTextHue[1],
+  red: storyTextHue[2],
+  pink: storyTextHue[3],
+  purple: storyTextHue[4],
   aqua: color.date,
   green: color.accent,
 } as const;
