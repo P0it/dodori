@@ -3,10 +3,13 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import {
   color,
@@ -28,6 +31,8 @@ type Props = {
   initial: ComposedText;
   /** 캔버스 너비 — 글자 크기가 캔버스 대비 비율이라 실제 크기를 여기서 낸다 */
   canvasWidth: number;
+  /** 뒤에 깔 사진 — 흐리게 눌러서 배경으로만 남긴다 */
+  photoUri: string;
   onDelete: () => void;
   /** 딤을 탭하거나 완료 — 내용이 비어 있으면 부르는 쪽이 오버레이를 지운다 */
   onDone: (value: ComposedText) => void;
@@ -35,14 +40,20 @@ type Props = {
 
 const TRACK_HEIGHT = 190;
 
+/** 상단 삭제·완료 줄이 먹는 높이 — 글자가 그 아래에서 시작하게 */
+const TOP_BAR_HEIGHT = 52;
+
+/** 편집 중에만 쓰는 배경 — 사진을 알아볼 정도로만 남기고 글자를 앞으로 세운다 */
+const EDIT_BACKDROP = { blurRadius: 44, scrim: 'rgba(0,0,0,0.55)' } as const;
+
 /**
- * 인라인 텍스트 편집 — 캔버스를 덮는 딤 위에서 바로 친다.
+ * 텍스트 편집 — 화면 전체가 입력으로 바뀐다 (인스타와 같다).
  *
- * 별도 화면으로 빠지지 않는 게 요점이다. 사진은 뒤에 그대로 보이고, 딤을 탭하면
- * 그 자리에서 편집이 끝나 곧바로 끌고 오므릴 수 있는 스티커가 된다.
- * 다만 키보드가 올라온 동안에는 글자가 키보드를 피해 위쪽에 뜬다 — 인스타와 같다.
+ * 사진은 흐려져 배경으로만 남고, 그 위에서 바로 친다. 상자를 그리지 않으니
+ * 몇 줄이 되든 화면이 곧 입력 칸이다 — 길어지면 세로로 스크롤되고,
+ * 배경을 탭하면 편집이 끝나 곧바로 끌고 오므릴 수 있는 스티커가 된다.
  */
-export function StoryTextInput({ initial, canvasWidth, onDelete, onDone }: Props) {
+export function StoryTextInput({ initial, canvasWidth, photoUri, onDelete, onDone }: Props) {
   const [text, setText] = useState(initial.text);
   const [textColor, setTextColor] = useState<StoryTextColorKey>(initial.color);
   const [size, setSize] = useState(initial.size);
@@ -63,17 +74,16 @@ export function StoryTextInput({ initial, canvasWidth, onDelete, onDone }: Props
 
   return (
     <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
-      {/* 딤 — 사진은 비치고, 탭하면 편집이 끝난다 */}
+      {/* 배경 — 사진을 흐리게 눌러 둔다. 탭하면 편집이 끝난다 */}
+      <Image
+        source={{ uri: photoUri }}
+        style={StyleSheet.absoluteFill}
+        contentFit="cover"
+        blurRadius={EDIT_BACKDROP.blurRadius}
+      />
       <Pressable
         onPress={done}
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0,0,0,0.45)',
-        }}
+        style={[StyleSheet.absoluteFill, { backgroundColor: EDIT_BACKDROP.scrim }]}
       />
 
       <KeyboardAvoidingView
@@ -81,28 +91,49 @@ export function StoryTextInput({ initial, canvasWidth, onDelete, onDone }: Props
         style={{ flex: 1 }}
         pointerEvents="box-none"
       >
-        {/* 글자 — 키보드를 피해 위쪽에 */}
-        <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 62 }} pointerEvents="box-none">
-          <TextInput
-            value={text}
-            onChangeText={setText}
-            autoFocus
-            multiline
-            placeholder="사진 위에 남길 말"
-            placeholderTextColor="rgba(255,255,255,0.45)"
-            style={{
-              fontFamily: typeface,
-              fontWeight: '800',
-              fontSize,
-              lineHeight: fontSize * 1.25,
-              color: storyTextColor[textColor],
-              textAlign: 'center',
-              textShadowColor: 'rgba(0,0,0,0.45)',
-              textShadowRadius: 6,
-              textShadowOffset: { width: 0, height: 1 },
-            }}
-          />
-        </View>
+        {/*
+          글자 — 키보드를 피해 위쪽에. 짧으면 가운데, 길어지면 스크롤된다.
+          예전엔 가운데 정렬한 고정 높이 상자라 세 줄이 넘어가면 첫 줄이
+          위로 밀려 나가 사라진 것처럼 보였다
+        */}
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{
+            flexGrow: 1,
+            paddingTop: TOP_BAR_HEIGHT,
+            paddingBottom: space[4],
+          }}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="none"
+          showsVerticalScrollIndicator={false}
+        >
+          {/* 글자 옆 빈 곳을 탭해도 편집이 끝난다 — 스크롤뷰가 딤을 덮고 있어서 */}
+          <Pressable
+            onPress={done}
+            style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 62 }}
+          >
+            <TextInput
+              value={text}
+              onChangeText={setText}
+              autoFocus
+              multiline
+              scrollEnabled={false}
+              placeholder="사진 위에 남길 말"
+              placeholderTextColor="rgba(255,255,255,0.45)"
+              style={{
+                fontFamily: typeface,
+                fontWeight: '800',
+                fontSize,
+                lineHeight: fontSize * 1.25,
+                color: storyTextColor[textColor],
+                textAlign: 'center',
+                textShadowColor: 'rgba(0,0,0,0.45)',
+                textShadowRadius: 6,
+                textShadowOffset: { width: 0, height: 1 },
+              }}
+            />
+          </Pressable>
+        </ScrollView>
 
         {/* 색 — 키보드 바로 위 */}
         <View

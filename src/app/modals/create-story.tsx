@@ -392,6 +392,7 @@ export default function CreateStory() {
           key={editing.id}
           initial={{ text: editing.text, color: editing.color, size: editing.size }}
           canvasWidth={canvas.width}
+          photoUri={photo.uri}
           onDelete={removeEditing}
           onDone={({ text, color: textColor, size }) => {
             // 빈 글자는 남길 이유가 없다 — 캔버스에 안 보이는 스티커가 쌓인다

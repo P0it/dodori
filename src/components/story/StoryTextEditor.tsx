@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { View } from 'react-native';
 import { Gesture, GestureDetector, type GestureType } from 'react-native-gesture-handler';
 import Animated, {
@@ -29,6 +29,10 @@ type Props = {
    */
   blocks?: React.MutableRefObject<GestureType | undefined>[];
 };
+
+/** 두 손가락(핀치·회전)이 이 글자에 먹는 범위 — 글자 둘레로 이만큼 넓게 */
+const ZOOM_PAD_X = 120;
+const ZOOM_PAD_Y = 100;
 
 /** 편집용 텍스트 레이어 — 끌어서 옮기고, 오므려서 키우고, 돌려서 기울인다 */
 export function StoryTextEditor({ overlays, rect, onChange, onEdit, blocks }: Props) {
@@ -76,7 +80,15 @@ function EditableText({
   // 글자를 잡는 순간 밑에 깔린 캔버스 제스처를 막는다 — 없으면 글자와 사진이 함께 움직인다
   const outer = blocks ?? [];
 
+  // 한 손가락(탭·팬)은 좁은 상자, 두 손가락(핀치·회전)은 넓은 상자에 붙는다.
+  // 두 상자가 겹쳐 있으니 서로 물러서지 않도록 명시해 준다
+  const panRef = useRef<GestureType | undefined>(undefined);
+  const pinchRef = useRef<GestureType | undefined>(undefined);
+  const rotateRef = useRef<GestureType | undefined>(undefined);
+
   const pan = Gesture.Pan()
+    .withRef(panRef)
+    .simultaneousWithExternalGesture(pinchRef, rotateRef)
     .blocksExternalGesture(...outer)
     .onChange((e) => {
       x.value = Math.min(1, Math.max(0, x.value + e.changeX / rect.width));
@@ -85,6 +97,8 @@ function EditableText({
     .onEnd(() => runOnJS(commit)());
 
   const pinch = Gesture.Pinch()
+    .withRef(pinchRef)
+    .simultaneousWithExternalGesture(panRef)
     .blocksExternalGesture(...outer)
     .onChange((e) => {
       size.value = Math.min(
@@ -95,6 +109,8 @@ function EditableText({
     .onEnd(() => runOnJS(commit)());
 
   const rotate = Gesture.Rotation()
+    .withRef(rotateRef)
+    .simultaneousWithExternalGesture(panRef)
     .blocksExternalGesture(...outer)
     .onChange((e) => {
       rotation.value += (e.rotationChange * 180) / Math.PI;
@@ -105,8 +121,9 @@ function EditableText({
     .blocksExternalGesture(...outer)
     .onEnd(() => runOnJS(onEdit)(overlay));
 
-  // 탭은 움직이기 시작하면 진다 — 나머지 셋은 동시에 먹는다
-  const gesture = Gesture.Simultaneous(Gesture.Race(tap, pan), pinch, rotate);
+  // 탭은 움직이기 시작하면 진다
+  const move = Gesture.Race(tap, pan);
+  const zoom = Gesture.Simultaneous(pinch, rotate);
 
   const box = useAnimatedStyle(() => ({
     transform: [
@@ -134,18 +151,22 @@ function EditableText({
         justifyContent: 'center',
       }}
     >
-      <GestureDetector gesture={gesture}>
-        {/*
-          글자 딱 만큼이면 잡기가 어렵다 — 여백을 둬서 손가락이 닿을 자리를 만든다.
-          핀치·회전은 두 손가락이 모두 이 상자 안에 들어와야 이 글자에 먹으므로
-          한 손가락이 글자를 잡는 폭보다 넉넉히 크게 잡는다.
-          (예전엔 손가락이 밖으로 나가면 캔버스 핀치로 "새는" 문제도 있었지만,
-           그건 이제 blocksExternalGesture가 막는다 — 여백은 잡기 편하라고만 남긴다)
-        */}
-        <Animated.View style={[{ paddingHorizontal: 36, paddingVertical: 28 }, box]}>
-          <Animated.Text style={[overlayTextStyle(overlay, rect), text]}>
-            {overlay.text}
-          </Animated.Text>
+      {/*
+        핀치·회전은 두 손가락이 **모두** 상자 안에 들어와야 이 글자에 먹는다.
+        글자 둘레만큼만 잡아 두면 손가락이 번번이 밖에 떨어져 캔버스 핀치로 새고
+        (= 배경이 줄어들고) 만다 — 그래서 두 손가락용 상자는 아주 넉넉하게 잡는다.
+        두 손가락 제스처만 붙어 있으니 이 여백이 한 손가락 조작을 가로채지는 않는다.
+      */}
+      <GestureDetector gesture={zoom}>
+        <Animated.View style={[{ paddingHorizontal: ZOOM_PAD_X, paddingVertical: ZOOM_PAD_Y }, box]}>
+          {/* 끌기·탭은 좁게 — 여기가 넓으면 글자 옆을 끌 때 사진이 안 움직인다 */}
+          <GestureDetector gesture={move}>
+            <View style={{ paddingHorizontal: 36, paddingVertical: 28 }}>
+              <Animated.Text style={[overlayTextStyle(overlay, rect), text]}>
+                {overlay.text}
+              </Animated.Text>
+            </View>
+          </GestureDetector>
         </Animated.View>
       </GestureDetector>
     </View>
