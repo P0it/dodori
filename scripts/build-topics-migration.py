@@ -10,7 +10,10 @@
    새 날짜의 파일명을 인자로 넘겨 새 마이그레이션을 만들 것.
 
    --wipe-votes: 기존 투표·댓글까지 지운다. 문항 내용을 갈아엎어
-   옛 답이 엉뚱한 질문에 붙게 될 때만 쓴다."""
+   옛 답이 엉뚱한 질문에 붙게 될 때만 쓴다.
+
+   --wipe-seqs=9,26: 그 seq의 투표·댓글만 지운다. 몇 문항만 고쳤을 때
+   전체를 날리지 않으려고 있다."""
 import json, io, sys
 
 SRC = 'docs/topics.json'
@@ -33,13 +36,24 @@ delete from public.topic_votes;
 """
 
 
+WIPE_SEQS = """
+-- 아래 seq의 문항이 바뀌었다. 옛 표·댓글은 이제 다른 질문에 달린 답이다.
+delete from public.topic_comments where topic_id in (select id from public.topics where seq in (%s));
+delete from public.topic_votes where topic_id in (select id from public.topics where seq in (%s));
+"""
+
+
 def q(s):
     return "'" + s.replace("'", "''") + "'"
 
 
 def main():
-    args = [a for a in sys.argv[1:] if a != '--wipe-votes']
+    args = [a for a in sys.argv[1:] if not a.startswith('--')]
     wipe = '--wipe-votes' in sys.argv
+    wipe_seqs = ''
+    for a in sys.argv[1:]:
+        if a.startswith('--wipe-seqs='):
+            wipe_seqs = ', '.join(str(int(s)) for s in a.split('=', 1)[1].split(',') if s.strip())
     out_path = args[0] if args else DEFAULT_SQL
     rows = json.load(io.open(SRC, encoding='utf-8'))
 
@@ -63,6 +77,8 @@ def main():
     out = [HEADER]
     if wipe:
         out.append(WIPE)
+    elif wipe_seqs:
+        out.append(WIPE_SEQS % (wipe_seqs, wipe_seqs))
     out += ['', 'insert into public.topics (seq, question, options) values']
     for i, s in enumerate(seqs):
         r = seen[s]
