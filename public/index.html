@@ -22,6 +22,25 @@
     <meta name="apple-mobile-web-app-title" content="도돌이" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
 
+    <!--
+      배포할 때마다 번들 파일명의 해시가 바뀐다. 홈 화면 앱(iOS PWA)이 옛 index.html을 캐시로
+      들고 있으면 이미 사라진 번들을 요청하게 되고, 그러면 앱이 통째로 안 뜨면서 배경색만 남는다
+      (= 로고도 없는 순수한 검은 화면). 스크립트 로드가 실패하면 주소를 한 번 바꿔 다시 받아
+      스스로 복구한다. 세션당 한 번만 — 진짜로 깨진 배포에서 무한 새로고침이 되면 안 된다.
+    -->
+    <script>
+      window.addEventListener(
+        'error',
+        function (e) {
+          if (!e.target || e.target.tagName !== 'SCRIPT') return;
+          if (sessionStorage.getItem('dodori-bundle-retry')) return;
+          sessionStorage.setItem('dodori-bundle-retry', '1');
+          location.replace(location.pathname + '?r=' + Date.now());
+        },
+        true,
+      );
+    </script>
+
     <!-- react-native-web 권장 리셋: https://necolas.github.io/react-native-web/docs/setup/#root-element -->
     <style id="expo-reset">
       /*
