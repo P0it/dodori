@@ -13,7 +13,8 @@
    옛 답이 엉뚱한 질문에 붙게 될 때만 쓴다.
 
    --wipe-seqs=9,26: 그 seq의 투표·댓글만 지운다. 몇 문항만 고쳤을 때
-   전체를 날리지 않으려고 있다."""
+   전체를 날리지 않으려고 있다. 26+ 는 seq 26 이상 전부 — 중간 문항을
+   지워 뒤 번호가 통째로 밀렸을 때 쓴다."""
 import json, io, sys
 
 SRC = 'docs/topics.json'
@@ -38,9 +39,25 @@ delete from public.topic_votes;
 
 WIPE_SEQS = """
 -- 아래 seq의 문항이 바뀌었다. 옛 표·댓글은 이제 다른 질문에 달린 답이다.
-delete from public.topic_comments where topic_id in (select id from public.topics where seq in (%s));
-delete from public.topic_votes where topic_id in (select id from public.topics where seq in (%s));
+delete from public.topic_comments where topic_id in (select id from public.topics where %s);
+delete from public.topic_votes where topic_id in (select id from public.topics where %s);
 """
+
+
+def wipe_predicate(spec):
+    """9,26 → seq in (9, 26) / 26+ → seq >= 26 (문항을 지워 뒤가 다 밀렸을 때)"""
+    exact, preds = [], []
+    for tok in spec.split(','):
+        tok = tok.strip()
+        if not tok:
+            continue
+        if tok.endswith('+'):
+            preds.append('seq >= %d' % int(tok[:-1]))
+        else:
+            exact.append(str(int(tok)))
+    if exact:
+        preds.insert(0, 'seq in (%s)' % ', '.join(exact))
+    return ' or '.join(preds)
 
 
 def q(s):
@@ -53,7 +70,7 @@ def main():
     wipe_seqs = ''
     for a in sys.argv[1:]:
         if a.startswith('--wipe-seqs='):
-            wipe_seqs = ', '.join(str(int(s)) for s in a.split('=', 1)[1].split(',') if s.strip())
+            wipe_seqs = wipe_predicate(a.split('=', 1)[1])
     out_path = args[0] if args else DEFAULT_SQL
     rows = json.load(io.open(SRC, encoding='utf-8'))
 
