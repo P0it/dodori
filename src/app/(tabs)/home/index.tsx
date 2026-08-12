@@ -197,9 +197,9 @@ function StoryRings() {
         avatarUrl={profiles.data?.me?.avatar_url ?? null}
         state={ringState(all, uid)}
         onPress={() =>
-          live.some((s) => s.authorId === uid) ? open(uid) : router.push('/modals/create-story')
+          live.some((s) => s.authorId === uid) ? open(uid) : router.push('/story/create')
         }
-        onPressAdd={() => router.push('/modals/create-story')}
+        onPressAdd={() => router.push('/story/create')}
       />
       {partnerId && (
         <StoryRing

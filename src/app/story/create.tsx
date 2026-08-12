@@ -28,6 +28,7 @@ import {
   createTextOverlay,
   OVERLAY_MAX,
   OVERLAY_SIZE_DEFAULT,
+  STORY_ASPECT,
   type TextOverlay,
 } from '@/lib/stories';
 import { StoryCanvas, type CanvasTransform } from '@/components/story/StoryCanvas';
@@ -82,22 +83,22 @@ function ToolButton({
 }
 
 /**
- * 스토리 올리기 — 인스타식 풀블리드 캔버스.
+ * 스토리 올리기 — 인스타식 편집 화면.
  *
- * 캔버스가 곧 화면이다. 검은 여백도 테두리도 없으니 "어디까지 올라가는지"를
- * 물을 자리가 없다 — 보이는 것이 올라가는 것이다. 버튼은 사진 밖이 아니라
- * 사진 위에 얹힌다.
+ * 캔버스는 화면 맨 위에 붙는 **9:16 카드**다(`STORY_ASPECT`). 화면 전체를 캔버스로 삼으면
+ * 기기마다 스토리 비율이 달라지고, 길쭉한 화면에서는 위아래로 흐린 여백만 커진다.
+ * 카드 아래 남는 검은 자리가 올리기 줄의 자리다 — 인스타의 "내 스토리 / →" 줄과 같은 칸.
+ * 닫기·텍스트 버튼은 카드 위에 얹힌다.
  *
- * 캔버스 크기는 **처음 잰 이 화면의 크기로 고정**한다. 창 크기(`Dimensions`)를 쓰면
- * 안 된다 — 루트가 상태바만큼 위를 이미 밀어 두고(그 위에 모달 카드까지 얹힌다)
- * 있어서 창보다 낮은 상자에 창 높이짜리 캔버스를 그리게 되고, 그만큼 전체가
- * 아래로 쏠린 채 밑이 잘린다. 매 렌더 다시 재지 않는 이유는 따로 있다 —
+ * 상자 크기는 **처음 한 번 재서 고정**한다. 창 크기(`Dimensions`)를 쓰면 안 된다 —
+ * 루트가 상태바만큼 위를 이미 밀어 두어서 창보다 낮은 상자에 창 높이짜리 캔버스를 그리게 되고,
+ * 그만큼 전체가 아래로 쏠린 채 밑이 잘린다. 매 렌더 다시 재지 않는 이유는 따로 있다 —
  * 키보드가 올라올 때 창이 줄면서 사진까지 같이 줄어든다.
  */
 export default function CreateStory() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [canvas, setCanvas] = useState<{ width: number; height: number } | null>(null);
+  const [box, setBox] = useState<{ width: number; height: number } | null>(null);
 
   const [photo, setPhoto] = useState<PickedPhoto | null>(null);
   const [transform, setTransform] = useState<CanvasTransform>(IDENTITY);
@@ -148,18 +149,24 @@ export default function CreateStory() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 첫 렌더는 재기만 한다 — 이 상자의 크기가 곧 캔버스다
-  if (!canvas) {
+  // 첫 렌더는 재기만 한다 — 이 상자 안에 카드를 앉힌다
+  if (!box) {
     return (
       <View
         style={{ flex: 1, backgroundColor: '#000' }}
         onLayout={(e) => {
           const { width, height } = e.nativeEvent.layout;
-          setCanvas({ width, height });
+          setBox({ width, height });
         }}
       />
     );
   }
+
+  /** 스토리 카드 — 화면이 9:16보다 길쭉하면 남는 자리는 아래에 검게 둔다 */
+  const canvas = {
+    width: box.width,
+    height: Math.min(box.height, box.width * STORY_ASPECT),
+  };
 
   const addText = () => {
     if (overlays.length >= OVERLAY_MAX) return;
@@ -387,6 +394,7 @@ export default function CreateStory() {
           initial={{ text: editing.text, color: editing.color, size: editing.size }}
           canvasWidth={canvas.width}
           canvasHeight={canvas.height}
+          boxHeight={box.height}
           onDone={({ text, color: textColor, size }) => {
             // 빈 글자는 남길 이유가 없다 — 캔버스에 안 보이는 스티커가 쌓인다
             setOverlays((prev) =>

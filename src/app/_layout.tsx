@@ -112,6 +112,12 @@ function RootLayout() {
             <Stack.Screen name="(auth)" />
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="modals" options={{ presentation: 'modal' }} />
+            {/*
+              스토리 편집만 시트가 아니라 전체 화면이다. iOS 시트는 키보드가 올라오면
+              카드째 위로 밀려 올라가는데(시스템 동작), 사진이 화면에 못 박혀 있어야 하는
+              화면이라 그 순간 사진까지 통째로 딸려 올라갔다
+            */}
+            <Stack.Screen name="story/create" options={{ presentation: 'fullScreenModal' }} />
           </Stack>
         </View>
         {!splashDone && <BrandSplash onDone={onSplashDone} />}

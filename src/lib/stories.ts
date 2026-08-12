@@ -171,6 +171,13 @@ export interface Rect {
 // 편집 캔버스 (사진 확대·이동 → 크롭)
 // ============================================================
 
+/**
+ * 스토리 한 장의 비율 (높이/너비) — 인스타와 같은 9:16.
+ * 화면이 이보다 길쭉하면 남는 자리는 검게 두고, 그 자리에 버튼을 놓는다.
+ * 화면 전체를 캔버스로 삼으면 기기마다 스토리 비율이 달라진다
+ */
+export const STORY_ASPECT = 16 / 9;
+
 /** cover 배율 대비 최대 확대 */
 export const CANVAS_ZOOM_MAX = 4;
 /**
@@ -192,24 +199,6 @@ export function coverScale(
 ): number {
   if (photoW <= 0 || photoH <= 0) return 1;
   return Math.max(canvasW / photoW, canvasH / photoH);
-}
-
-/**
- * 사진 전체가 보이는 배율 — **cover 대비**라 그대로 캔버스 `scale`에 넣을 수 있다.
- *
- * 처음 보여 주는 구도가 이것이다. cover(=1)로 열면 세로 사진이든 가로 사진이든
- * 화면을 채우려고 확대돼 원본이 잘려 나간다 — 고른 사진은 고른 비율 그대로 먼저 보여 주고,
- * 채우고 싶으면 그때 오므려 키운다. 남는 자리는 같은 사진의 흐린 배경이 받는다.
- */
-export function fitScale(
-  photoW: number,
-  photoH: number,
-  canvasW: number,
-  canvasH: number,
-): number {
-  if (photoW <= 0 || photoH <= 0) return 1;
-  const contain = Math.min(canvasW / photoW, canvasH / photoH);
-  return contain / coverScale(photoW, photoH, canvasW, canvasH);
 }
 
 /**

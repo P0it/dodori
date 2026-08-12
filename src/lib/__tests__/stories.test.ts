@@ -3,7 +3,6 @@ import {
   clampPan,
   containedRect,
   coverScale,
-  fitScale,
   cropRect,
   createTextOverlay,
   formatMonthLabel,
@@ -180,21 +179,6 @@ describe('coverScale', () => {
 
   it('사진 크기를 모르면 1', () => {
     expect(coverScale(0, 0, 360, 640)).toBe(1);
-  });
-});
-
-describe('fitScale', () => {
-  it('가로 사진은 cover보다 줄어야 다 보인다 — 0.18/0.64', () => {
-    // contain = min(360/2000, 640/1000) = 0.18
-    expect(fitScale(2000, 1000, 360, 640)).toBeCloseTo(0.18 / 0.64);
-  });
-
-  it('캔버스와 비율이 같으면 cover가 곧 fit이라 1', () => {
-    expect(fitScale(1080, 1920, 360, 640)).toBeCloseTo(1);
-  });
-
-  it('사진 크기를 모르면 1', () => {
-    expect(fitScale(0, 0, 360, 640)).toBe(1);
   });
 });
 

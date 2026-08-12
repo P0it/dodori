@@ -8,7 +8,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
-import { CANVAS_ZOOM_MAX, clampPan, coverScale, fitScale } from '@/lib/stories';
+import { CANVAS_ZOOM_MAX, clampPan, coverScale } from '@/lib/stories';
 
 /** 캔버스에 보이는 만큼만 저장된다 — 올릴 때 이 값으로 원본을 자른다 */
 export interface CanvasTransform {
@@ -43,8 +43,9 @@ type Props = {
 /**
  * 편집 캔버스의 사진 — 오므려 키우거나 줄이고, 끌어서 구도를 잡는다.
  *
- * **처음 구도는 사진 전체가 보이는 배율(`fitScale`)이다** — 화면을 채우려고 확대해서
- * 원본을 잘라 놓고 시작하지 않는다. 채우고 싶으면 그 자리에서 오므려 키운다.
+ * **처음 구도는 캔버스를 꽉 채우는 배율(cover=1)이다** — 인스타와 같다. 사진 전체를
+ * 보이게 열면(contain) 위아래로 흐린 여백만 큰 화면이 되고, 그 여백을 보려고 연 게 아니다.
+ * 원본을 더 보고 싶으면 그 자리에서 오므려 줄인다.
  * 배율의 범위는 `minScale` ~ cover×4다. 1(=cover) 밑으로 내려가면 사진이 캔버스를 다 덮지 못해
  * 뒤가 비치는데, 그건 사고가 아니라 고른 구도다 — 뒤를 무엇으로 채울지는 부르는 쪽이 정한다
  * (편집 화면은 같은 사진의 흐린 배경을 깐다).
@@ -60,9 +61,9 @@ export function StoryCanvas({
   onChange,
   gestureRefs,
 }: Props) {
-  /** 처음 구도 = 사진 전체가 보이는 배율. 아주 긴 사진이면 minScale보다도 작을 수 있다 */
-  const initial = fitScale(photoWidth, photoHeight, width, height);
-  const floor = Math.min(minScale, initial);
+  /** 처음 구도 = 캔버스를 꽉 채우는 배율 */
+  const initial = 1;
+  const floor = minScale;
 
   const scale = useSharedValue(initial);
   const saved = useSharedValue(initial);

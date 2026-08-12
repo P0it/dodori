@@ -27,14 +27,23 @@ type Props = {
   initial: ComposedText;
   /** 캔버스 너비 — 글자 크기가 캔버스 대비 비율이라 실제 크기를 여기서 낸다 */
   canvasWidth: number;
-  /** 캔버스 높이 — 글자가 세로로 넘치기 시작하는 지점을 여기서 낸다 */
+  /** 캔버스(카드) 높이 — 글자가 놓일 자리와 넘치기 시작하는 지점을 여기서 낸다 */
   canvasHeight: number;
+  /** 화면 상자 높이 — 카드보다 길 수 있다. 색 고르기 줄은 이 바닥을 기준으로 앉는다 */
+  boxHeight: number;
   /** 완료 — 내용이 비어 있으면 부르는 쪽이 오버레이를 지운다 */
   onDone: (value: ComposedText) => void;
 };
 
 /** 입력 중 사진을 한 겹 누르는 정도 — 사진이 뭔지 알아볼 만큼만 */
 const EDIT_DIM = 'rgba(0,0,0,0.35)';
+
+/**
+ * 키보드 위에 두는 여유. iOS는 키보드 위에 시스템 도구줄(^ ∨ 완료)이 한 겹 더 붙는데
+ * 그 높이는 `endCoordinates`에 잡히지 않을 때가 있다 — 색 고르기 줄이 그 아래로 깔리면
+ * 색을 아예 고를 수 없어서, 그 줄만큼 넉넉히 띄운다
+ */
+const KEYBOARD_CLEARANCE = Platform.OS === 'ios' ? 52 : space[3];
 
 /**
  * 텍스트 편집 — 화면 전체가 입력 칸이다.
@@ -50,7 +59,13 @@ const EDIT_DIM = 'rgba(0,0,0,0.35)';
  * 나가는 길은 **배경 탭 하나**다 (= 완료). 글자를 다 지우고 나가면 부르는 쪽이 지운다 —
  * 그래서 완료·삭제 버튼이 따로 없다. 위치·크기·기울기는 나간 뒤 손가락으로 잡는다.
  */
-export function StoryTextInput({ initial, canvasWidth, canvasHeight, onDone }: Props) {
+export function StoryTextInput({
+  initial,
+  canvasWidth,
+  canvasHeight,
+  boxHeight,
+  onDone,
+}: Props) {
   const insets = useSafeAreaInsets();
   const [text, setText] = useState(initial.text);
   const [textColor, setTextColor] = useState<StoryTextColorKey>(initial.color);
@@ -86,17 +101,31 @@ export function StoryTextInput({ initial, canvasWidth, canvasHeight, onDone }: P
 
   return (
     /*
-      크기를 캔버스에 못 박는다 — bottom:0에 맡기면 안드로이드에서 키보드가 뜰 때
+      크기를 화면 상자에 못 박는다 — bottom:0에 맡기면 안드로이드에서 키보드가 뜰 때
       창이 줄면서 이 겹도 같이 줄고, 가운데가 위로 올라가 버린다
     */
-    <View style={{ position: 'absolute', top: 0, left: 0, width: canvasWidth, height: canvasHeight }}>
+    <View style={{ position: 'absolute', top: 0, left: 0, width: canvasWidth, height: boxHeight }}>
       {/*
-        사진을 한 겹 눌러 둔다 — 지금은 글자를 치는 시간이라는 표시다.
+        사진(카드)만 한 겹 눌러 둔다 — 지금은 글자를 치는 시간이라는 표시다.
         사진 자체는 그대로다: 흐리게도, 키우지도 않는다. 이 겹은 터치를 먹지 않는다
       */}
-      <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: EDIT_DIM }]} />
+      <View
+        pointerEvents="none"
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: canvasHeight,
+          backgroundColor: EDIT_DIM,
+        }}
+      />
 
-      <View style={[StyleSheet.absoluteFill, { justifyContent: 'center' }]} pointerEvents="box-none">
+      {/* 글자는 카드 한가운데에 — 나가면 놓일 그 자리다 */}
+      <View
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, height: canvasHeight, justifyContent: 'center' }}
+        pointerEvents="box-none"
+      >
         <TextInput
           value={text}
           onChangeText={setText}
@@ -135,7 +164,7 @@ export function StoryTextInput({ initial, canvasWidth, canvasHeight, onDone }: P
           position: 'absolute',
           left: 0,
           right: 0,
-          bottom: (keyboard || insets.bottom) + space[3],
+          bottom: (keyboard || insets.bottom) + KEYBOARD_CLEARANCE,
           flexDirection: 'row',
           flexWrap: 'wrap',
           gap: 12,
