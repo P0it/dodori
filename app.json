@@ -63,9 +63,11 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "데이트 트랙에 담을 사진을 선택하기 위해 사진 보관함 접근이 필요합니다."
+          "photosPermission": "함께 남길 사진과 동영상을 선택하기 위해 사진 보관함 접근이 필요합니다."
         }
       ],
+      "expo-video",
+      "react-native-compressor",
       [
         "expo-splash-screen",
         {
