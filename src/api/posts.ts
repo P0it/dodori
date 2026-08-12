@@ -1,7 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from './supabase';
 import { useMyCouple } from './couple';
-import { signedSourceUrls, signedThumbUrls, uploadPhotos, type PickedPhoto } from './photos';
+import {
+  signedSourceUrls,
+  signedThumbUrls,
+  uploadPhotos,
+  type PickedPhoto,
+  type UploadProgress,
+} from './photos';
 import { storagePathsFor } from '@/lib/media';
 
 export interface PostPhoto {
@@ -147,7 +153,18 @@ export function useCreatePost() {
   const qc = useQueryClient();
   const couple = useMyCouple();
   return useMutation({
-    mutationFn: async ({ caption, photos }: { caption: string; photos: PickedPhoto[] }) => {
+    mutationFn: async ({
+      caption,
+      photos,
+      onProgress,
+      abort,
+    }: {
+      caption: string;
+      photos: PickedPhoto[];
+      onProgress?: (p: UploadProgress) => void;
+      /** 취소 깃발 — 영상이 섞이면 올리는 데 몇 초씩 걸린다 */
+      abort?: { current: boolean };
+    }) => {
       const { data: userData } = await supabase.auth.getUser();
       const uid = userData.user?.id;
       if (!uid || !couple.data) throw new Error('로그인·연결이 필요해요');
@@ -158,7 +175,9 @@ export function useCreatePost() {
         .single();
       if (error) throw error;
       const postId = data.id as string;
-      if (photos.length) await uploadPhotos({ postId }, couple.data.coupleId, photos);
+      if (photos.length) {
+        await uploadPhotos({ postId }, couple.data.coupleId, photos, { onProgress, abort });
+      }
       return postId;
     },
     onSuccess: () => {

@@ -85,6 +85,18 @@ export function estimateVideoBytes(durationMs: number): number {
   return Math.round((durationMs / 1000) * (VIDEO_BITRATE_BPS / 8));
 }
 
+/**
+ * 여러 항목을 올리는 동안의 전체 진행률 0~1.
+ * 항목 안의 비율(`ratio`)은 부르는 쪽이 이미 0~1로 접어서 준다.
+ */
+export function uploadRatio(
+  p: { index: number; total: number; ratio: number } | null | undefined,
+): number {
+  if (!p || p.total <= 0) return 0;
+  const within = Math.min(1, Math.max(0, p.ratio));
+  return Math.min(1, Math.max(0, (p.index + within) / p.total));
+}
+
 /** 용량 경고에 필요한 최소 모양 — 고른 항목(PickedPhoto)이 그대로 만족한다 */
 export interface MediaEstimate {
   bytes?: number;

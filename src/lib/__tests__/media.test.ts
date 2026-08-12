@@ -5,6 +5,7 @@ import {
   renditionPath,
   storagePathsFor,
   uploadEstimate,
+  uploadRatio,
   VIDEO_MAX_MS,
 } from '../media';
 
@@ -131,5 +132,27 @@ describe('uploadEstimate', () => {
 
   it('남은 공간을 넘어서도 100%에서 멈춘다', () => {
     expect(uploadEstimate([영상항목], 1024).percentOfRemaining).toBe(100);
+  });
+});
+
+describe('uploadRatio', () => {
+  it('아직 시작 전이면 0', () => {
+    expect(uploadRatio(null)).toBe(0);
+    expect(uploadRatio(undefined)).toBe(0);
+  });
+
+  it('항목 수로 나눈 자리에 항목 안 비율을 얹는다', () => {
+    expect(uploadRatio({ index: 0, total: 2, ratio: 0 })).toBe(0);
+    expect(uploadRatio({ index: 0, total: 2, ratio: 1 })).toBe(0.5);
+    expect(uploadRatio({ index: 1, total: 2, ratio: 0.5 })).toBe(0.75);
+  });
+
+  it('total이 0이어도 나눗셈이 터지지 않는다', () => {
+    expect(uploadRatio({ index: 0, total: 0, ratio: 0.5 })).toBe(0);
+  });
+
+  it('범위를 벗어난 값은 0~1로 눌린다', () => {
+    expect(uploadRatio({ index: 0, total: 1, ratio: 1.4 })).toBe(1);
+    expect(uploadRatio({ index: 0, total: 1, ratio: -0.3 })).toBe(0);
   });
 });

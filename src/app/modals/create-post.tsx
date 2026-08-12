@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -16,10 +16,15 @@ import { Meta } from '@/components/Meta';
 import { PlayGlyph, PlusGlyph } from '@/components/glyphs';
 import { PostCropSheet } from '@/components/feed/PostCropSheet';
 import type { CanvasTransform } from '@/components/story/StoryCanvas';
-import { cropToCanvas, pickPhotos, type PickedPhoto } from '@/api/photos';
+import {
+  cropToCanvas,
+  pickPhotos,
+  type PickedPhoto,
+  type UploadProgress,
+} from '@/api/photos';
 import { useCreatePost } from '@/api/posts';
 import { useStorageQuota } from '@/api/couple';
-import { formatBytes } from '@/lib/media';
+import { formatBytes, uploadEstimate, uploadRatio } from '@/lib/media';
 import { isFramed, postFrameRatioOf } from '@/lib/posts';
 import { alertDialog } from '@/components/dialog';
 
@@ -34,6 +39,12 @@ export default function CreatePost() {
 
   const createPost = useCreatePost();
   const quota = useStorageQuota();
+  const [progress, setProgress] = useState<UploadProgress | null>(null);
+  /** 올리는 중 누르는 취소 — uploadPhotos가 항목 경계와 압축 중에 본다 */
+  const abort = useRef(false);
+
+  /** "영상 2개 · 약 9MB · 남은 공간의 6%" — 사람이 놀라는 쪽은 영상이라 영상만 센다 */
+  const estimate = uploadEstimate(photos, quota.data?.remainingBytes ?? 0);
 
   const onPick = async () => {
     if (quota.data?.full) {
@@ -78,6 +89,8 @@ export default function CreatePost() {
 
   const save = async () => {
     if (!canSave || saving) return;
+    abort.current = false;
+    setProgress(null);
     setSaving(true);
     try {
       // 크롭 시트를 열지 않은 사진은 여기서 중앙 크롭으로 확정한다 —
@@ -89,12 +102,15 @@ export default function CreatePost() {
             : cropToCanvas(p, { canvasWidth: screenW, canvasHeight: frameH, scale: 1, tx: 0, ty: 0 }),
         ),
       );
-      await createPost.mutateAsync({ caption, photos: framed });
+      await createPost.mutateAsync({ caption, photos: framed, onProgress: setProgress, abort });
       router.dismiss();
     } catch (e) {
-      alertDialog('저장 실패', e instanceof Error ? e.message : String(e));
+      const message = e instanceof Error ? e.message : String(e);
+      // 취소는 실패가 아니다 — 사용자가 방금 누른 것이라 알림을 한 겹 더 띄우지 않는다
+      if (message !== '취소했어요') alertDialog('저장 실패', message);
     } finally {
       setSaving(false);
+      setProgress(null);
     }
   };
 
@@ -166,12 +182,18 @@ export default function CreatePost() {
             </Pressable>
           )}
         </View>
-        <Meta>사진 {photos.length}/10 · 눌러서 구도를 잡고, ×를 누르면 빼요</Meta>
+        <Meta>항목 {photos.length}/10 · 눌러서 구도를 잡고, ×를 누르면 빼요</Meta>
         {quota.data && (
           <Meta>
             {quota.data.full
               ? '공간이 가득 찼어요. 곧 더 많은 공간을 제공할 예정이에요'
               : `보관 공간 ${formatBytes(quota.data.usedBytes)} / ${formatBytes(quota.data.quotaBytes)}`}
+          </Meta>
+        )}
+        {estimate.videoCount > 0 && (
+          <Meta>
+            영상 {estimate.videoCount}개 · 약 {formatBytes(estimate.bytes)} · 남은 공간의{' '}
+            {estimate.percentOfRemaining}%
           </Meta>
         )}
 
@@ -215,6 +237,35 @@ export default function CreatePost() {
             </Text>
           )}
         </Pressable>
+
+        {/*
+          올리는 중에만 나타나는 줄 — 영상이 섞이면 압축에 몇 초씩 걸려
+          스피너만으로는 멈춘 것처럼 보인다.
+        */}
+        {saving && (
+          <View style={{ gap: space[2] }}>
+            <View style={{ height: 3, borderRadius: 2, backgroundColor: color.surface2 }}>
+              <View
+                style={{
+                  height: 3,
+                  borderRadius: 2,
+                  backgroundColor: color.accent,
+                  width: `${Math.round(uploadRatio(progress) * 100)}%`,
+                }}
+              />
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Meta>
+                {progress
+                  ? `${progress.phase === 'compress' ? '영상 줄이는 중' : '올리는 중'} ${progress.index + 1}/${progress.total}`
+                  : '준비 중'}
+              </Meta>
+              <Pressable onPress={() => (abort.current = true)} hitSlop={8}>
+                <Meta>취소</Meta>
+              </Pressable>
+            </View>
+          </View>
+        )}
       </ScrollView>
 
       <PostCropSheet

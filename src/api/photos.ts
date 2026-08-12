@@ -283,14 +283,39 @@ async function webVideoPoster(uri: string) {
  * 업로드 전 기기에서 720p로 줄인다 — 아이폰 4K 15초는 100MB가 넘어 그대로는 못 올린다.
  * 웹은 압축 수단이 없어 원본이 그대로 가고, 대신 업로드에서 크기 상한만 검사한다.
  */
-async function compressVideo(uri: string, onProgress?: (ratio: number) => void): Promise<string> {
+async function compressVideo(
+  uri: string,
+  onProgress?: (ratio: number) => void,
+  abort?: { current: boolean },
+): Promise<string> {
   if (Platform.OS === 'web') return uri;
   const { Video } = await import('react-native-compressor');
+  let cancellationId: string | null = null;
   return Video.compress(
     uri,
-    { compressionMethod: 'manual', maxSize: 1280, bitrate: 2_500_000 },
-    onProgress,
+    {
+      compressionMethod: 'manual',
+      maxSize: 1280,
+      bitrate: 2_500_000,
+      getCancellationId: (id) => {
+        cancellationId = id;
+      },
+    },
+    (ratio) => {
+      // 압축은 몇 초씩 걸린다 — 취소를 여기서 받지 않으면 그 시간을 통째로 기다려야 한다
+      if (abort?.current && cancellationId) Video.cancelCompression(cancellationId);
+      onProgress?.(ratio);
+    },
   );
+}
+
+export interface UploadProgress {
+  /** 지금 처리 중인 항목 (0부터) */
+  index: number;
+  total: number;
+  phase: 'compress' | 'upload';
+  /** 0~1 */
+  ratio: number;
 }
 
 /**
@@ -479,8 +504,17 @@ export async function uploadPhotos(
   parent: PhotoParent,
   coupleId: string,
   photos: PickedPhoto[],
-  /** 표지 전용 — 앨범 커버로 쓰려고 구해 온 이미지. 그날의 사진이 아니라 아카이브에서 감춘다 */
-  options?: { coverOnly?: boolean },
+  options?: {
+    /** 표지 전용 — 앨범 커버로 쓰려고 구해 온 이미지. 그날의 사진이 아니라 아카이브에서 감춘다 */
+    coverOnly?: boolean;
+    onProgress?: (p: UploadProgress) => void;
+    /**
+     * 취소 깃발 — 항목 경계와 압축 중에 확인한다.
+     * storage의 upload는 AbortSignal을 받지 않으므로 **"올리던 파일 하나는 마치고 멈춘다"**가
+     * 정직한 동작이다. 멈추면 그 항목이 올린 파일은 지운다.
+     */
+    abort?: { current: boolean };
+  },
 ): Promise<string[]> {
   const { data: userData } = await supabase.auth.getUser();
   const uid = userData.user?.id;
@@ -488,8 +522,20 @@ export async function uploadPhotos(
   const parentId = parent.trackId ?? parent.postId ?? parent.storyId!;
 
   const ids: string[] = [];
-  for (const photo of photos) {
+  for (const [index, photo] of photos.entries()) {
+    if (options?.abort?.current) throw new Error('취소했어요');
     const video = photo.video;
+    /**
+     * 항목 하나 안에서의 진행을 0~1로 접어 내보낸다 — 영상은 압축이 앞 절반, 업로드가 뒤 절반.
+     * 이렇게 접어야 막대가 단계 전환에서 뒤로 물러나지 않는다.
+     */
+    const progress = (phase: UploadProgress['phase'], ratio: number) =>
+      options?.onProgress?.({
+        index,
+        total: photos.length,
+        phase,
+        ratio: video ? (phase === 'compress' ? ratio / 2 : 0.5 + ratio / 2) : ratio,
+      });
     const path = `${coupleId}/${parentId}/${Crypto.randomUUID()}${video ? '.mp4' : '.jpg'}`;
 
     // 그림은 사진이면 원본에서, 영상이면 포스터에서 굽는다 — 두 갈래가 같은 렌디션 함수를 쓴다
@@ -510,7 +556,15 @@ export async function uploadPhotos(
       // 사진은 본체가 곧 feed 렌디션이라 파일이 2개, 영상은 mp4가 따로 있어 3개다
       const parts = video
         ? [
-            { path, uri: await compressVideo(photo.uri), type: 'video/mp4' },
+            {
+              path,
+              uri: await compressVideo(
+                photo.uri,
+                (ratio) => progress('compress', ratio),
+                options?.abort,
+              ),
+              type: 'video/mp4',
+            },
             { path: renditionPath(path, 'feed'), uri: main.uri, type: 'image/jpeg' },
             { path: renditionPath(path, 'grid'), uri: small.uri, type: 'image/jpeg' },
           ]
@@ -519,7 +573,8 @@ export async function uploadPhotos(
             { path: renditionPath(path, 'grid'), uri: small.uri, type: 'image/jpeg' },
           ];
 
-      for (const part of parts) {
+      for (const [i, part] of parts.entries()) {
+        progress('upload', i / parts.length);
         const body = await (await fetch(part.uri)).arrayBuffer();
         // 웹은 압축 수단이 없어 원본이 그대로 온다 — 버킷 상한(50MB)에 닿아
         // 알아보기 어려운 스토리지 에러가 나기 전에 먼저 막는다
@@ -561,7 +616,8 @@ export async function uploadPhotos(
       // 순서를 뒤집지 않는 이유: insert가 먼저면 업로드 실패 시 "깨진 사진 행"이 남아
       // 화면에 빈 칸으로 드러난다 — 고아 파일보다 나쁘다.
       if (uploaded.length) await supabase.storage.from('photos').remove(uploaded);
-      throw e;
+      // 압축을 끊으면 라이브러리 쪽 에러가 올라온다 — 사용자에게는 취소로 보여야 한다
+      throw options?.abort?.current ? new Error('취소했어요') : e;
     }
   }
   return ids;
