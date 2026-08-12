@@ -1,7 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from './supabase';
 import { useMyCouple } from './couple';
-import { signedSourceUrls, signedThumbUrls, uploadPhotos, type PickedPhoto } from './photos';
+import {
+  signedSourceUrls,
+  signedThumbUrls,
+  uploadPhotos,
+  type PickedPhoto,
+  type UploadProgress,
+} from './photos';
 import { storagePathsFor } from '@/lib/media';
 import { parseOverlays, type TextOverlay } from '@/lib/stories';
 import type { Json } from '@/types/database.types';
@@ -171,11 +177,16 @@ export function useCreateStory() {
       photo,
       trackId,
       overlays,
+      onProgress,
+      abort,
     }: {
       /** 편집 화면을 이미 한 장으로 구워 온 그림 — 여기서 더 손대지 않는다 */
       photo: PickedPhoto;
       trackId: string | null;
       overlays: TextOverlay[];
+      onProgress?: (p: UploadProgress) => void;
+      /** 취소 깃발 — 영상이면 압축에 몇 초씩 걸린다 */
+      abort?: { current: boolean };
     }) => {
       const { data: userData } = await supabase.auth.getUser();
       const uid = userData.user?.id;
@@ -193,7 +204,7 @@ export function useCreateStory() {
         .single();
       if (error) throw error;
       const storyId = data.id as string;
-      await uploadPhotos({ storyId }, couple.data.coupleId, [photo]);
+      await uploadPhotos({ storyId }, couple.data.coupleId, [photo], { onProgress, abort });
       return storyId;
     },
     onSuccess: (_id, vars) => {

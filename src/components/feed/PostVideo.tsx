@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { Image, type ImageContentFit } from 'expo-image';
 import { VideoView, useVideoPlayer } from 'expo-video';
@@ -28,7 +28,12 @@ export function PostVideo({
   /** 지금 보이는 캐러셀 페이지인가 — 벗어나면 재생을 멈춘다 */
   active: boolean;
 }) {
-  const [playing, setPlaying] = useState(false);
+  const [tapped, setTapped] = useState(false);
+  /**
+   * 다른 페이지로 넘어가면 소스를 놓는다 — 상태를 되돌리는 대신 파생시킨다.
+   * 돌아오면 처음부터 다시 재생된다(15초짜리라 이어보기를 기억할 이유가 없다).
+   */
+  const playing = tapped && active;
 
   // useCaching — 한 번 받은 영상은 디스크에 남아 다시 볼 때 통신이 없다
   const player = useVideoPlayer(
@@ -39,13 +44,9 @@ export function PostVideo({
     },
   );
 
-  useEffect(() => {
-    if (!active && playing) setPlaying(false);
-  }, [active, playing]);
-
   return (
     <Pressable
-      onPress={() => videoUrl && setPlaying((v) => !v)}
+      onPress={() => videoUrl && setTapped((v) => !v)}
       style={{ width, height, backgroundColor: color.bg }}
     >
       {playing ? (

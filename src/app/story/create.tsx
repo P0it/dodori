@@ -41,7 +41,9 @@ import {
   pickPhotos,
   STORY_BACKDROP,
   type PickedPhoto,
+  type UploadProgress,
 } from '@/api/photos';
+import { uploadRatio } from '@/lib/media';
 import { useCreateStory } from '@/api/stories';
 import { useStorageQuota } from '@/api/couple';
 import { useTodayTrack } from '@/api/tracks';
@@ -106,6 +108,9 @@ export default function CreateStory() {
   const [photo, setPhoto] = useState<PickedPhoto | null>(null);
   const [transform, setTransform] = useState<CanvasTransform>(IDENTITY);
   const [saving, setSaving] = useState(false);
+  const [progress, setProgress] = useState<UploadProgress | null>(null);
+  /** 올리는 중 누르는 취소 — 영상이면 압축에 몇 초씩 걸린다 */
+  const abort = useRef(false);
   // 그날 앨범에 담을지는 직접 고른다 — 자동으로 붙이지 않는다
   const [attachToTrack, setAttachToTrack] = useState(false);
   const [overlays, setOverlays] = useState<TextOverlay[]>([]);
@@ -263,18 +268,25 @@ export default function CreateStory() {
 
   const save = async () => {
     if (!photo || saving) return;
+    abort.current = false;
+    setProgress(null);
     setSaving(true);
     try {
       await createStory.mutateAsync({
         photo: await bakePhotoLayer(photo),
         trackId: attachToTrack ? (todayTrack.data?.id ?? null) : null,
         overlays,
+        onProgress: setProgress,
+        abort,
       });
       router.dismiss();
     } catch (e) {
-      alertDialog('올리기 실패', e instanceof Error ? e.message : String(e));
+      const message = e instanceof Error ? e.message : String(e);
+      // 취소는 실패가 아니다 — 사용자가 방금 누른 것이라 알림을 한 겹 더 띄우지 않는다
+      if (message !== '취소했어요') alertDialog('올리기 실패', message);
     } finally {
       setSaving(false);
+      setProgress(null);
     }
   };
 
@@ -396,7 +408,33 @@ export default function CreateStory() {
               gap: space[3],
             }}
           >
-            {todayTrack.data && (
+            {/*
+              올리는 중에는 담기 토글 자리에 진행 상황을 둔다 — 영상은 압축에 몇 초씩 걸려
+              동그란 스피너만으로는 멈춘 것처럼 보인다.
+            */}
+            {saving ? (
+              <Pressable
+                onPress={() => (abort.current = true)}
+                hitSlop={8}
+                style={{
+                  flexShrink: 1,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 10,
+                  paddingHorizontal: 12,
+                  paddingVertical: 9,
+                  borderRadius: radius.pill,
+                  backgroundColor: 'rgba(0,0,0,0.45)',
+                }}
+              >
+                <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 12.5, color: color.white }}>
+                  {progress?.phase === 'compress' ? '영상 줄이는 중' : '올리는 중'}{' '}
+                  {Math.round(uploadRatio(progress) * 100)}%
+                </Text>
+                <Text style={{ fontFamily: typeface, fontSize: 12.5, color: color.muted }}>취소</Text>
+              </Pressable>
+            ) : (
+              todayTrack.data && (
               <Pressable
                 onPress={() => setAttachToTrack((v) => !v)}
                 style={({ pressed }) => ({
@@ -440,6 +478,7 @@ export default function CreateStory() {
                   {todayTrack.data.title}에도 담기
                 </Text>
               </Pressable>
+              )
             )}
 
             <View style={{ flex: 1 }} />
