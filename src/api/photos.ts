@@ -333,36 +333,53 @@ export async function uploadPhotos(
     const main = await renderRendition(photo, 'feed');
     const small = await renderRendition(photo, 'grid');
 
-    for (const [p, out] of [
-      [path, main],
-      [renditionPath(path, 'grid'), small],
-    ] as const) {
-      const body = await (await fetch(out.uri)).arrayBuffer();
-      const { error: upError } = await supabase.storage
-        .from('photos')
-        .upload(p, body, { contentType: 'image/jpeg', cacheControl: PHOTO_CACHE_SEC });
-      if (upError) throw upError;
-    }
+    // 이 항목이 올린 파일 — 중간에 실패하면 되돌린다.
+    // 이전 항목의 파일은 지우지 않는다: 그쪽은 이미 DB 행이 커밋돼 화면에 보이고 있다.
+    const uploaded: string[] = [];
+    // 스토리지에 실제로 올라간 크기 — 쿼터가 이 합계를 센다 (본체 1080 + 360)
+    let bytes = 0;
 
-    const { data: row, error: rowError } = await supabase
-      .from('photos')
-      .insert({
-        track_id: parent.trackId ?? null,
-        post_id: parent.postId ?? null,
-        story_id: parent.storyId ?? null,
-        uploader_id: uid,
-        couple_id: coupleId,
-        storage_path: path,
-        renditions: true,
-        cover_only: options?.coverOnly ?? false,
-        width: main.width,
-        height: main.height,
-        taken_at: photo.takenAt,
-      })
-      .select('id')
-      .single();
-    if (rowError) throw rowError;
-    ids.push(row.id);
+    try {
+      for (const [p, out] of [
+        [path, main],
+        [renditionPath(path, 'grid'), small],
+      ] as const) {
+        const body = await (await fetch(out.uri)).arrayBuffer();
+        const { error: upError } = await supabase.storage
+          .from('photos')
+          .upload(p, body, { contentType: 'image/jpeg', cacheControl: PHOTO_CACHE_SEC });
+        if (upError) throw upError;
+        uploaded.push(p);
+        bytes += body.byteLength;
+      }
+
+      const { data: row, error: rowError } = await supabase
+        .from('photos')
+        .insert({
+          track_id: parent.trackId ?? null,
+          post_id: parent.postId ?? null,
+          story_id: parent.storyId ?? null,
+          uploader_id: uid,
+          couple_id: coupleId,
+          storage_path: path,
+          renditions: true,
+          cover_only: options?.coverOnly ?? false,
+          width: main.width,
+          height: main.height,
+          taken_at: photo.takenAt,
+          bytes,
+        })
+        .select('id')
+        .single();
+      if (rowError) throw rowError;
+      ids.push(row.id);
+    } catch (e) {
+      // 업로드가 insert보다 먼저라, 쿼터 트리거가 거부하면 파일만 스토리지에 영구히 남는다.
+      // 순서를 뒤집지 않는 이유: insert가 먼저면 업로드 실패 시 "깨진 사진 행"이 남아
+      // 화면에 빈 칸으로 드러난다 — 고아 파일보다 나쁘다.
+      if (uploaded.length) await supabase.storage.from('photos').remove(uploaded);
+      throw e;
+    }
   }
   return ids;
 }
