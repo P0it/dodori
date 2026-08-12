@@ -15,9 +15,9 @@ export function overlayTextStyle(overlay: TextOverlay, rect: Rect): TextStyle {
     lineHeight: fontSize * 1.25,
     color: storyTextColor[overlay.color],
     textAlign: 'center',
-    // 폭을 못 박는다(maxWidth가 아니라) — 편집 레이어는 이 글자를 여백 있는 상자 안에 넣는데,
-    // 거기서 줄어든 폭으로 접히면 뷰어와 줄바꿈이 달라진다
-    width: rect.width * OVERLAY_WIDTH_RATIO,
+    // 상자는 글자에 붙되(그래야 편집 화면에서 글자 옆을 잡아도 사진이 움직인다) 접히는 폭은
+    // 여기서 정한다 — 편집 레이어도 이만큼은 반드시 내주어야 뷰어와 줄바꿈이 같아진다
+    maxWidth: rect.width * OVERLAY_WIDTH_RATIO,
     // 밝은 사진 위에서도 흰 글자가 읽히도록
     textShadowColor: 'rgba(0,0,0,0.45)',
     textShadowRadius: 6,

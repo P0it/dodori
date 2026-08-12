@@ -9,6 +9,7 @@ import Animated, {
 import {
   OVERLAY_SIZE_MAX,
   OVERLAY_SIZE_MIN,
+  OVERLAY_WIDTH_RATIO,
   type Rect,
   type TextOverlay,
 } from '@/lib/stories';
@@ -30,9 +31,17 @@ type Props = {
   blocks?: React.MutableRefObject<GestureType | undefined>[];
 };
 
-/** 두 손가락(핀치·회전)이 이 글자에 먹는 범위 — 글자 둘레로 이만큼 넓게 */
-const ZOOM_PAD_X = 120;
-const ZOOM_PAD_Y = 100;
+/**
+ * 두 손가락(핀치·회전)이 이 글자에 먹는 범위 — 글자 **위아래로만** 넉넉하게.
+ *
+ * 옆으로 넓히면 안 된다: 글자 상자는 이미 캔버스의 9할까지 쓰므로 좌우로 조금만 더 줘도
+ * 화면 폭을 다 덮어 버리고, 그러면 사진을 오므리려는 두 손가락이 번번이 글자에 걸려
+ * 사진이 안 줄어든다.
+ */
+const ZOOM_PAD_Y = 56;
+
+/** 한 손가락(끌기·탭)이 먹는 범위 — 글자 좌우로 이만큼. 캔버스 폭의 남은 1할을 반씩 나눈다 */
+const grabPadX = (rectWidth: number) => (rectWidth * (1 - OVERLAY_WIDTH_RATIO)) / 2;
 
 /** 편집용 텍스트 레이어 — 끌어서 옮기고, 오므려서 키우고, 돌려서 기울인다 */
 export function StoryTextEditor({ overlays, rect, onChange, onEdit, blocks }: Props) {
@@ -153,15 +162,13 @@ function EditableText({
     >
       {/*
         핀치·회전은 두 손가락이 **모두** 상자 안에 들어와야 이 글자에 먹는다.
-        글자 둘레만큼만 잡아 두면 손가락이 번번이 밖에 떨어져 캔버스 핀치로 새고
-        (= 배경이 줄어들고) 만다 — 그래서 두 손가락용 상자는 아주 넉넉하게 잡는다.
-        두 손가락 제스처만 붙어 있으니 이 여백이 한 손가락 조작을 가로채지는 않는다.
+        위아래로만 넓히는 이유는 ZOOM_PAD_Y 주석에 있다 — 옆으로 넓히면 사진 핀치가 죽는다.
       */}
       <GestureDetector gesture={zoom}>
-        <Animated.View style={[{ paddingHorizontal: ZOOM_PAD_X, paddingVertical: ZOOM_PAD_Y }, box]}>
-          {/* 끌기·탭은 좁게 — 여기가 넓으면 글자 옆을 끌 때 사진이 안 움직인다 */}
+        <Animated.View style={[{ paddingVertical: ZOOM_PAD_Y }, box]}>
+          {/* 끌기·탭은 글자 좌우로 조금만 — 여기가 넓으면 글자 옆을 끌 때 사진이 안 움직인다 */}
           <GestureDetector gesture={move}>
-            <View style={{ paddingHorizontal: 36, paddingVertical: 28 }}>
+            <View style={{ paddingHorizontal: grabPadX(rect.width), paddingVertical: 28 }}>
               <Animated.Text style={[overlayTextStyle(overlay, rect), text]}>
                 {overlay.text}
               </Animated.Text>
