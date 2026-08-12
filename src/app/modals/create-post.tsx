@@ -13,7 +13,7 @@ import { useRouter } from 'expo-router';
 import { color, radius, space, typeface } from '@/theme/tokens';
 import { TopBar } from '@/components/TopBar';
 import { Meta } from '@/components/Meta';
-import { PlusGlyph } from '@/components/glyphs';
+import { PlayGlyph, PlusGlyph } from '@/components/glyphs';
 import { PostCropSheet } from '@/components/feed/PostCropSheet';
 import type { CanvasTransform } from '@/components/story/StoryCanvas';
 import { cropToCanvas, pickPhotos, type PickedPhoto } from '@/api/photos';
@@ -41,10 +41,10 @@ export default function CreatePost() {
       return;
     }
     try {
-      const picked = await pickPhotos(10);
+      const picked = await pickPhotos(10, { videos: true });
       if (picked.length) setPhotos((prev) => [...prev, ...picked].slice(0, 10));
     } catch (e) {
-      alertDialog('사진 선택 실패', e instanceof Error ? e.message : String(e));
+      alertDialog('선택 실패', e instanceof Error ? e.message : String(e));
     }
   };
 
@@ -105,12 +105,25 @@ export default function CreatePost() {
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space[2] }}>
           {photos.map((p) => (
             <View key={p.uri}>
-              <Pressable onPress={() => setCropping(p)}>
+              {/* 영상은 자를 수 없다 — 화면에서 cover로 놓이므로 크롭 시트를 열지 않는다 */}
+              <Pressable onPress={() => !p.video && setCropping(p)}>
                 <Image
-                  source={{ uri: p.uri }}
+                  source={{ uri: p.video ? p.video.posterUri : p.uri }}
                   style={{ width: 88, height: 88, borderRadius: radius.coverSm }}
                   contentFit="cover"
                 />
+                {p.video && (
+                  <View
+                    style={{
+                      position: 'absolute',
+                      right: 5,
+                      bottom: 5,
+                      opacity: 0.95,
+                    }}
+                  >
+                    <PlayGlyph size={16} color={color.white} />
+                  </View>
+                )}
               </Pressable>
               <Pressable
                 onPress={() => setPhotos((prev) => prev.filter((x) => x.uri !== p.uri))}

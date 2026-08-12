@@ -1,9 +1,17 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { Platform } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as Crypto from 'expo-crypto';
+import { createVideoPlayer } from 'expo-video';
 import { coverScale, cropRect } from '@/lib/stories';
-import { renditionPath, storagePathsFor, type RenditionKind } from '@/lib/media';
+import {
+  renditionPath,
+  storagePathsFor,
+  VIDEO_MAX_MS,
+  WEB_VIDEO_MAX_BYTES,
+  type RenditionKind,
+} from '@/lib/media';
 import { supabase } from './supabase';
 import { cachedSign, putSign, readySigns, SIGN_TTL_SEC } from './signCache';
 import { useMyCouple } from './couple';
@@ -55,6 +63,31 @@ export async function signedThumbUrl(
     .createSignedUrl(path, SIGN_TTL_SEC, options);
   if (error) throw error;
   return putSign(`${kind}:${path}`, data.signedUrl);
+}
+
+/**
+ * 영상 본체(mp4) 재생용 서명 — 렌디션 매핑 없이 **경로 그대로** 서명한다.
+ * 그림(포스터)은 signedThumbUrls가 맡는다. 캐시 키를 `src:`로 나눠 둘이 섞이지 않게 한다.
+ */
+export async function signedSourceUrls(paths: string[]): Promise<Map<string, string>> {
+  await readySigns();
+  const out = new Map<string, string>();
+  const need: string[] = [];
+  for (const p of paths) {
+    const cached = cachedSign(`src:${p}`);
+    if (cached) out.set(p, cached);
+    else if (!need.includes(p)) need.push(p);
+  }
+  if (need.length) {
+    const { data, error } = await supabase.storage
+      .from('photos')
+      .createSignedUrls(need, SIGN_TTL_SEC);
+    if (error) throw error;
+    for (const item of data) {
+      if (item.path && item.signedUrl) out.set(item.path, putSign(`src:${item.path}`, item.signedUrl));
+    }
+  }
+  return out;
 }
 
 /** 서명 배치가 받는 최소 형태 — 어느 테이블에서 왔든 이 둘만 있으면 된다 */
@@ -117,9 +150,16 @@ export async function signedThumbUrls(
 
 export interface PickedPhoto {
   uri: string;
+  /**
+   * 영상이면 **포스터** 기준 크기다 — asset이 주는 크기가 아니다.
+   * iOS 세로 영상은 ImagePicker가 회전 변환 전 1920×1080을 주는 경우가 있어,
+   * 그대로 쓰면 세로 영상에 가로 프레임이 씌워진다. 포스터 비트맵은 회전이 적용된 뒤라 항상 옳다.
+   */
   width: number;
   height: number;
   takenAt: string | null;
+  /** 있으면 이 항목은 동영상 — `uri`는 재생용 원본이고, 그림이 필요한 곳은 `posterUri`를 쓴다 */
+  video?: { posterUri: string; durationMs: number };
 }
 
 /**
@@ -132,21 +172,125 @@ export interface PickedPhoto {
  * 한 겹 끼고, "선택한 사진만" 을 고른 사용자는 이후 매번 "선택 항목 관리" 를 거친다 —
  * 갤러리로 바로 들어가지 못하는 원인이었다.
  */
-export async function pickPhotos(limit = 20): Promise<PickedPhoto[]> {
+export async function pickPhotos(
+  limit = 20,
+  /** 동영상까지 고를 수 있게 한다 — 스토리·게시물만 켠다 (트랙 사진·커버는 사진 전용) */
+  opts?: { videos?: boolean },
+): Promise<PickedPhoto[]> {
   const res = await ImagePicker.launchImageLibraryAsync({
-    mediaTypes: ['images'],
+    mediaTypes: opts?.videos ? ['images', 'videos'] : ['images'],
     allowsMultipleSelection: limit > 1,
     selectionLimit: limit,
     exif: true,
     quality: 1,
   });
   if (res.canceled) return [];
-  return res.assets.map((a) => ({
-    uri: a.uri,
-    width: a.width,
-    height: a.height,
-    takenAt: parseExifDate(a.exif),
-  }));
+
+  const picked: PickedPhoto[] = [];
+  for (const a of res.assets) {
+    if (a.type === 'video') picked.push(await pickedVideo(a));
+    else
+      picked.push({
+        uri: a.uri,
+        width: a.width,
+        height: a.height,
+        takenAt: parseExifDate(a.exif),
+      });
+  }
+  return picked;
+}
+
+/**
+ * 고른 영상 하나를 PickedPhoto로 — 포스터를 **선택 시점에** 굽는다.
+ *
+ * 나중으로 미룰 수 없다: 작성 화면의 썸네일 스트립이 `<Image source={{uri}}>`인데
+ * mp4는 렌더되지 않아 빈 칸이 된다.
+ *
+ * 길이 초과는 여기서 throw한다 — 두 작성 화면이 이미 pickPhotos를 try/catch로 감싸
+ * alertDialog를 띄우므로 배선을 새로 깔 필요가 없다 (트리밍 UI는 범위 밖).
+ */
+async function pickedVideo(asset: ImagePicker.ImagePickerAsset): Promise<PickedPhoto> {
+  const poster = await videoPoster(asset.uri);
+  const durationMs = Math.round(asset.duration ?? poster.durationMs);
+  if (durationMs > VIDEO_MAX_MS) {
+    throw new Error(`영상은 ${VIDEO_MAX_MS / 1000}초까지 올릴 수 있어요`);
+  }
+  return {
+    uri: asset.uri,
+    width: poster.width,
+    height: poster.height,
+    takenAt: parseExifDate(asset.exif),
+    video: { posterUri: poster.uri, durationMs },
+  };
+}
+
+/** 영상 첫 프레임 → JPEG. 이후로는 평범한 사진 uri라 렌디션·크롭이 그대로 통한다 */
+async function videoPoster(uri: string): Promise<{
+  uri: string;
+  width: number;
+  height: number;
+  durationMs: number;
+}> {
+  if (Platform.OS === 'web') return webVideoPoster(uri);
+  const player = createVideoPlayer(uri);
+  try {
+    const [thumb] = await player.generateThumbnailsAsync(0);
+    const ctx = ImageManipulator.ImageManipulator.manipulate(thumb);
+    const rendered = await ctx.renderAsync();
+    const out = await rendered.saveAsync({
+      format: ImageManipulator.SaveFormat.JPEG,
+      compress: 0.9,
+    });
+    return { uri: out.uri, width: out.width, height: out.height, durationMs: 0 };
+  } finally {
+    // 썸네일 비트맵을 쥔 네이티브 객체라 GC를 기다리지 않고 바로 놓아준다
+    player.release();
+  }
+}
+
+/** 웹에는 generateThumbnailsAsync가 없다 — <video>의 첫 프레임을 canvas로 옮긴다 */
+async function webVideoPoster(uri: string) {
+  const video = document.createElement('video');
+  video.muted = true;
+  video.playsInline = true;
+  video.preload = 'metadata';
+  video.src = uri;
+  await new Promise<void>((resolve, reject) => {
+    // loadeddata = currentTime 0의 프레임이 준비된 시점
+    video.onloadeddata = () => resolve();
+    video.onerror = () => reject(new Error('영상을 읽지 못했어요'));
+  });
+
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('영상을 읽지 못했어요');
+  ctx.drawImage(video, 0, 0);
+  const blob = await new Promise<Blob | null>((resolve) =>
+    canvas.toBlob(resolve, 'image/jpeg', 0.9),
+  );
+  if (!blob) throw new Error('영상을 읽지 못했어요');
+  return {
+    uri: URL.createObjectURL(blob),
+    width: canvas.width,
+    height: canvas.height,
+    durationMs: Math.round((video.duration || 0) * 1000),
+  };
+}
+
+/**
+ * 업로드 전 기기에서 720p로 줄인다 — 아이폰 4K 15초는 100MB가 넘어 그대로는 못 올린다.
+ * 웹은 압축 수단이 없어 원본이 그대로 가고, 대신 업로드에서 크기 상한만 검사한다.
+ */
+async function compressVideo(uri: string, onProgress?: (ratio: number) => void): Promise<string> {
+  if (Platform.OS === 'web') return uri;
+  const { Video } = await import('react-native-compressor');
+  return Video.compress(
+    uri,
+    { compressionMethod: 'manual', maxSize: 1280, bitrate: 2_500_000 },
+    onProgress,
+  );
 }
 
 /**
@@ -215,6 +359,22 @@ export async function cropToCanvas(
   photo: PickedPhoto,
   crop: { canvasWidth: number; canvasHeight: number; scale: number; tx: number; ty: number },
 ): Promise<PickedPhoto> {
+  // 영상은 화면에서 cover로 놓는다 — 자를 수 있는 건 포스터뿐이다.
+  // 포스터를 프레임에 맞춰 잘라 두면 저장된 width/height가 프레임 비율이 되고,
+  // 그림이 필요한 모든 곳(피드·격자·앨범)이 실제 재생 구도와 같은 그림을 본다.
+  if (photo.video) {
+    const poster = await cropToCanvas(
+      { uri: photo.video.posterUri, width: photo.width, height: photo.height, takenAt: null },
+      crop,
+    );
+    return {
+      ...photo,
+      width: poster.width,
+      height: poster.height,
+      video: { ...photo.video, posterUri: poster.uri },
+    };
+  }
+
   const r = cropRect(
     photo.width,
     photo.height,
@@ -329,27 +489,48 @@ export async function uploadPhotos(
 
   const ids: string[] = [];
   for (const photo of photos) {
-    const path = `${coupleId}/${parentId}/${Crypto.randomUUID()}.jpg`;
-    const main = await renderRendition(photo, 'feed');
-    const small = await renderRendition(photo, 'grid');
+    const video = photo.video;
+    const path = `${coupleId}/${parentId}/${Crypto.randomUUID()}${video ? '.mp4' : '.jpg'}`;
+
+    // 그림은 사진이면 원본에서, 영상이면 포스터에서 굽는다 — 두 갈래가 같은 렌디션 함수를 쓴다
+    const source: PickedPhoto = video
+      ? { uri: video.posterUri, width: photo.width, height: photo.height, takenAt: photo.takenAt }
+      : photo;
+    const main = await renderRendition(source, 'feed');
+    const small = await renderRendition(source, 'grid');
 
     // 이 항목이 올린 파일 — 중간에 실패하면 되돌린다.
     // 이전 항목의 파일은 지우지 않는다: 그쪽은 이미 DB 행이 커밋돼 화면에 보이고 있다.
     const uploaded: string[] = [];
-    // 스토리지에 실제로 올라간 크기 — 쿼터가 이 합계를 센다 (본체 1080 + 360)
+    // 스토리지에 실제로 올라간 크기 — 쿼터가 이 합계를 센다
+    // (사진이면 1080+360, 영상이면 mp4+포스터+360)
     let bytes = 0;
 
     try {
-      for (const [p, out] of [
-        [path, main],
-        [renditionPath(path, 'grid'), small],
-      ] as const) {
-        const body = await (await fetch(out.uri)).arrayBuffer();
+      // 사진은 본체가 곧 feed 렌디션이라 파일이 2개, 영상은 mp4가 따로 있어 3개다
+      const parts = video
+        ? [
+            { path, uri: await compressVideo(photo.uri), type: 'video/mp4' },
+            { path: renditionPath(path, 'feed'), uri: main.uri, type: 'image/jpeg' },
+            { path: renditionPath(path, 'grid'), uri: small.uri, type: 'image/jpeg' },
+          ]
+        : [
+            { path, uri: main.uri, type: 'image/jpeg' },
+            { path: renditionPath(path, 'grid'), uri: small.uri, type: 'image/jpeg' },
+          ];
+
+      for (const part of parts) {
+        const body = await (await fetch(part.uri)).arrayBuffer();
+        // 웹은 압축 수단이 없어 원본이 그대로 온다 — 버킷 상한(50MB)에 닿아
+        // 알아보기 어려운 스토리지 에러가 나기 전에 먼저 막는다
+        if (part.type === 'video/mp4' && body.byteLength > WEB_VIDEO_MAX_BYTES) {
+          throw new Error(`영상이 너무 커요 (${WEB_VIDEO_MAX_BYTES / 1024 / 1024}MB 이하)`);
+        }
         const { error: upError } = await supabase.storage
           .from('photos')
-          .upload(p, body, { contentType: 'image/jpeg', cacheControl: PHOTO_CACHE_SEC });
+          .upload(part.path, body, { contentType: part.type, cacheControl: PHOTO_CACHE_SEC });
         if (upError) throw upError;
-        uploaded.push(p);
+        uploaded.push(part.path);
         bytes += body.byteLength;
       }
 
@@ -368,6 +549,8 @@ export async function uploadPhotos(
           height: main.height,
           taken_at: photo.takenAt,
           bytes,
+          media: video ? 'video' : 'photo',
+          duration_ms: video?.durationMs ?? null,
         })
         .select('id')
         .single();
