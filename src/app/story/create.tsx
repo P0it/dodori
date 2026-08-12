@@ -149,6 +149,33 @@ export default function CreateStory() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  /*
+    웹 전용 — 키보드가 떠도 화면이 밀려 올라가지 않게.
+
+    iOS 사파리는 입력 칸을 보이겠다고 페이지를 통째로 위로 민다. 이 화면은 사진이
+    제자리에 못 박혀 있어야 하는데 사진도 도구도 같이 올라가 화면 밖으로 나갔다.
+    문서 높이를 **지금 보이는 만큼**(visualViewport)으로 줄여 두면 밀어 올릴 자리가
+    없어진다 — 키보드는 카드의 아랫부분을 덮기만 하고, 사진과 위쪽 도구는 그대로다.
+  */
+  useEffect(() => {
+    if (!IS_WEB || typeof window === 'undefined') return;
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const root = document.documentElement;
+    const sync = () => {
+      root.style.height = `${vv.height}px`;
+      window.scrollTo(0, 0);
+    };
+    sync();
+    vv.addEventListener('resize', sync);
+    vv.addEventListener('scroll', sync);
+    return () => {
+      root.style.height = '';
+      vv.removeEventListener('resize', sync);
+      vv.removeEventListener('scroll', sync);
+    };
+  }, []);
+
   // 첫 렌더는 재기만 한다 — 이 상자 안에 카드를 앉힌다
   if (!box) {
     return (
