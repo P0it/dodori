@@ -140,8 +140,18 @@ Windows 작업 트리에서는 iOS 빌드가 불가능하다. 맥미니에 같�
   Spend Cap에 걸리면 앱 전체 사진이 안 보인다. `renditions=false`인 옛 사진만 폴백으로 변환을 쓴다.
   `signedThumbUrl(path, kind, renditions)`에 **세 번째 인자를 빠뜨리면 신규 사진도 폴백을 탄다**(타입은 통과).
   삭제는 반드시 `storagePathsFor()` 경유 — 본체만 지우면 `_360`이 고아 파일로 남는다.
-  커플당 사진 쿼터는 `couples.photo_quota`(무료 100장)를 읽는 `photos` insert 트리거가 강제하고,
-  한도에 닿아도 **기존 사진은 지우지 않고 열람도 계속 된다**(새 업로드만 막는다)
+- **동영상**(2026-08-12, 스토리·게시물만): 사진과 **같은 `photos` 테이블·같은 버킷**을 쓰고
+  구분은 본체 확장자 하나다(`.jpg`/`.mp4`). 경로 규칙은 전부 `lib/media.ts`.
+  `renditionPath()`가 mp4를 포스터 JPEG로 매핑하므로 **그림이 필요한 화면은 영상을 그냥 사진으로 본다**
+  (앨범 커버·캘린더·플레이리스트·장소는 무수정). 영상은 파일 3개 — `{uuid}.mp4`·`_poster.jpg`·`_360.jpg`.
+  15초 상한, 업로드 전 기기에서 720p 압축(`react-native-compressor`, 웹은 원본+45MB 상한).
+  재생용 mp4 서명은 `signedSourceUrls()`(썸네일과 캐시 키가 다르다). 설계: `docs/superpowers/specs/2026-08-12-video-upload-design.md`
+- 커플당 쿼터는 **장수가 아니라 바이트 총량**이다 — `couples.storage_quota_bytes`(무료 200MB)와
+  `photos.bytes` 합계를 `photos` insert 트리거가 강제하고, 합계 조회는 `storage_used_bytes()` RPC.
+  15초 영상 하나가 사진 27장이라 장수로는 셀 수 없어 `photo_quota`는 폐기했다.
+  한도에 닿아도 **기존 사진·영상은 지우지 않고 열람도 계속 된다**(새 업로드만 막는다).
+  업로드가 중간에 실패하면 그 항목이 올린 파일을 되돌린다 — 스토리지 업로드가 insert보다 먼저라
+  트리거가 거부하면 파일만 남았다
 - 게시물 사진 프레임은 `lib/posts.ts`의 `postFrameRatio`(가로 16:9 ~ 세로 4:5 클램프) 하나로
   업로드 크롭(`PostCropSheet`)과 피드 표시(`PostCard`)가 같은 값을 쓴다 — 한쪽만 바꾸면 어긋난다.
   크롭 제스처는 스토리 편집기의 `StoryCanvas`·`cropToCanvas` 재사용(게시물은 `minScale=1`)
@@ -152,6 +162,8 @@ Windows 작업 트리에서는 iOS 빌드가 불가능하다. 맥미니에 같�
 - [x] 방향 전환(2026-07): 오늘의 주제 + 커플 피드 + 4탭
 - [x] 플레이리스트 재정의 이행 — 장소=트랙 / 하루=앨범, 싱글 제거
 - [x] 커플 아케이드 — 홈의 '오늘의 게임' (하루 한 종목·3판 최고점·내가 마쳐야 상대 공개)
+- [ ] 동영상 업로드 + 바이트 쿼터 — 코드·마이그레이션은 끝, **기기 검증 남음**:
+      `react-native-compressor` × RN 0.86 실동작(0단계 스파이크)과 웹 패스가 미검증이다
 - [ ] 베타 배포(EAS/TestFlight) → M6 스토어 준비
 
 ## 배포 후 1회 수동 설정
