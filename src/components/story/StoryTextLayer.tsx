@@ -1,6 +1,6 @@
 import { Text, View, type TextStyle } from 'react-native';
 import { storyTextColor, typeface } from '@/theme/tokens';
-import type { Rect, TextOverlay } from '@/lib/stories';
+import { OVERLAY_WIDTH_RATIO, type Rect, type TextOverlay } from '@/lib/stories';
 
 /**
  * 텍스트 스티커의 글자 모양 — 편집 화면과 뷰어가 똑같이 써야 "본 대로 저장"이 성립한다.
@@ -15,7 +15,9 @@ export function overlayTextStyle(overlay: TextOverlay, rect: Rect): TextStyle {
     lineHeight: fontSize * 1.25,
     color: storyTextColor[overlay.color],
     textAlign: 'center',
-    maxWidth: rect.width * 0.9,
+    // 폭을 못 박는다(maxWidth가 아니라) — 편집 레이어는 이 글자를 여백 있는 상자 안에 넣는데,
+    // 거기서 줄어든 폭으로 접히면 뷰어와 줄바꿈이 달라진다
+    width: rect.width * OVERLAY_WIDTH_RATIO,
     // 밝은 사진 위에서도 흰 글자가 읽히도록
     textShadowColor: 'rgba(0,0,0,0.45)',
     textShadowRadius: 6,

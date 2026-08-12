@@ -16,6 +16,7 @@ import {
   typeface,
   type StoryTextColorKey,
 } from '@/theme/tokens';
+import { OVERLAY_WIDTH_RATIO } from '@/lib/stories';
 
 export interface ComposedText {
   text: string;
@@ -136,7 +137,10 @@ export function StoryTextInput({
           placeholderTextColor="rgba(255,255,255,0.45)"
           style={{
             height,
-            paddingHorizontal: 62,
+            // 뷰어·편집 레이어와 같은 폭이라야 치는 동안의 줄바꿈이 완료 후에도 그대로다
+            width: canvasWidth * OVERLAY_WIDTH_RATIO,
+            alignSelf: 'center',
+            paddingHorizontal: 0,
             paddingVertical: 0,
             fontFamily: typeface,
             fontWeight: '800',

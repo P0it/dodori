@@ -13,7 +13,7 @@ import * as Crypto from 'expo-crypto';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { captureRef } from 'react-native-view-shot';
-import type { GestureType } from 'react-native-gesture-handler';
+import { GestureHandlerRootView, type GestureType } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   color,
@@ -224,7 +224,12 @@ export default function CreateStory() {
   const rect = { x: 0, y: 0, width: canvas.width, height: canvas.height };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#000' }}>
+    /*
+      전체 화면 모달은 네이티브 창을 따로 띄운다 — 앱 루트의 GestureHandlerRootView가
+      거기까지 닿지 않아서 그 안에서는 핀치·팬이 통째로 죽는다 (사진이 안 줄어들던 원인).
+      이 화면은 제 뿌리를 따로 심는다
+    */
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#000' }}>
       {/* 사진 — 화면에 못 박혀 있다. 키보드가 올라와도 여기는 움직이지 않는다 */}
       {photo && (
         <View style={{ position: 'absolute', top: 0, left: 0, width: canvas.width, height: canvas.height }}>
@@ -406,6 +411,6 @@ export default function CreateStory() {
           }}
         />
       )}
-    </View>
+    </GestureHandlerRootView>
   );
 }

@@ -178,6 +178,13 @@ export interface Rect {
  */
 export const STORY_ASPECT = 16 / 9;
 
+/**
+ * 글자 스티커가 쓸 수 있는 가로 폭 (캔버스 너비 대비).
+ * 입력 칸·편집 레이어·뷰어가 **같은 값**을 써야 줄바꿈이 같은 자리에서 일어난다 —
+ * 치는 동안 한 줄이던 말이 완료를 누르는 순간 세 줄로 접히던 원인이 이 값의 어긋남이었다
+ */
+export const OVERLAY_WIDTH_RATIO = 0.9;
+
 /** cover 배율 대비 최대 확대 */
 export const CANVAS_ZOOM_MAX = 4;
 /**
