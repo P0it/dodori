@@ -1,13 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from './supabase';
 import { useMyCouple } from './couple';
-import {
-  signedThumbUrl,
-  signedThumbUrls,
-  storagePathsFor,
-  uploadPhotos,
-  type PickedPhoto,
-} from './photos';
+import { signedThumbUrl, signedThumbUrls, uploadPhotos, type PickedPhoto } from './photos';
+import { storagePathsFor } from '@/lib/media';
 import { todayKST, type ISODate } from '@/lib/date';
 
 export interface MonthTrack {

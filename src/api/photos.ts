@@ -3,6 +3,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as Crypto from 'expo-crypto';
 import { coverScale, cropRect } from '@/lib/stories';
+import { renditionPath, storagePathsFor, type RenditionKind } from '@/lib/media';
 import { supabase } from './supabase';
 import { cachedSign, putSign, readySigns, SIGN_TTL_SEC } from './signCache';
 import { useMyCouple } from './couple';
@@ -20,8 +21,6 @@ export const RENDITION = {
   grid: { width: 360, compress: 0.7 },
 } as const;
 
-export type RenditionKind = keyof typeof RENDITION;
-
 /**
  * 사진 파일의 Cache-Control (초).
  *
@@ -30,21 +29,6 @@ export type RenditionKind = keyof typeof RENDITION;
  * 이미 올라간 사진에는 적용되지 않는다(파일 메타데이터라 새 업로드부터).
  */
 const PHOTO_CACHE_SEC = String(365 * 24 * 60 * 60);
-
-/** 목록 렌디션의 경로 — 본체가 `{uuid}.jpg`면 `{uuid}_360.jpg` */
-export function renditionPath(storagePath: string, kind: RenditionKind): string {
-  return kind === 'feed' ? storagePath : storagePath.replace(/\.jpg$/, '_360.jpg');
-}
-
-/**
- * 사진 하나가 스토리지에 실제로 차지하는 경로 전부.
- * 삭제할 때 이걸 안 쓰면 _360이 고아 파일로 남는다.
- */
-export function storagePathsFor(photo: { storagePath: string; renditions: boolean }): string[] {
-  return photo.renditions
-    ? [photo.storagePath, renditionPath(photo.storagePath, 'grid')]
-    : [photo.storagePath];
-}
 
 /**
  * 렌디션 서명 URL — photos 버킷이 비공개라 public URL은 렌더되지 않는다.

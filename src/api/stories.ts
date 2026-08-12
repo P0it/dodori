@@ -1,12 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from './supabase';
 import { useMyCouple } from './couple';
-import {
-  signedThumbUrls,
-  storagePathsFor,
-  uploadPhotos,
-  type PickedPhoto,
-} from './photos';
+import { signedThumbUrls, uploadPhotos, type PickedPhoto } from './photos';
+import { storagePathsFor } from '@/lib/media';
 import { parseOverlays, type TextOverlay } from '@/lib/stories';
 import type { Json } from '@/types/database.types';
 
