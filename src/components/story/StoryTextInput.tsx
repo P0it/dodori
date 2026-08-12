@@ -93,13 +93,28 @@ export function StoryTextInput({
   /**
    * 색 고르기 줄만 키보드 위로 올린다 (기준은 줄어들지 않는 상자라 높이를 그대로 더한다).
    *
-   * `will`과 `did`를 **둘 다** 듣는다 — autoFocus가 부모의 effect보다 먼저 돌아서
+   * 네이티브는 `will`과 `did`를 **둘 다** 듣는다 — autoFocus가 부모의 effect보다 먼저 돌아서
    * 이 화면은 `keyboardWillShow`를 놓치는 자리에 있다 (자식의 mount가 먼저다).
    * 그러면 높이가 0으로 남아 색 줄이 키보드 뒤에 깔린 채 나오지 않는다.
-   * 이미 올라와 있는 키보드는 `Keyboard.metrics()`로 처음부터 잰다
+   *
+   * 웹의 `Keyboard`는 **빈 껍데기다** — react-native-web은 addListener가 아무것도 하지 않고
+   * `metrics`는 아예 없다(부르면 그 자리에서 터진다). 브라우저에서는 키보드가 올라온 만큼
+   * `visualViewport`가 줄어드니 그 차이를 키보드 높이로 쓴다
    */
-  const [keyboard, setKeyboard] = useState(() => Keyboard.metrics()?.height ?? 0);
+  const [keyboard, setKeyboard] = useState(() => Keyboard.metrics?.()?.height ?? 0);
   useEffect(() => {
+    if (Platform.OS === 'web') {
+      const vv = typeof window === 'undefined' ? null : window.visualViewport;
+      if (!vv) return;
+      const sync = () => setKeyboard(Math.max(0, window.innerHeight - vv.height - vv.offsetTop));
+      sync();
+      vv.addEventListener('resize', sync);
+      vv.addEventListener('scroll', sync);
+      return () => {
+        vv.removeEventListener('resize', sync);
+        vv.removeEventListener('scroll', sync);
+      };
+    }
     const up = (e: KeyboardEvent) => setKeyboard(e.endCoordinates.height);
     const down = () => setKeyboard(0);
     const subs = [
