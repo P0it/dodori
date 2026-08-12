@@ -19,7 +19,18 @@ export default function Root({ children }: PropsWithChildren) {
           content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
         />
         <ScrollViewStyleReset />
-        <style dangerouslySetInnerHTML={{ __html: `body { background-color: #121212; }` }} />
+        {/*
+          문서 자체는 스크롤하지 않는다 — 스크롤은 화면 안의 목록이 맡는다.
+          이걸 풀어 두면 iOS Safari가 입력 칸을 보이겠다고 페이지를 통째로 밀어 올려
+          (스토리 편집처럼) 화면에 못 박아 둔 사진까지 같이 올라간다
+        */}
+        <style
+          dangerouslySetInnerHTML={{
+            __html:
+              'html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }' +
+              'body { background-color: #121212; }',
+          }}
+        />
       </head>
       <body>{children}</body>
     </html>

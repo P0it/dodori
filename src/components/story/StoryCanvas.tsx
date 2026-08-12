@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { View } from 'react-native';
+import { Platform, View } from 'react-native';
 import { Image } from 'expo-image';
 import { Gesture, GestureDetector, type GestureType } from 'react-native-gesture-handler';
 import Animated, {
@@ -64,6 +64,19 @@ export function StoryCanvas({
   /** 처음 구도 = 캔버스를 꽉 채우는 배율 */
   const initial = 1;
   const floor = minScale;
+
+  /*
+    iOS Safari는 `user-scalable=no`를 무시하고 두 손가락을 페이지 줌(gesture* 이벤트)으로
+    가져가 버린다 — 그러면 사진은 그대로고 앱 화면만 커진다. 이 캔버스가 떠 있는 동안만 막는다.
+    (`touch-action: none`만으로는 사파리에서 부족하다.) 웹 전용 — 네이티브에는 이 이벤트가 없다
+  */
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof document === 'undefined') return;
+    const stop = (e: Event) => e.preventDefault();
+    const types = ['gesturestart', 'gesturechange', 'gestureend'];
+    types.forEach((t) => document.addEventListener(t, stop, { passive: false }));
+    return () => types.forEach((t) => document.removeEventListener(t, stop));
+  }, []);
 
   const scale = useSharedValue(initial);
   const saved = useSharedValue(initial);
