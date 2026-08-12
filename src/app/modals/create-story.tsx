@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Dimensions,
   Image as RNImage,
   Platform,
   Pressable,
@@ -89,14 +88,16 @@ function ToolButton({
  * 물을 자리가 없다 — 보이는 것이 올라가는 것이다. 버튼은 사진 밖이 아니라
  * 사진 위에 얹힌다.
  *
- * 캔버스 크기는 **마운트 시점의 창 크기로 고정**한다. 매 렌더 다시 재면
- * 키보드가 올라올 때 창이 줄면서 사진까지 같이 줄어든다 (텍스트를 칠 때마다
- * 배경이 쪼그라들던 원인).
+ * 캔버스 크기는 **처음 잰 이 화면의 크기로 고정**한다. 창 크기(`Dimensions`)를 쓰면
+ * 안 된다 — 루트가 상태바만큼 위를 이미 밀어 두고(그 위에 모달 카드까지 얹힌다)
+ * 있어서 창보다 낮은 상자에 창 높이짜리 캔버스를 그리게 되고, 그만큼 전체가
+ * 아래로 쏠린 채 밑이 잘린다. 매 렌더 다시 재지 않는 이유는 따로 있다 —
+ * 키보드가 올라올 때 창이 줄면서 사진까지 같이 줄어든다.
  */
 export default function CreateStory() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [canvas] = useState(() => Dimensions.get('window'));
+  const [canvas, setCanvas] = useState<{ width: number; height: number } | null>(null);
 
   const [photo, setPhoto] = useState<PickedPhoto | null>(null);
   const [transform, setTransform] = useState<CanvasTransform>(IDENTITY);
@@ -118,9 +119,6 @@ export default function CreateStory() {
     pinch: useRef<GestureType | undefined>(undefined),
     reset: useRef<GestureType | undefined>(undefined),
   };
-
-  // 텍스트는 캔버스에 붙는다 — 잘라낸 사진이 곧 캔버스라 이 좌표가 저장 후에도 그대로 맞는다
-  const rect = { x: 0, y: 0, width: canvas.width, height: canvas.height };
 
   const editing = overlays.find((o) => o.id === editingId) ?? null;
 
@@ -149,6 +147,19 @@ export default function CreateStory() {
     // 마운트 때 한 번 (onPick은 매 렌더 새 함수)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // 첫 렌더는 재기만 한다 — 이 상자의 크기가 곧 캔버스다
+  if (!canvas) {
+    return (
+      <View
+        style={{ flex: 1, backgroundColor: '#000' }}
+        onLayout={(e) => {
+          const { width, height } = e.nativeEvent.layout;
+          setCanvas({ width, height });
+        }}
+      />
+    );
+  }
 
   const addText = () => {
     if (overlays.length >= OVERLAY_MAX) return;
@@ -202,6 +213,9 @@ export default function CreateStory() {
     }
   };
 
+  // 텍스트는 캔버스에 붙는다 — 잘라낸 사진이 곧 캔버스라 이 좌표가 저장 후에도 그대로 맞는다
+  const rect = { x: 0, y: 0, width: canvas.width, height: canvas.height };
+
   return (
     <View style={{ flex: 1, backgroundColor: '#000' }}>
       {/* 사진 — 화면에 못 박혀 있다. 키보드가 올라와도 여기는 움직이지 않는다 */}
@@ -253,7 +267,7 @@ export default function CreateStory() {
           {/* 밝은 사진 위에서도 아이콘이 읽히도록 — 위아래로만 얇게 */}
           <LinearGradient
             colors={['rgba(0,0,0,0.5)', 'transparent']}
-            style={{ position: 'absolute', top: 0, left: 0, right: 0, height: insets.top + 92 }}
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 92 }}
             pointerEvents="none"
           />
           <LinearGradient
@@ -265,11 +279,12 @@ export default function CreateStory() {
           {/*
             상단 — 왼쪽은 나가기(×), 오른쪽은 얹기(T). 양끝에 하나씩이라 헷갈릴 짝이 없고,
             같은 크기의 원이라 한 줄에 정확히 맞는다.
+            상태바만큼은 루트가 이미 밀어 두었다 — 여기서 또 더하면 두 번 밀린다
           */}
           <View
             style={{
               position: 'absolute',
-              top: insets.top + space[2],
+              top: space[2],
               left: 0,
               right: 0,
               flexDirection: 'row',
