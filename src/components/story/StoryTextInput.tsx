@@ -1,14 +1,5 @@
-import { useEffect, useState } from 'react';
-import {
-  Keyboard,
-  Platform,
-  Pressable,
-  StyleSheet,
-  TextInput,
-  View,
-  type KeyboardEvent,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useState } from 'react';
+import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import {
   color,
   space,
@@ -32,7 +23,7 @@ type Props = {
   canvasWidth: number;
   /** 캔버스(카드) 높이 — 글자가 놓일 자리와 넘치기 시작하는 지점을 여기서 낸다 */
   canvasHeight: number;
-  /** 화면 상자 높이 — 카드보다 길 수 있다. 색 고르기 줄은 이 바닥을 기준으로 앉는다 */
+  /** 화면 상자 높이 — 카드보다 길 수 있다. 카드 밖을 탭해도 나가지도록 여기까지 덮는다 */
   boxHeight: number;
   /** 버리기 — 이 글자를 아예 없앤다 */
   onDelete: () => void;
@@ -44,13 +35,6 @@ type Props = {
 const EDIT_DIM = 'rgba(0,0,0,0.35)';
 
 /**
- * 키보드 위에 두는 여유. iOS는 키보드 위에 시스템 도구줄(^ ∨ 완료)이 한 겹 더 붙는데
- * 그 높이는 `endCoordinates`에 잡히지 않을 때가 있다 — 색 고르기 줄이 그 아래로 깔리면
- * 색을 아예 고를 수 없어서, 그 줄만큼 넉넉히 띄운다
- */
-const KEYBOARD_CLEARANCE = Platform.OS === 'ios' ? 52 : space[3];
-
-/**
  * 텍스트 편집 — 화면 전체가 입력 칸이다.
  *
  * 뒤에 깔린 편집 캔버스(고른 비율 그대로의 사진)를 한 겹 어둡게만 누른다.
@@ -59,10 +43,10 @@ const KEYBOARD_CLEARANCE = Platform.OS === 'ios' ? 52 : space[3];
  *
  * **치는 자리 = 놓일 자리다.** 입력 칸은 키보드를 피해 위로 밀려나지 않고 화면
  * 한가운데에 못 박혀 있다 — 새 글자가 캔버스 정중앙(y=0.5)에 놓이니, 위에서 치다가
- * 완료하면 가운데로 뛰어내리던 어긋남이 없다. 키보드를 피하는 건 색 고르기 줄뿐이다.
+ * 완료하면 가운데로 뛰어내리던 어긋남이 없다. 도구(버리기·색)는 키보드가 닿지 않는 위쪽에 둔다.
  *
- * 나가는 길은 **배경 탭 하나**다 (= 완료). 글자를 다 지우고 나가면 부르는 쪽이 지운다 —
- * 그래서 완료·삭제 버튼이 따로 없다. 위치·크기·기울기는 나간 뒤 손가락으로 잡는다.
+ * 나가는 길은 **글자 밖 탭 하나**다 (= 완료). 그래서 완료 버튼이 따로 없다.
+ * 위치·크기·기울기는 나간 뒤 손가락으로 잡는다.
  */
 export function StoryTextInput({
   initial,
@@ -72,7 +56,6 @@ export function StoryTextInput({
   onDelete,
   onDone,
 }: Props) {
-  const insets = useSafeAreaInsets();
   const [text, setText] = useState(initial.text);
   const [textColor, setTextColor] = useState<StoryTextColorKey>(initial.color);
   const [selection, setSelection] = useState<{ start: number; end: number } | undefined>(() =>
@@ -89,42 +72,6 @@ export function StoryTextInput({
    */
   const [contentHeight, setContentHeight] = useState(lineHeight);
   const height = Math.min(Math.max(contentHeight, lineHeight), canvasHeight * 0.6);
-
-  /**
-   * 색 고르기 줄만 키보드 위로 올린다 (기준은 줄어들지 않는 상자라 높이를 그대로 더한다).
-   *
-   * 네이티브는 `will`과 `did`를 **둘 다** 듣는다 — autoFocus가 부모의 effect보다 먼저 돌아서
-   * 이 화면은 `keyboardWillShow`를 놓치는 자리에 있다 (자식의 mount가 먼저다).
-   * 그러면 높이가 0으로 남아 색 줄이 키보드 뒤에 깔린 채 나오지 않는다.
-   *
-   * 웹의 `Keyboard`는 **빈 껍데기다** — react-native-web은 addListener가 아무것도 하지 않고
-   * `metrics`는 아예 없다(부르면 그 자리에서 터진다). 브라우저에서는 키보드가 올라온 만큼
-   * `visualViewport`가 줄어드니 그 차이를 키보드 높이로 쓴다
-   */
-  const [keyboard, setKeyboard] = useState(() => Keyboard.metrics?.()?.height ?? 0);
-  useEffect(() => {
-    if (Platform.OS === 'web') {
-      const vv = typeof window === 'undefined' ? null : window.visualViewport;
-      if (!vv) return;
-      const sync = () => setKeyboard(Math.max(0, window.innerHeight - vv.height - vv.offsetTop));
-      sync();
-      vv.addEventListener('resize', sync);
-      vv.addEventListener('scroll', sync);
-      return () => {
-        vv.removeEventListener('resize', sync);
-        vv.removeEventListener('scroll', sync);
-      };
-    }
-    const up = (e: KeyboardEvent) => setKeyboard(e.endCoordinates.height);
-    const down = () => setKeyboard(0);
-    const subs = [
-      Keyboard.addListener('keyboardWillShow', up),
-      Keyboard.addListener('keyboardDidShow', up),
-      Keyboard.addListener('keyboardWillHide', down),
-      Keyboard.addListener('keyboardDidHide', down),
-    ];
-    return () => subs.forEach((s) => s.remove());
-  }, []);
 
   const done = () => onDone({ text: text.trim(), color: textColor, size: initial.size });
 
@@ -217,13 +164,18 @@ export function StoryTextInput({
         <TrashGlyph size={20} color={color.white} />
       </Pressable>
 
-      {/* 색 — 키보드 바로 위 */}
+      {/*
+        색 — 버리기 버튼 바로 아래, 화면 위쪽이다.
+        키보드 위에 두려면 키보드 높이를 재야 하는데 그 방법이 플랫폼마다 다르고
+        (웹의 Keyboard는 빈 껍데기다) 어느 한쪽에서 어긋나면 색을 아예 못 고른다.
+        위는 무엇으로도 가려지지 않는 자리다
+      */}
       <View
         style={{
           position: 'absolute',
           left: 0,
           right: 0,
-          bottom: (keyboard || insets.bottom) + KEYBOARD_CLEARANCE,
+          top: space[2] + 38 + space[3],
           flexDirection: 'row',
           flexWrap: 'wrap',
           gap: 12,
