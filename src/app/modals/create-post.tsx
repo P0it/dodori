@@ -18,7 +18,8 @@ import { PostCropSheet } from '@/components/feed/PostCropSheet';
 import type { CanvasTransform } from '@/components/story/StoryCanvas';
 import { cropToCanvas, pickPhotos, type PickedPhoto } from '@/api/photos';
 import { useCreatePost } from '@/api/posts';
-import { usePhotoQuota } from '@/api/couple';
+import { useStorageQuota } from '@/api/couple';
+import { formatBytes } from '@/lib/media';
 import { isFramed, postFrameRatioOf } from '@/lib/posts';
 import { alertDialog } from '@/components/dialog';
 
@@ -32,7 +33,7 @@ export default function CreatePost() {
   const { width: screenW } = useWindowDimensions();
 
   const createPost = useCreatePost();
-  const quota = usePhotoQuota();
+  const quota = useStorageQuota();
 
   const onPick = async () => {
     if (quota.data?.full) {
@@ -157,7 +158,7 @@ export default function CreatePost() {
           <Meta>
             {quota.data.full
               ? '공간이 가득 찼어요. 곧 더 많은 공간을 제공할 예정이에요'
-              : `사진 ${quota.data.used} / ${quota.data.quota}장`}
+              : `보관 공간 ${formatBytes(quota.data.usedBytes)} / ${formatBytes(quota.data.quotaBytes)}`}
           </Meta>
         )}
 

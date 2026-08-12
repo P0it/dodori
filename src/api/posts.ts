@@ -147,7 +147,7 @@ export function useCreatePost() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['posts'] });
-      qc.invalidateQueries({ queryKey: ['photoQuota'] });
+      qc.invalidateQueries({ queryKey: ['storageQuota'] });
     },
   });
 }
@@ -166,7 +166,7 @@ export function useDeletePost() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['posts'] });
-      qc.invalidateQueries({ queryKey: ['photoQuota'] });
+      qc.invalidateQueries({ queryKey: ['storageQuota'] });
     },
   });
 }

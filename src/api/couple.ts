@@ -198,36 +198,43 @@ export function useCompleteSetup() {
   });
 }
 
-export interface PhotoQuota {
-  used: number;
-  quota: number;
-  /** 한도 도달 — 새 업로드만 막힌다. 이미 올린 사진은 그대로 보인다 */
+export interface StorageQuota {
+  usedBytes: number;
+  quotaBytes: number;
+  /** 남은 공간 — 업로드 경고가 "남은 공간의 몇 %"를 계산할 때 쓴다 */
+  remainingBytes: number;
+  /** 한도 도달 — 새 업로드만 막힌다. 이미 올린 것은 그대로 보인다 */
   full: boolean;
 }
 
 /**
- * 커플의 사진 사용량 — 업로드 화면에서 잔량을 보여주고 한도에서 막는다.
+ * 커플의 보관 공간 사용량 — 업로드 화면에서 잔량을 보여주고 한도에서 막는다.
  * 진짜 강제는 서버(photos insert 트리거)가 하고, 여기는 미리 알려주는 역할이다.
+ *
+ * 장수가 아니라 바이트로 센다 — 15초 영상 하나가 사진 27장이라 개수로는 셀 수 없다.
+ * 합계는 RPC로 받는다(전 행을 내려받아 클라이언트에서 더하지 않는다).
  */
-export function usePhotoQuota() {
+export function useStorageQuota() {
   const couple = useMyCouple();
   const coupleId = couple.data?.coupleId;
   return useQuery({
     enabled: !!coupleId,
-    queryKey: ['photoQuota', coupleId],
-    queryFn: async (): Promise<PhotoQuota> => {
-      const [row, count] = await Promise.all([
-        supabase.from('couples').select('photo_quota').eq('id', coupleId!).single(),
-        supabase
-          .from('photos')
-          .select('id', { count: 'exact', head: true })
-          .eq('couple_id', coupleId!),
+    queryKey: ['storageQuota', coupleId],
+    queryFn: async (): Promise<StorageQuota> => {
+      const [row, used] = await Promise.all([
+        supabase.from('couples').select('storage_quota_bytes').eq('id', coupleId!).single(),
+        supabase.rpc('storage_used_bytes'),
       ]);
       if (row.error) throw row.error;
-      if (count.error) throw count.error;
-      const used = count.count ?? 0;
-      const quota = row.data.photo_quota;
-      return { used, quota, full: used >= quota };
+      if (used.error) throw used.error;
+      const usedBytes = used.data ?? 0;
+      const quotaBytes = row.data.storage_quota_bytes;
+      return {
+        usedBytes,
+        quotaBytes,
+        remainingBytes: Math.max(0, quotaBytes - usedBytes),
+        full: usedBytes >= quotaBytes,
+      };
     },
   });
 }

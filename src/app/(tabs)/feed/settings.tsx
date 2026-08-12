@@ -1,14 +1,15 @@
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { color, tintBg, typeface } from '@/theme/tokens';
-import { useCoupleProfiles } from '@/api/couple';
+import { useCoupleProfiles, useStorageQuota } from '@/api/couple';
 import { useAnniversaries } from '@/api/anniversaries';
+import { formatBytes } from '@/lib/media';
 import { signOut } from '@/api/auth';
 import { TopBar } from '@/components/TopBar';
 import { Meta } from '@/components/Meta';
 import { Divider } from '@/components/Divider';
 import { Avatar } from '@/components/Avatar';
-import { StarGlyph, StoryGlyph, LogoutGlyph, ChevronGlyph } from '@/components/glyphs';
+import { StarGlyph, StoryGlyph, StackGlyph, LogoutGlyph, ChevronGlyph } from '@/components/glyphs';
 import { confirmDialog } from '@/components/dialog';
 
 /** 스튜디오 관리 — 기념일·연결·로그아웃 (계정 화면에서 분리) */
@@ -16,6 +17,7 @@ export default function StudioSettings() {
   const router = useRouter();
   const profiles = useCoupleProfiles();
   const annivs = useAnniversaries();
+  const quota = useStorageQuota();
 
   const me = profiles.data?.me;
   const partner = profiles.data?.partner;
@@ -69,6 +71,17 @@ export default function StudioSettings() {
           label="기념일 관리"
           sub={`자동 ${(annivs.data?.length ?? 0) - customCount} · 커스텀 ${customCount}`}
           onPress={() => router.push('/feed/anniversaries')}
+        />
+        <Divider />
+        {/* 사진만 쓰던 때는 한도가 멀었지만 영상이 들어오면서 잔량을 확인할 곳이 필요해졌다 */}
+        <LinkRow
+          icon={<StackGlyph size={17} />}
+          label="보관 공간"
+          sub={
+            quota.data
+              ? `${formatBytes(quota.data.usedBytes)} / ${formatBytes(quota.data.quotaBytes)}`
+              : undefined
+          }
         />
         <Divider />
         <LinkRow

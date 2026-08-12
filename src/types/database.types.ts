@@ -118,25 +118,25 @@ export type Database = {
           created_at: string
           id: string
           invite_code: string | null
-          photo_quota: number
           plan: string
           started_at: string | null
+          storage_quota_bytes: number
         }
         Insert: {
           created_at?: string
           id?: string
           invite_code?: string | null
-          photo_quota?: number
           plan?: string
           started_at?: string | null
+          storage_quota_bytes?: number
         }
         Update: {
           created_at?: string
           id?: string
           invite_code?: string | null
-          photo_quota?: number
           plan?: string
           started_at?: string | null
+          storage_quota_bytes?: number
         }
         Relationships: []
       }
@@ -328,11 +328,14 @@ export type Database = {
       }
       photos: {
         Row: {
+          bytes: number
           couple_id: string
           cover_only: boolean
           created_at: string
+          duration_ms: number | null
           height: number | null
           id: string
+          media: string
           post_id: string | null
           renditions: boolean
           storage_path: string
@@ -343,11 +346,14 @@ export type Database = {
           width: number | null
         }
         Insert: {
+          bytes?: number
           couple_id: string
           cover_only?: boolean
           created_at?: string
+          duration_ms?: number | null
           height?: number | null
           id?: string
+          media?: string
           post_id?: string | null
           renditions?: boolean
           storage_path: string
@@ -358,11 +364,14 @@ export type Database = {
           width?: number | null
         }
         Update: {
+          bytes?: number
           couple_id?: string
           cover_only?: boolean
           created_at?: string
+          duration_ms?: number | null
           height?: number | null
           id?: string
+          media?: string
           post_id?: string | null
           renditions?: boolean
           storage_path?: string
@@ -1077,6 +1086,7 @@ export type Database = {
       invoke_sync_holidays: { Args: never; Returns: undefined }
       my_couple_id: { Args: never; Returns: string }
       partner_voted: { Args: { p_topic_id: string }; Returns: boolean }
+      storage_used_bytes: { Args: never; Returns: number }
       submit_game_round: {
         Args: {
           p_date: string

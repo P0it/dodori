@@ -340,7 +340,7 @@ export function useUpdateTrack(id: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['track', id] });
       qc.invalidateQueries({ queryKey: ['tracks'] });
-      qc.invalidateQueries({ queryKey: ['photoQuota'] });
+      qc.invalidateQueries({ queryKey: ['storageQuota'] });
     },
   });
 }
@@ -371,7 +371,7 @@ export function useSetTrackCover(trackId: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['track', trackId] });
       qc.invalidateQueries({ queryKey: ['tracks'] });
-      qc.invalidateQueries({ queryKey: ['photoQuota'] });
+      qc.invalidateQueries({ queryKey: ['storageQuota'] });
     },
   });
 }
