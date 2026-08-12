@@ -139,6 +139,30 @@ export function PlusGlyph({ size = 24, color: fg = color.white }: GlyphProps) {
   );
 }
 
+/** 글자 얹기 (T) — 스토리 편집의 텍스트 도구 */
+export function TextToolGlyph({ size = 20, color: fg = color.white }: GlyphProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d="M5 6h14M12 6v12" stroke={fg} strokeWidth={2} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+/** 올리기 (↑) */
+export function ArrowUpGlyph({ size = 22, color: fg = color.onPrimary }: GlyphProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M12 19.5V5M5.5 11.5 12 5l6.5 6.5"
+        stroke={fg}
+        strokeWidth={2.2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
 /** 담김 표시 (✓) — 굵고 둥근 체크 */
 export function CheckGlyph({ size = 16, color: fg = color.bg }: GlyphProps) {
   return (

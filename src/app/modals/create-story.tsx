@@ -43,19 +43,22 @@ import {
 import { useCreateStory } from '@/api/stories';
 import { useTodayTrack } from '@/api/tracks';
 import { alertDialog } from '@/components/dialog';
+import { ArrowUpGlyph, CloseGlyph, TextToolGlyph } from '@/components/glyphs';
 
 const IDENTITY: CanvasTransform = { scale: 1, tx: 0, ty: 0 };
 
 /** 굽는 방법만 플랫폼마다 다르다 — 네이티브는 화면 캡처, 웹은 canvas 합성 */
 const IS_WEB = Platform.OS === 'web';
 
-/** 사진 위에 얹는 도구 버튼 — 글리프가 아니라 라벨이라 뭘 하는지 읽힌다 */
-function ToolPill({
-  label,
+/** 상단 도구 버튼 한 칸 — 전부 같은 원이라 한 줄에 나란히 맞는다 */
+const TOOL_SIZE = 38;
+
+function ToolButton({
+  children,
   onPress,
   disabled,
 }: {
-  label: string;
+  children: React.ReactNode;
   onPress: () => void;
   disabled?: boolean;
 }) {
@@ -65,16 +68,16 @@ function ToolPill({
       disabled={disabled}
       hitSlop={8}
       style={({ pressed }) => ({
-        paddingHorizontal: 13,
-        paddingVertical: 7,
-        borderRadius: radius.pill,
+        width: TOOL_SIZE,
+        height: TOOL_SIZE,
+        borderRadius: TOOL_SIZE / 2,
+        alignItems: 'center',
+        justifyContent: 'center',
         backgroundColor: 'rgba(0,0,0,0.45)',
         opacity: disabled ? 0.4 : pressed ? 0.75 : 1,
       })}
     >
-      <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 12.5, color: color.white }}>
-        {label}
-      </Text>
+      {children}
     </Pressable>
   );
 }
@@ -121,19 +124,19 @@ export default function CreateStory() {
 
   const editing = overlays.find((o) => o.id === editingId) ?? null;
 
-  const onPick = async (first: boolean) => {
+  const onPick = async () => {
     try {
       const [picked] = await pickPhotos(1);
       if (picked) {
         setPhoto(picked);
         setTransform(IDENTITY);
-      } else if (first) {
+      } else {
         // 진입하자마자 뜬 갤러리를 그냥 닫았다 = 올릴 생각이 없다
         router.dismiss();
       }
     } catch (e) {
       alertDialog('사진 선택 실패', e instanceof Error ? e.message : String(e));
-      if (first) router.dismiss();
+      router.dismiss();
     }
   };
 
@@ -142,7 +145,7 @@ export default function CreateStory() {
   useEffect(() => {
     if (opened.current) return;
     opened.current = true;
-    onPick(true);
+    onPick();
     // 마운트 때 한 번 (onPick은 매 렌더 새 함수)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -265,9 +268,8 @@ export default function CreateStory() {
           />
 
           {/*
-            상단 — 왼쪽은 '이 사진을 떠나는' 것들(닫기·바꾸기), 오른쪽은 '얹는' 것(텍스트).
-            둘을 화면 양끝으로 갈라 놓고 각각 라벨을 붙인다 — 나란한 두 글리프는
-            어느 쪽이 뭔지 알 수 없었다.
+            상단 — 왼쪽은 나가기(×), 오른쪽은 얹기(T). 양끝에 하나씩이라 헷갈릴 짝이 없고,
+            같은 크기의 원이라 한 줄에 정확히 맞는다.
           */}
           <View
             style={{
@@ -277,20 +279,16 @@ export default function CreateStory() {
               right: 0,
               flexDirection: 'row',
               alignItems: 'center',
+              justifyContent: 'space-between',
               paddingHorizontal: space[4],
-              gap: space[3],
             }}
           >
-            <Pressable hitSlop={12} onPress={() => router.dismiss()}>
-              <Text style={{ fontFamily: typeface, fontSize: 22, color: color.white }}>×</Text>
-            </Pressable>
-            <ToolPill label="사진 바꾸기" onPress={() => onPick(false)} />
-            <View style={{ flex: 1 }} />
-            <ToolPill
-              label="텍스트"
-              onPress={addText}
-              disabled={overlays.length >= OVERLAY_MAX}
-            />
+            <ToolButton onPress={() => router.dismiss()}>
+              <CloseGlyph size={20} color={color.white} />
+            </ToolButton>
+            <ToolButton onPress={addText} disabled={overlays.length >= OVERLAY_MAX}>
+              <TextToolGlyph size={20} />
+            </ToolButton>
           </View>
 
           {/* 하단 — 앨범에 담기(좌) + 올리기(우). 사진 위에 얹힌 한 줄 */}
@@ -358,30 +356,16 @@ export default function CreateStory() {
               onPress={save}
               disabled={saving}
               style={({ pressed }) => ({
-                height: 46,
-                minWidth: 96,
-                paddingHorizontal: 24,
-                borderRadius: radius.pill,
+                width: 52,
+                height: 52,
+                borderRadius: 26,
                 backgroundColor: color.accent,
                 alignItems: 'center',
                 justifyContent: 'center',
                 opacity: pressed || saving ? 0.85 : 1,
               })}
             >
-              {saving ? (
-                <ActivityIndicator color={color.onPrimary} />
-              ) : (
-                <Text
-                  style={{
-                    fontFamily: typeface,
-                    fontWeight: '700',
-                    fontSize: 15,
-                    color: color.onPrimary,
-                  }}
-                >
-                  올리기
-                </Text>
-              )}
+              {saving ? <ActivityIndicator color={color.onPrimary} /> : <ArrowUpGlyph size={24} />}
             </Pressable>
           </View>
         </>
