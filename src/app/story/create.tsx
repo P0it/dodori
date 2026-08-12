@@ -400,6 +400,10 @@ export default function CreateStory() {
           canvasWidth={canvas.width}
           canvasHeight={canvas.height}
           boxHeight={box.height}
+          onDelete={() => {
+            setOverlays((prev) => prev.filter((o) => o.id !== editing.id));
+            setEditingId(null);
+          }}
           onDone={({ text, color: textColor, size }) => {
             // 빈 글자는 남길 이유가 없다 — 캔버스에 안 보이는 스티커가 쌓인다
             setOverlays((prev) =>

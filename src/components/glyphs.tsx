@@ -163,6 +163,27 @@ export function ArrowUpGlyph({ size = 22, color: fg = color.onPrimary }: GlyphPr
   );
 }
 
+/** 버리기 (휴지통) */
+export function TrashGlyph({ size = 20, color: fg = color.white }: GlyphProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M4.5 6.5h15M9.5 6.5V4.8c0-.7.6-1.3 1.3-1.3h2.4c.7 0 1.3.6 1.3 1.3v1.7"
+        stroke={fg}
+        strokeWidth={1.8}
+        strokeLinecap="round"
+      />
+      <Path
+        d="M6.8 6.5 7.7 19a1.5 1.5 0 0 0 1.5 1.4h5.6a1.5 1.5 0 0 0 1.5-1.4l.9-12.5"
+        stroke={fg}
+        strokeWidth={1.8}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
 /** 담김 표시 (✓) — 굵고 둥근 체크 */
 export function CheckGlyph({ size = 16, color: fg = color.bg }: GlyphProps) {
   return (

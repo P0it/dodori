@@ -6,6 +6,7 @@ import {
   StyleSheet,
   TextInput,
   View,
+  type KeyboardEvent,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -17,6 +18,7 @@ import {
   type StoryTextColorKey,
 } from '@/theme/tokens';
 import { OVERLAY_WIDTH_RATIO } from '@/lib/stories';
+import { TrashGlyph } from '@/components/glyphs';
 
 export interface ComposedText {
   text: string;
@@ -32,6 +34,8 @@ type Props = {
   canvasHeight: number;
   /** 화면 상자 높이 — 카드보다 길 수 있다. 색 고르기 줄은 이 바닥을 기준으로 앉는다 */
   boxHeight: number;
+  /** 버리기 — 이 글자를 아예 없앤다 */
+  onDelete: () => void;
   /** 완료 — 내용이 비어 있으면 부르는 쪽이 오버레이를 지운다 */
   onDone: (value: ComposedText) => void;
 };
@@ -65,11 +69,15 @@ export function StoryTextInput({
   canvasWidth,
   canvasHeight,
   boxHeight,
+  onDelete,
   onDone,
 }: Props) {
   const insets = useSafeAreaInsets();
   const [text, setText] = useState(initial.text);
   const [textColor, setTextColor] = useState<StoryTextColorKey>(initial.color);
+  const [selection, setSelection] = useState<{ start: number; end: number } | undefined>(() =>
+    initial.text ? { start: initial.text.length, end: initial.text.length } : undefined,
+  );
 
   const fontSize = Math.max(12, canvasWidth * initial.size);
   const lineHeight = fontSize * 1.25;
@@ -82,20 +90,25 @@ export function StoryTextInput({
   const [contentHeight, setContentHeight] = useState(lineHeight);
   const height = Math.min(Math.max(contentHeight, lineHeight), canvasHeight * 0.6);
 
-  // 색 고르기 줄만 키보드 위로 올린다 (기준은 줄어들지 않는 캔버스라 높이를 그대로 더한다)
-  const [keyboard, setKeyboard] = useState(0);
+  /**
+   * 색 고르기 줄만 키보드 위로 올린다 (기준은 줄어들지 않는 상자라 높이를 그대로 더한다).
+   *
+   * `will`과 `did`를 **둘 다** 듣는다 — autoFocus가 부모의 effect보다 먼저 돌아서
+   * 이 화면은 `keyboardWillShow`를 놓치는 자리에 있다 (자식의 mount가 먼저다).
+   * 그러면 높이가 0으로 남아 색 줄이 키보드 뒤에 깔린 채 나오지 않는다.
+   * 이미 올라와 있는 키보드는 `Keyboard.metrics()`로 처음부터 잰다
+   */
+  const [keyboard, setKeyboard] = useState(() => Keyboard.metrics()?.height ?? 0);
   useEffect(() => {
-    const ios = Platform.OS === 'ios';
-    const show = Keyboard.addListener(ios ? 'keyboardWillShow' : 'keyboardDidShow', (e) =>
-      setKeyboard(e.endCoordinates.height),
-    );
-    const hide = Keyboard.addListener(ios ? 'keyboardWillHide' : 'keyboardDidHide', () =>
-      setKeyboard(0),
-    );
-    return () => {
-      show.remove();
-      hide.remove();
-    };
+    const up = (e: KeyboardEvent) => setKeyboard(e.endCoordinates.height);
+    const down = () => setKeyboard(0);
+    const subs = [
+      Keyboard.addListener('keyboardWillShow', up),
+      Keyboard.addListener('keyboardDidShow', up),
+      Keyboard.addListener('keyboardWillHide', down),
+      Keyboard.addListener('keyboardDidHide', down),
+    ];
+    return () => subs.forEach((s) => s.remove());
   }, []);
 
   const done = () => onDone({ text: text.trim(), color: textColor, size: initial.size });
@@ -122,6 +135,13 @@ export function StoryTextInput({
         }}
       />
 
+      {/*
+        글자 **밖**을 한 번 탭하면 그게 완료다. 입력 칸보다 먼저 그려서 아래에 깔린다 —
+        위에 덮으면 글자를 눌러 커서를 옮기는 것까지 완료로 먹혀 버린다.
+        색 고르기 줄은 뒤에 그려서 이 겹 위에 온다
+      */}
+      <Pressable onPress={done} style={StyleSheet.absoluteFill} />
+
       {/* 글자는 카드 한가운데에 — 나가면 놓일 그 자리다 */}
       <View
         style={{ position: 'absolute', top: 0, left: 0, right: 0, height: canvasHeight, justifyContent: 'center' }}
@@ -131,6 +151,13 @@ export function StoryTextInput({
           value={text}
           onChangeText={setText}
           onContentSizeChange={(e) => setContentHeight(e.nativeEvent.contentSize.height)}
+          /*
+            고치러 들어왔으면 커서는 글자 끝이다 — 맨 앞에 서 있으면 뒤에 이어 쓰려고
+            글자 뒤를 탭하게 되고, 그건 편집을 나가는 손짓이다.
+            첫 선택 뒤에는 손을 뗀다(undefined) — 계속 붙들고 있으면 한글 조합이 끊긴다
+          */
+          selection={selection}
+          onSelectionChange={() => setSelection(undefined)}
           autoFocus
           multiline
           placeholder="사진 위에 남길 말"
@@ -155,12 +182,25 @@ export function StoryTextInput({
         />
       </View>
 
-      {/*
-        입력 칸 위에 덮은 투명한 한 겹 — 한 번 탭하면 그게 완료다.
-        커서를 탭으로 옮기지는 못하지만 인스타도 같다.
-        색 고르기 줄은 이 뒤에 그려서 여전히 눌린다
-      */}
-      <Pressable onPress={done} style={StyleSheet.absoluteFill} />
+      {/* 버리기 — 글자를 다 지우고 나가는 길의 지름길. 오른쪽 위, 다른 도구 버튼과 같은 원 */}
+      <Pressable
+        onPress={onDelete}
+        hitSlop={8}
+        style={({ pressed }) => ({
+          position: 'absolute',
+          top: space[2],
+          right: space[4],
+          width: 38,
+          height: 38,
+          borderRadius: 19,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: 'rgba(0,0,0,0.45)',
+          opacity: pressed ? 0.75 : 1,
+        })}
+      >
+        <TrashGlyph size={20} color={color.white} />
+      </Pressable>
 
       {/* 색 — 키보드 바로 위 */}
       <View
