@@ -10,6 +10,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { Image } from 'expo-image';
+import { VideoView, useVideoPlayer } from 'expo-video';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { runOnJS } from 'react-native-reanimated';
@@ -133,6 +134,23 @@ export default function StoryViewer() {
 
   const current = list[index];
 
+  const videoUrl = current?.photo?.media === 'video' ? current.photo.videoUrl : null;
+  /**
+   * 칸이 머무는 시간 — 사진은 고정, 영상은 제 길이만큼.
+   * 진행바의 단일 진실은 여전히 아래 인터벌이고 플레이어가 거기에 따라간다
+   * (15초 안에서 생기는 드리프트는 눈에 띄지 않는다).
+   */
+  const stepMs = current?.photo?.durationMs ?? STEP_MS;
+
+  const videoPlayer = useVideoPlayer(videoUrl ? { uri: videoUrl, useCaching: true } : null, (p) => {
+    p.play();
+  });
+  useEffect(() => {
+    if (!videoUrl) return;
+    if (paused) videoPlayer.pause();
+    else videoPlayer.play();
+  }, [paused, videoUrl, videoPlayer]);
+
   // 다음 칸 사진을 미리 받아 둔다 — 넘긴 뒤에 받기 시작하면 그 몇 백 ms가 빈 화면이 된다
   useEffect(() => {
     const next = list[index + 1]?.photo?.thumbUrl;
@@ -152,7 +170,7 @@ export default function StoryViewer() {
     const from = elapsed.current;
     const timer = setInterval(() => {
       elapsed.current = from + (Date.now() - resumedAt);
-      const p = elapsed.current / STEP_MS;
+      const p = elapsed.current / stepMs;
       if (p >= 1) {
         clearInterval(timer);
         if (index + 1 < list.length) setIndex(index + 1);
@@ -162,7 +180,7 @@ export default function StoryViewer() {
       }
     }, TICK_MS);
     return () => clearInterval(timer);
-  }, [current?.id, index, list.length, paused, router]);
+  }, [current?.id, index, list.length, paused, router, stepMs]);
 
   // 상대 스토리를 열면 본 시각 기록 (이미 있으면 서버에서 걸러진다)
   useEffect(() => {
@@ -182,6 +200,14 @@ export default function StoryViewer() {
       </View>
     );
   }
+
+  /** 화면 안에서 사진(=포스터)이 실제로 차지하는 사각형 — 영상과 텍스트가 같은 값을 봐야 겹친다 */
+  const rect = containedRect(
+    current.photo?.width ?? null,
+    current.photo?.height ?? null,
+    frame.width,
+    frame.height,
+  );
 
   // 꾹 누르는 동안은 사진만 남긴다 — 가린 것 없이 보려고 누르는 것이므로
   const hold = (on: boolean) => setPausedBy((p) => ({ ...p, hold: on }));
@@ -231,26 +257,35 @@ export default function StoryViewer() {
           style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
           onLayout={(e) => setFrame(e.nativeEvent.layout)}
         >
-          {current.photo && (
-            // key가 없으면 컴포넌트가 재사용돼 새 사진을 받는 동안 '이전 스토리 사진'이 그대로 남는다
-            <Image
-              key={current.photo.id}
-              source={photoSource(current.photo.thumbUrl)}
-              style={{ width: '100%', height: '100%' }}
-              contentFit="contain"
-              transition={120}
-            />
-          )}
+          {current.photo &&
+            (videoUrl ? (
+              // 포스터가 9:16으로 잘려 저장돼 있어 이 rect가 곧 편집 화면의 카드다 —
+              // 그 안을 cover로 채우면 올릴 때 본 구도와 정확히 겹친다
+              <VideoView
+                key={current.photo.id}
+                player={videoPlayer}
+                style={{
+                  position: 'absolute',
+                  left: rect.x,
+                  top: rect.y,
+                  width: rect.width,
+                  height: rect.height,
+                }}
+                contentFit="cover"
+                nativeControls={false}
+              />
+            ) : (
+              // key가 없으면 컴포넌트가 재사용돼 새 사진을 받는 동안 '이전 스토리 사진'이 그대로 남는다
+              <Image
+                key={current.photo.id}
+                source={photoSource(current.photo.thumbUrl)}
+                style={{ width: '100%', height: '100%' }}
+                contentFit="contain"
+                transition={120}
+              />
+            ))}
           {/* 텍스트 스티커 — 사진에 구워 넣지 않고 올릴 때 잡은 자리 그대로 얹는다 */}
-          <StoryTextLayer
-            overlays={current.overlays}
-            rect={containedRect(
-              current.photo?.width ?? null,
-              current.photo?.height ?? null,
-              frame.width,
-              frame.height,
-            )}
-          />
+          <StoryTextLayer overlays={current.overlays} rect={rect} />
         </View>
 
         {/* 좌우 탭 이동 + 꾹 눌러 멈추기 — 전면을 덮고, 위아래 UI가 그 위에 얹힌다 */}

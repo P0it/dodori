@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from './supabase';
 import { useMyCouple } from './couple';
-import { signedThumbUrls, uploadPhotos, type PickedPhoto } from './photos';
+import { signedSourceUrls, signedThumbUrls, uploadPhotos, type PickedPhoto } from './photos';
 import { storagePathsFor } from '@/lib/media';
 import { parseOverlays, type TextOverlay } from '@/lib/stories';
 import type { Json } from '@/types/database.types';
@@ -17,6 +17,11 @@ export interface StoryPhoto {
   gridThumbUrl: string;
   width: number | null;
   height: number | null;
+  media: 'photo' | 'video';
+  /** 영상 본체(mp4)의 재생용 서명 URL — 사진이면 null */
+  videoUrl: string | null;
+  /** 영상 길이 — 뷰어 진행바가 재생 전에 칸 길이를 알아야 튀지 않는다 */
+  durationMs: number | null;
 }
 
 export interface StoryComment {
@@ -49,7 +54,7 @@ export interface Story {
 
 const SELECT = `id, author_id, caption, created_at, seen_at, track_id, overlays,
    tracks(title),
-   photos!photos_story_id_fkey(id, storage_path, renditions, width, height, created_at),
+   photos!photos_story_id_fkey(id, storage_path, renditions, width, height, media, duration_ms, created_at),
    story_reactions(emoji, user_id),
    story_comments(id, author_id, body, created_at)`;
 
@@ -68,6 +73,8 @@ type StoryRow = {
     renditions: boolean;
     width: number | null;
     height: number | null;
+    media: 'photo' | 'video';
+    duration_ms: number | null;
     created_at: string;
   }[];
   story_reactions: { emoji: string; user_id: string }[];
@@ -79,6 +86,7 @@ function toStory(
   row: StoryRow,
   feedUrls: Map<string, string>,
   gridUrls: Map<string, string>,
+  videoUrls: Map<string, string>,
 ): Story {
   const byEmoji = new Map<string, string[]>();
   for (const r of row.story_reactions ?? []) {
@@ -103,6 +111,9 @@ function toStory(
           gridThumbUrl: gridUrls.get(p.storage_path) ?? '',
           width: p.width,
           height: p.height,
+          media: p.media,
+          videoUrl: p.media === 'video' ? (videoUrls.get(p.storage_path) ?? null) : null,
+          durationMs: p.duration_ms,
         }
       : null,
     reactions: [...byEmoji.entries()].map(([emoji, userIds]) => ({ emoji, userIds })),
@@ -137,11 +148,16 @@ export function useStories() {
       const all = rows.flatMap((r) =>
         (r.photos ?? []).map((ph) => ({ storagePath: ph.storage_path, renditions: ph.renditions })),
       );
-      const [feedUrls, gridUrls] = await Promise.all([
+      // 영상이 하나도 없으면 빈 배열이라 왕복이 생기지 않는다
+      const videoPaths = rows.flatMap((r) =>
+        (r.photos ?? []).filter((ph) => ph.media === 'video').map((ph) => ph.storage_path),
+      );
+      const [feedUrls, gridUrls, videoUrls] = await Promise.all([
         signedThumbUrls(all, 'feed'),
         signedThumbUrls(all, 'grid'),
+        signedSourceUrls(videoPaths),
       ]);
-      return rows.map((r) => toStory(r, feedUrls, gridUrls));
+      return rows.map((r) => toStory(r, feedUrls, gridUrls, videoUrls));
     },
   });
 }

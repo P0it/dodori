@@ -34,13 +34,16 @@ import {
 import { StoryCanvas, type CanvasTransform } from '@/components/story/StoryCanvas';
 import { StoryTextEditor } from '@/components/story/StoryTextEditor';
 import { StoryTextInput } from '@/components/story/StoryTextInput';
+import { VideoView, useVideoPlayer } from 'expo-video';
 import {
   composeStoryCanvas,
+  cropToCanvas,
   pickPhotos,
   STORY_BACKDROP,
   type PickedPhoto,
 } from '@/api/photos';
 import { useCreateStory } from '@/api/stories';
+import { useStorageQuota } from '@/api/couple';
 import { useTodayTrack } from '@/api/tracks';
 import { alertDialog } from '@/components/dialog';
 import { ArrowUpGlyph, CloseGlyph, TextToolGlyph } from '@/components/glyphs';
@@ -111,6 +114,16 @@ export default function CreateStory() {
 
   const createStory = useCreateStory();
   const todayTrack = useTodayTrack();
+  const quota = useStorageQuota();
+
+  /**
+   * 영상 스토리의 미리보기 — 편집(핀치·팬)이 없으므로 9:16 칸에 cover로 꽉 채운다.
+   * 여백이 없으니 사진 쪽의 흐린 배경·스크림도 그리지 않는다.
+   */
+  const videoPlayer = useVideoPlayer(photo?.video ? { uri: photo.uri } : null, (p) => {
+    p.loop = true;
+    p.play();
+  });
   /** 굽기의 대상 — 사진과 흐린 배경까지, 텍스트는 뺀 레이어 */
   const photoLayer = useRef<View>(null);
   // 캔버스(사진)와 텍스트 레이어는 형제 뷰라 RNGH가 알아서 우선순위를 정해 주지 않는다.
@@ -125,7 +138,7 @@ export default function CreateStory() {
 
   const onPick = async () => {
     try {
-      const [picked] = await pickPhotos(1);
+      const [picked] = await pickPhotos(1, { videos: true });
       if (picked) {
         setPhoto(picked);
         setTransform(IDENTITY);
@@ -134,20 +147,27 @@ export default function CreateStory() {
         router.dismiss();
       }
     } catch (e) {
-      alertDialog('사진 선택 실패', e instanceof Error ? e.message : String(e));
+      alertDialog('선택 실패', e instanceof Error ? e.message : String(e));
       router.dismiss();
     }
   };
 
-  // 들어오면 곧바로 갤러리 — 사진을 고르는 것 말고 할 일이 없는 화면을 한 장 끼우지 않는다
+  // 들어오면 곧바로 갤러리 — 사진을 고르는 것 말고 할 일이 없는 화면을 한 장 끼우지 않는다.
+  // 다만 잔량을 먼저 본다: 다 찬 채로 갤러리를 열면 고르고 나서야 실패한다.
   const opened = useRef(false);
   useEffect(() => {
-    if (opened.current) return;
+    // enabled=false(연결 전)면 isLoading이 false라 여기서 멎지 않는다
+    if (opened.current || quota.isLoading) return;
     opened.current = true;
+    if (quota.data?.full) {
+      alertDialog('공간이 가득 찼어요', '곧 더 많은 공간을 제공할 예정이에요');
+      router.dismiss();
+      return;
+    }
     onPick();
-    // 마운트 때 한 번 (onPick은 매 렌더 새 함수)
+    // 잔량이 정해진 뒤 한 번 (onPick은 매 렌더 새 함수)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [quota.isLoading, quota.data?.full]);
 
   /*
     웹 전용 — 키보드가 떠도 화면이 밀려 올라가지 않게.
@@ -216,6 +236,17 @@ export default function CreateStory() {
    * (`captureRef`가 네이티브 전용이라). 흐린 배경 값은 양쪽이 `STORY_BACKDROP` 하나를 본다.
    */
   const bakePhotoLayer = async (source: PickedPhoto): Promise<PickedPhoto> => {
+    // 영상은 구울 수 없다 — 포스터만 9:16으로 잘라 둔다.
+    // 그러면 저장된 width/height가 9:16이 되고, 뷰어의 containedRect()가 돌려주는 사각형에
+    // cover로 영상을 그렸을 때 편집 화면·포스터·재생 구도가 정확히 겹친다
+    // (텍스트 오버레이의 0~1 좌표가 그대로 맞는 이유이기도 하다).
+    if (source.video) {
+      return cropToCanvas(source, {
+        ...IDENTITY,
+        canvasWidth: canvas.width,
+        canvasHeight: canvas.height,
+      });
+    }
     if (IS_WEB) {
       return composeStoryCanvas(source, {
         ...transform,
@@ -269,26 +300,38 @@ export default function CreateStory() {
             collapsable={false}
             style={{ width: canvas.width, height: canvas.height, backgroundColor: '#000' }}
           >
-            <Image
-              source={{ uri: photo.uri }}
-              style={StyleSheet.absoluteFill}
-              contentFit="cover"
-              blurRadius={STORY_BACKDROP.blurRadius}
-            />
-            {/* 흐린 배경이 사진보다 튀지 않게 한 겹 눌러 준다 */}
-            <View
-              style={[StyleSheet.absoluteFill, { backgroundColor: STORY_BACKDROP.scrim }]}
-            />
-            <StoryCanvas
-              uri={photo.uri}
-              photoWidth={photo.width}
-              photoHeight={photo.height}
-              width={canvas.width}
-              height={canvas.height}
-              minScale={CANVAS_ZOOM_MIN}
-              onChange={setTransform}
-              gestureRefs={canvasGestures}
-            />
+            {photo.video ? (
+              // 영상은 크롭·줌이 없다(결정 5) — cover로 꽉 채우므로 여백도 흐린 배경도 없다
+              <VideoView
+                player={videoPlayer}
+                style={StyleSheet.absoluteFill}
+                contentFit="cover"
+                nativeControls={false}
+              />
+            ) : (
+              <>
+                <Image
+                  source={{ uri: photo.uri }}
+                  style={StyleSheet.absoluteFill}
+                  contentFit="cover"
+                  blurRadius={STORY_BACKDROP.blurRadius}
+                />
+                {/* 흐린 배경이 사진보다 튀지 않게 한 겹 눌러 준다 */}
+                <View
+                  style={[StyleSheet.absoluteFill, { backgroundColor: STORY_BACKDROP.scrim }]}
+                />
+                <StoryCanvas
+                  uri={photo.uri}
+                  photoWidth={photo.width}
+                  photoHeight={photo.height}
+                  width={canvas.width}
+                  height={canvas.height}
+                  minScale={CANVAS_ZOOM_MIN}
+                  onChange={setTransform}
+                  gestureRefs={canvasGestures}
+                />
+              </>
+            )}
           </View>
           {/* 편집 중인 글자는 입력 쪽에 떠 있다 — 캔버스에 두 번 그리지 않는다 */}
           <StoryTextEditor
