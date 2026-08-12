@@ -98,8 +98,12 @@ UI의 "가보고 싶은 곳" = 코드의 `playlists`(테이블·훅·라우트) 
 
 - `npm test` — lib 단위 테스트 (date/D-day/기념일 — 유일한 테스트 대상)
 - `npm run typecheck` — tsc strict
-- `npx supabase start` / `db reset` — 로컬 스택 (Docker 필요)
-- `npx supabase gen types typescript --local > src/types/database.types.ts` — 스키마 변경 후 타입 재생성
+- **원격 Supabase에 바로 붙어서 작업한다 — 로컬 스택(`npx supabase start`)은 쓰지 않는다.**
+  `.env`의 `EXPO_PUBLIC_SUPABASE_URL`은 원격(`https://iyqttrufrjeytntinsrb.supabase.co`),
+  CLI는 같은 프로젝트에 link돼 있다. Docker Desktop이 부팅과 함께 뜨면 옛 `supabase_*_dodori`
+  컨테이너가 restart 정책으로 되살아나 WSL VM이 7GB를 먹으니, 보이면 `npx supabase stop`으로 내린다
+- `npx supabase db push` — 마이그레이션을 원격에 적용 (원격은 하나뿐이라 한 번에 한 세션만)
+- `npx supabase gen types typescript --linked > src/types/database.types.ts` — 스키마 변경 후 타입 재생성
 - 카카오 로그인은 Expo Go 불가 — dev client: `npx expo run:android|ios` (KAKAO_NATIVE_APP_KEY 필요, `.env`)
 
 ## iOS 베타 (TestFlight) — 빌드는 맥미니 M4에서 로컬로
@@ -110,8 +114,8 @@ Windows 작업 트리에서는 iOS 빌드가 불가능하다. 맥미니에 같�
 - 일상 개발(맥): `npx expo run:ios --device` — dev client가 폰에 깔리고 이후 수정은 새로고침으로 반영
 - 릴리스 빌드(맥): `npx eas-cli build -p ios --profile production --local` → `npx eas-cli submit -p ios`
   `--local`은 클라우드 대기열 없이 내 맥에서 돌리되 서명·환경변수는 EAS 설정을 그대로 쓴다
-- 맥의 `.env`는 **원격 Supabase 값**이어야 한다 — Windows 쪽 `.env`는 로컬 스택(127.0.0.1)이라 그대로 쓰면
-  폰에서 아무것도 안 보인다. `KAKAO_NATIVE_APP_KEY`는 EAS 빌드용으로도 `eas env:create`에 등록해 둘 것
+- 맥의 `.env`도 Windows와 같은 **원격 Supabase 값**을 쓴다 (양쪽 다 원격 직결).
+  `KAKAO_NATIVE_APP_KEY`는 EAS 빌드용으로도 `eas env:create`에 등록해 둘 것
 - 전제: Apple Developer Program(연 $99), 카카오 콘솔에 iOS 플랫폼·번들 ID `com.hyunwoo.dodori` 등록
 
 ## 구조 메모
