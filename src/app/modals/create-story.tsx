@@ -163,11 +163,6 @@ export default function CreateStory() {
     setEditingId(fresh.id);
   };
 
-  const removeEditing = () => {
-    setOverlays((prev) => prev.filter((o) => o.id !== editingId));
-    setEditingId(null);
-  };
-
   /**
    * 편집 화면의 사진 레이어를 그대로 한 장으로 굽는다 — 흐린 배경과 여백까지 픽셀로 남는다.
    * 이래야 뷰어·피드·보관함이 구도를 몰라도 되고, 텍스트의 0~1 좌표가 곧 이미지 좌표가 된다.
@@ -376,7 +371,7 @@ export default function CreateStory() {
           key={editing.id}
           initial={{ text: editing.text, color: editing.color, size: editing.size }}
           canvasWidth={canvas.width}
-          onDelete={removeEditing}
+          canvasHeight={canvas.height}
           onDone={({ text, color: textColor, size }) => {
             // 빈 글자는 남길 이유가 없다 — 캔버스에 안 보이는 스티커가 쌓인다
             setOverlays((prev) =>

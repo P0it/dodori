@@ -1,14 +1,13 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
-  KeyboardAvoidingView,
+  Keyboard,
   Platform,
   Pressable,
   StyleSheet,
-  Text,
   TextInput,
   View,
 } from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   color,
   space,
@@ -17,7 +16,6 @@ import {
   typeface,
   type StoryTextColorKey,
 } from '@/theme/tokens';
-import { OVERLAY_SIZE_MAX, OVERLAY_SIZE_MIN } from '@/lib/stories';
 
 export interface ComposedText {
   text: string;
@@ -29,15 +27,11 @@ type Props = {
   initial: ComposedText;
   /** 캔버스 너비 — 글자 크기가 캔버스 대비 비율이라 실제 크기를 여기서 낸다 */
   canvasWidth: number;
-  onDelete: () => void;
+  /** 캔버스 높이 — 글자가 세로로 넘치기 시작하는 지점을 여기서 낸다 */
+  canvasHeight: number;
   /** 완료 — 내용이 비어 있으면 부르는 쪽이 오버레이를 지운다 */
   onDone: (value: ComposedText) => void;
 };
-
-const TRACK_HEIGHT = 190;
-
-/** 상단 삭제·완료 줄이 먹는 높이 — 글자가 그 아래에서 시작하게 */
-const TOP_BAR_HEIGHT = 52;
 
 /** 입력 중 사진을 한 겹 누르는 정도 — 사진이 뭔지 알아볼 만큼만 */
 const EDIT_DIM = 'rgba(0,0,0,0.35)';
@@ -48,63 +42,77 @@ const EDIT_DIM = 'rgba(0,0,0,0.35)';
  * 뒤에 깔린 편집 캔버스(고른 비율 그대로의 사진)를 한 겹 어둡게만 누른다.
  * 흐린 사본을 덮어씌우지 않는 게 요점이다 — cover로 그리는 순간 고른 비율이 무시되고
  * 사진이 확대돼 버린다.
- * 상자를 그리지 않으니 몇 줄이 되든 화면이 곧 입력 칸이고, 길어지면 세로로 스크롤된다.
- * 화면을 한 번 더 탭하면 편집이 끝난다 — 상단의 완료·삭제와 같은 길이다.
+ *
+ * **치는 자리 = 놓일 자리다.** 입력 칸은 키보드를 피해 위로 밀려나지 않고 화면
+ * 한가운데에 못 박혀 있다 — 새 글자가 캔버스 정중앙(y=0.5)에 놓이니, 위에서 치다가
+ * 완료하면 가운데로 뛰어내리던 어긋남이 없다. 키보드를 피하는 건 색 고르기 줄뿐이다.
+ *
+ * 나가는 길은 **배경 탭 하나**다 (= 완료). 글자를 다 지우고 나가면 부르는 쪽이 지운다 —
+ * 그래서 완료·삭제 버튼이 따로 없다. 위치·크기·기울기는 나간 뒤 손가락으로 잡는다.
  */
-export function StoryTextInput({ initial, canvasWidth, onDelete, onDone }: Props) {
+export function StoryTextInput({ initial, canvasWidth, canvasHeight, onDone }: Props) {
+  const insets = useSafeAreaInsets();
   const [text, setText] = useState(initial.text);
   const [textColor, setTextColor] = useState<StoryTextColorKey>(initial.color);
-  const [size, setSize] = useState(initial.size);
 
-  const fontSize = Math.max(12, canvasWidth * size);
-  const ratio = (size - OVERLAY_SIZE_MIN) / (OVERLAY_SIZE_MAX - OVERLAY_SIZE_MIN);
+  const fontSize = Math.max(12, canvasWidth * initial.size);
+  const lineHeight = fontSize * 1.25;
 
-  const done = () => onDone({ text: text.trim(), color: textColor, size });
+  /**
+   * 입력 칸 높이는 내용을 따라간다 — 한 줄이면 한 줄만 차지해야 그 줄이 화면
+   * 한가운데에 선다. 플랫폼마다 multiline의 기본 높이가 제각각이라(웹 textarea는
+   * 두어 줄) 재서 쓴다. 넘치면 화면의 6할에서 멈추고 안에서 스크롤된다
+   */
+  const [contentHeight, setContentHeight] = useState(lineHeight);
+  const height = Math.min(Math.max(contentHeight, lineHeight), canvasHeight * 0.6);
 
-  const setFromTrackY = (y: number) => {
-    const t = 1 - Math.min(1, Math.max(0, y / TRACK_HEIGHT)); // 위가 크다
-    setSize(OVERLAY_SIZE_MIN + t * (OVERLAY_SIZE_MAX - OVERLAY_SIZE_MIN));
-  };
-  const slider = Gesture.Pan()
-    .onBegin((e) => setFromTrackY(e.y))
-    .onChange((e) => setFromTrackY(e.y))
-    .runOnJS(true);
+  // 색 고르기 줄만 키보드 위로 올린다 (기준은 줄어들지 않는 캔버스라 높이를 그대로 더한다)
+  const [keyboard, setKeyboard] = useState(0);
+  useEffect(() => {
+    const ios = Platform.OS === 'ios';
+    const show = Keyboard.addListener(ios ? 'keyboardWillShow' : 'keyboardDidShow', (e) =>
+      setKeyboard(e.endCoordinates.height),
+    );
+    const hide = Keyboard.addListener(ios ? 'keyboardWillHide' : 'keyboardDidHide', () =>
+      setKeyboard(0),
+    );
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
+
+  const done = () => onDone({ text: text.trim(), color: textColor, size: initial.size });
 
   return (
-    <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
+    /*
+      크기를 캔버스에 못 박는다 — bottom:0에 맡기면 안드로이드에서 키보드가 뜰 때
+      창이 줄면서 이 겹도 같이 줄고, 가운데가 위로 올라가 버린다
+    */
+    <View style={{ position: 'absolute', top: 0, left: 0, width: canvasWidth, height: canvasHeight }}>
       {/*
         사진을 한 겹 눌러 둔다 — 지금은 글자를 치는 시간이라는 표시다.
         사진 자체는 그대로다: 흐리게도, 키우지도 않는다. 이 겹은 터치를 먹지 않는다
       */}
       <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: EDIT_DIM }]} />
 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ flex: 1 }}
-        pointerEvents="box-none"
-      >
-        {/*
-          입력 칸이 곧 화면이다 — 높이를 내용에 맡기지 않고 남은 자리를 통째로 차지한다.
-          내용에 맡기면(자동 높이) 웹의 textarea가 기본 두어 줄로 서서 세 줄만 넘어도
-          첫 줄이 밀려 나가 사라졌다. 넘치는 줄은 입력 칸 안에서 스크롤된다
-        */}
+      <View style={[StyleSheet.absoluteFill, { justifyContent: 'center' }]} pointerEvents="box-none">
         <TextInput
           value={text}
           onChangeText={setText}
+          onContentSizeChange={(e) => setContentHeight(e.nativeEvent.contentSize.height)}
           autoFocus
           multiline
-          textAlignVertical="center"
           placeholder="사진 위에 남길 말"
           placeholderTextColor="rgba(255,255,255,0.45)"
           style={{
-            flex: 1,
-            paddingTop: TOP_BAR_HEIGHT,
-            paddingBottom: space[4],
+            height,
             paddingHorizontal: 62,
+            paddingVertical: 0,
             fontFamily: typeface,
             fontWeight: '800',
             fontSize,
-            lineHeight: fontSize * 1.25,
+            lineHeight,
             color: storyTextColor[textColor],
             textAlign: 'center',
             textShadowColor: 'rgba(0,0,0,0.45)',
@@ -112,102 +120,44 @@ export function StoryTextInput({ initial, canvasWidth, onDelete, onDone }: Props
             textShadowOffset: { width: 0, height: 1 },
           }}
         />
+      </View>
 
-        {/*
-          입력 칸 위에 덮은 투명한 한 겹 — 한 번 더 탭하면 편집에서 빠져나온다.
-          입력 칸이 화면을 다 먹으니 "글자 밖" 이라는 자리가 없어서, 나가는 길을
-          이 겹이 대신 맡는다. 커서를 탭으로 옮기지는 못하지만 인스타도 같다.
-          색 고르기 줄은 이 뒤에 그려서 여전히 눌린다
-        */}
-        <Pressable onPress={done} style={StyleSheet.absoluteFill} />
+      {/*
+        입력 칸 위에 덮은 투명한 한 겹 — 한 번 탭하면 그게 완료다.
+        커서를 탭으로 옮기지는 못하지만 인스타도 같다.
+        색 고르기 줄은 이 뒤에 그려서 여전히 눌린다
+      */}
+      <Pressable onPress={done} style={StyleSheet.absoluteFill} />
 
-        {/* 색 — 키보드 바로 위 */}
-        <View
-          style={{
-            flexDirection: 'row',
-            flexWrap: 'wrap',
-            gap: 12,
-            justifyContent: 'center',
-            paddingHorizontal: space[4],
-            paddingVertical: space[4],
-          }}
-        >
-          {STORY_TEXT_COLOR_KEYS.map((key) => (
-            <Pressable
-              key={key}
-              onPress={() => setTextColor(key)}
-              hitSlop={6}
-              style={{
-                width: 28,
-                height: 28,
-                borderRadius: 14,
-                backgroundColor: storyTextColor[key],
-                borderWidth: key === textColor ? 3 : 1,
-                borderColor: key === textColor ? color.white : 'rgba(255,255,255,0.35)',
-              }}
-            />
-          ))}
-        </View>
-      </KeyboardAvoidingView>
-
-      {/* 크기 슬라이더 — 위가 크다 */}
-      <GestureDetector gesture={slider}>
-        <View
-          style={{
-            position: 'absolute',
-            left: 0,
-            top: '30%',
-            width: 54,
-            height: TRACK_HEIGHT,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <View
-            style={{
-              width: 4,
-              height: TRACK_HEIGHT,
-              borderRadius: 2,
-              backgroundColor: 'rgba(255,255,255,0.35)',
-            }}
-          />
-          <View
-            style={{
-              position: 'absolute',
-              top: (1 - ratio) * TRACK_HEIGHT - 11,
-              width: 22,
-              height: 22,
-              borderRadius: 11,
-              backgroundColor: color.white,
-            }}
-          />
-        </View>
-      </GestureDetector>
-
-      {/* 상단 — 삭제 / 완료 */}
+      {/* 색 — 키보드 바로 위 */}
       <View
         style={{
           position: 'absolute',
-          top: 0,
           left: 0,
           right: 0,
+          bottom: (keyboard || insets.bottom) + space[3],
           flexDirection: 'row',
-          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: 12,
+          justifyContent: 'center',
           paddingHorizontal: space[4],
-          paddingVertical: space[3],
         }}
       >
-        <Pressable hitSlop={10} onPress={onDelete}>
-          <Text style={{ fontFamily: typeface, fontSize: 14.5, color: color.danger }}>삭제</Text>
-        </Pressable>
-        <View style={{ flex: 1 }} />
-        <Pressable hitSlop={10} onPress={done}>
-          <Text
-            style={{ fontFamily: typeface, fontWeight: '800', fontSize: 15, color: color.white }}
-          >
-            완료
-          </Text>
-        </Pressable>
+        {STORY_TEXT_COLOR_KEYS.map((key) => (
+          <Pressable
+            key={key}
+            onPress={() => setTextColor(key)}
+            hitSlop={6}
+            style={{
+              width: 28,
+              height: 28,
+              borderRadius: 14,
+              backgroundColor: storyTextColor[key],
+              borderWidth: key === textColor ? 3 : 1,
+              borderColor: key === textColor ? color.white : 'rgba(255,255,255,0.35)',
+            }}
+          />
+        ))}
       </View>
     </View>
   );
