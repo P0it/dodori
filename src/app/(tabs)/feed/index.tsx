@@ -46,6 +46,7 @@ export default function Studio() {
             thumbUrl={p.gridThumbUrl}
             caption={p.caption}
             multiple={p.photos.length > 1}
+            video={p.photos[0]?.media === 'video'}
             onPress={() => router.push(`/feed/post/${p.id}`)}
           />
         )}

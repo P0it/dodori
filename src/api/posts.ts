@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from './supabase';
 import { useMyCouple } from './couple';
-import { signedThumbUrls, uploadPhotos, type PickedPhoto } from './photos';
+import { signedSourceUrls, signedThumbUrls, uploadPhotos, type PickedPhoto } from './photos';
 import { storagePathsFor } from '@/lib/media';
 
 export interface PostPhoto {
@@ -9,10 +9,13 @@ export interface PostPhoto {
   storagePath: string;
   /** 미리 구운 렌디션(_360)이 있는지 — 삭제 대상 경로가 이 값으로 갈린다 */
   renditions: boolean;
-  /** 서명된 썸네일 URL (비공개 버킷) — 피드 캐러셀용 비율 보존 변형 */
+  /** 서명된 썸네일 URL (비공개 버킷) — 피드 캐러셀용 비율 보존 변형. 영상이면 포스터다 */
   thumbUrl: string;
   width: number | null;
   height: number | null;
+  media: 'photo' | 'video';
+  /** 영상 본체(mp4)의 재생용 서명 URL — 사진이면 null */
+  videoUrl: string | null;
 }
 export interface PostComment {
   id: string;
@@ -36,7 +39,7 @@ export interface Post {
 }
 
 const SELECT = `id, author_id, caption, created_at,
-   photos!photos_post_id_fkey(id, storage_path, renditions, width, height, created_at),
+   photos!photos_post_id_fkey(id, storage_path, renditions, width, height, media, created_at),
    post_reactions(emoji, user_id),
    post_comments(id, author_id, body, created_at, parent_id)`;
 
@@ -51,6 +54,7 @@ type PostRow = {
     renditions: boolean;
     width: number | null;
     height: number | null;
+    media: 'photo' | 'video';
     created_at: string;
   }[];
   post_reactions: { emoji: string; user_id: string }[];
@@ -67,7 +71,12 @@ type PostRow = {
  * 서명 URL은 미리 배치로 받아 두고 여기서는 조회만 한다 — 행마다 낱개로 서명하면
  * 사진 수만큼 왕복이 생겨 첫 진입이 1~2초씩 밀린다 (api/photos.ts signedThumbUrls)
  */
-function toPost(row: PostRow, feedUrls: Map<string, string>, gridUrls: Map<string, string>): Post {
+function toPost(
+  row: PostRow,
+  feedUrls: Map<string, string>,
+  gridUrls: Map<string, string>,
+  videoUrls: Map<string, string>,
+): Post {
   const byEmoji = new Map<string, string[]>();
   for (const r of row.post_reactions ?? []) {
     byEmoji.set(r.emoji, [...(byEmoji.get(r.emoji) ?? []), r.user_id]);
@@ -85,6 +94,8 @@ function toPost(row: PostRow, feedUrls: Map<string, string>, gridUrls: Map<strin
       thumbUrl: feedUrls.get(p.storage_path) ?? '',
       width: p.width,
       height: p.height,
+      media: p.media,
+      videoUrl: p.media === 'video' ? (videoUrls.get(p.storage_path) ?? null) : null,
     })),
     gridThumbUrl: sortedPhotos[0] ? (gridUrls.get(sortedPhotos[0].storage_path) ?? null) : null,
     reactions: [...byEmoji.entries()].map(([emoji, userIds]) => ({ emoji, userIds })),
@@ -116,12 +127,17 @@ export function usePosts() {
       const all = rows.flatMap((r) =>
         (r.photos ?? []).map((p) => ({ storagePath: p.storage_path, renditions: p.renditions })),
       );
+      // 영상이 하나도 없으면 빈 배열이라 왕복이 생기지 않는다
+      const videoPaths = rows.flatMap((r) =>
+        (r.photos ?? []).filter((p) => p.media === 'video').map((p) => p.storage_path),
+      );
       // 그리드는 각 게시물의 첫 장만 쓰지만, 어차피 요청 1건이라 통째로 받는 게 더 싸다
-      const [feedUrls, gridUrls] = await Promise.all([
+      const [feedUrls, gridUrls, videoUrls] = await Promise.all([
         signedThumbUrls(all, 'feed'),
         signedThumbUrls(all, 'grid'),
+        signedSourceUrls(videoPaths),
       ]);
-      return rows.map((r) => toPost(r, feedUrls, gridUrls));
+      return rows.map((r) => toPost(r, feedUrls, gridUrls, videoUrls));
     },
   });
 }

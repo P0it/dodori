@@ -9,6 +9,7 @@ import {
 import Animated from 'react-native-reanimated';
 import { type GestureType } from 'react-native-gesture-handler';
 import { ZoomableImage } from './PhotoZoom';
+import { PostVideo } from './PostVideo';
 import { color, radius, space, typeface } from '@/theme/tokens';
 import { formatRelative } from '@/lib/date';
 import { postContentFit, postFrameRatioOf, REACTIONS } from '@/lib/posts';
@@ -110,16 +111,28 @@ export function PostCard({
             scrollEventThrottle={16}
             style={{ width, height: carouselH }}
           >
-            {post.photos.map((p) => (
-              <ZoomableImage
-                key={p.id}
-                source={photoSource(p.thumbUrl)}
-                style={{ width, height: carouselH, backgroundColor: color.bg }}
-                contentFit={postContentFit(p, frameRatio)}
-                transition={160}
-                simultaneousGestures={outerGestures}
-              />
-            ))}
+            {post.photos.map((p, i) =>
+              p.media === 'video' ? (
+                <PostVideo
+                  key={p.id}
+                  posterUrl={p.thumbUrl}
+                  videoUrl={p.videoUrl}
+                  width={width}
+                  height={carouselH}
+                  contentFit={postContentFit(p, frameRatio)}
+                  active={page === i}
+                />
+              ) : (
+                <ZoomableImage
+                  key={p.id}
+                  source={photoSource(p.thumbUrl)}
+                  style={{ width, height: carouselH, backgroundColor: color.bg }}
+                  contentFit={postContentFit(p, frameRatio)}
+                  transition={160}
+                  simultaneousGestures={outerGestures}
+                />
+              ),
+            )}
           </Animated.ScrollView>
 
           {/* n/m 카운터 */}
