@@ -23,10 +23,11 @@ import { PlaceKindTile } from '@/components/PlaceKindTile';
 import { PlaceMap, type MapPin, type PlaceMapHandle } from '@/components/map/PlaceMap';
 import { confirmDialog } from '@/components/dialog';
 
-// 시트 스냅 — 접힘은 지도를 넓게 보는 자리, 펼침은 목록을 훑는 자리
-const SNAP = ['38%', '88%'];
-const COLLAPSED = 0;
-const EXPANDED = 1;
+// 시트 스냅 — 살짝은 헤더만 남기고 지도를 다 보는 자리, 접힘은 목록 몇 줄, 펼침은 목록을 훑는 자리.
+// 살짝은 픽셀 고정 — 손잡이 + 헤더(제목 줄 44 + 장소 수) + 구분선 높이라 화면 비율로 잡으면 기기마다 잘린다
+const SNAP = [116, '38%', '88%'];
+const COLLAPSED = 1;
+const EXPANDED = 2;
 // 행 높이 고정 (사진/타일 52 + 상하 패딩 9씩)
 const ROW_H = 70;
 
