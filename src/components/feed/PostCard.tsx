@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Pressable,
   Text,
@@ -7,7 +7,7 @@ import {
   type NativeSyntheticEvent,
 } from 'react-native';
 import Animated from 'react-native-reanimated';
-import { type GestureType } from 'react-native-gesture-handler';
+import { Gesture, GestureDetector, type GestureType } from 'react-native-gesture-handler';
 import { ZoomableImage } from './PhotoZoom';
 import { PostVideo } from './PostVideo';
 import { color, radius, space, typeface } from '@/theme/tokens';
@@ -59,6 +59,44 @@ export function PostCard({
   const frameRatio = postFrameRatioOf(post.photos);
   const carouselH = Math.round(width * frameRatio);
 
+  /*
+    가로 캐러셀도 RNGH에 등록해 바깥 세로 리스트와 동시 인식시킨다.
+    등록하지 않으면 사진 위 세로 드래그를 안쪽 ScrollView가 먹고 리스트로 넘겨주지 않는다
+    (사진이 카드의 대부분이라 화면이 아예 안 움직이는 것처럼 보인다).
+  */
+  const carouselGesture = useMemo(() => {
+    const native = Gesture.Native();
+    return outerGestures?.length ? native.simultaneousWithExternalGesture(...outerGestures) : native;
+  }, [outerGestures]);
+  // 사진이 한 장이면 캐러셀 없이 그대로 그린다 — 중첩 스크롤 자체를 만들지 않는다
+  const single = post.photos.length === 1;
+  const photoGestures = useMemo(
+    () => (single ? outerGestures : [carouselGesture, ...(outerGestures ?? [])]),
+    [single, carouselGesture, outerGestures],
+  );
+
+  const renderMedia = (p: Post['photos'][number], i: number) =>
+    p.media === 'video' ? (
+      <PostVideo
+        key={p.id}
+        posterUrl={p.thumbUrl}
+        videoUrl={p.videoUrl}
+        width={width}
+        height={carouselH}
+        contentFit={postContentFit(p, frameRatio)}
+        active={page === i}
+      />
+    ) : (
+      <ZoomableImage
+        key={p.id}
+        source={photoSource(p.thumbUrl)}
+        style={{ width, height: carouselH, backgroundColor: color.bg }}
+        contentFit={postContentFit(p, frameRatio)}
+        transition={160}
+        simultaneousGestures={photoGestures}
+      />
+    );
+
   const likedBy = post.reactions.find((r) => r.emoji === HEART)?.userIds ?? [];
   const iLiked = likedBy.includes(myUid);
 
@@ -103,37 +141,22 @@ export function PostCard({
       */}
       {post.photos.length > 0 && (
         <View>
-          <Animated.ScrollView
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            onScroll={onScroll}
-            scrollEventThrottle={16}
-            style={{ width, height: carouselH }}
-          >
-            {post.photos.map((p, i) =>
-              p.media === 'video' ? (
-                <PostVideo
-                  key={p.id}
-                  posterUrl={p.thumbUrl}
-                  videoUrl={p.videoUrl}
-                  width={width}
-                  height={carouselH}
-                  contentFit={postContentFit(p, frameRatio)}
-                  active={page === i}
-                />
-              ) : (
-                <ZoomableImage
-                  key={p.id}
-                  source={photoSource(p.thumbUrl)}
-                  style={{ width, height: carouselH, backgroundColor: color.bg }}
-                  contentFit={postContentFit(p, frameRatio)}
-                  transition={160}
-                  simultaneousGestures={outerGestures}
-                />
-              ),
-            )}
-          </Animated.ScrollView>
+          {single ? (
+            renderMedia(post.photos[0], 0)
+          ) : (
+            <GestureDetector gesture={carouselGesture}>
+              <Animated.ScrollView
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                onScroll={onScroll}
+                scrollEventThrottle={16}
+                style={{ width, height: carouselH }}
+              >
+                {post.photos.map(renderMedia)}
+              </Animated.ScrollView>
+            </GestureDetector>
+          )}
 
           {/* n/m 카운터 */}
           {post.photos.length > 1 && (
