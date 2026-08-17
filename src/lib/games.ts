@@ -22,7 +22,7 @@ export const GAME_CATALOG: GameDef[] = [
   {
     key: 'reaction',
     name: '반응속도',
-    blurb: '초록으로 바뀌는 순간 탭 — 4번의 평균',
+    blurb: '초록으로 바뀌는 순간 탭 — 한 판에 한 번',
     unit: 'ms',
     higherIsBetter: false,
     format: (s) => `${Math.round(s)}ms`,

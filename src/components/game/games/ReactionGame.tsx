@@ -4,16 +4,15 @@ import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-na
 import { color, space, typeface } from '@/theme/tokens';
 import type { GameProps } from '../GameHost';
 
-/** 회차를 바꾸면 GAME_CATALOG의 blurb도 같이 고칠 것 */
-const ROUNDS = 4;
 const PENALTY_MS = 1000;
 
-/** 초록으로 바뀌면 탭. 5회 평균 ms. 초록 전에 누르면 그 회차는 페널티(1000ms). */
+/** 초록으로 바뀌면 탭. 한 판에 한 번, 그 ms가 점수. 초록 전에 누르면 페널티(1000ms). */
 export default function ReactionGame({ onFinish }: GameProps) {
   const [state, setState] = useState<'wait' | 'ready' | 'now'>('wait');
-  const [times, setTimes] = useState<number[]>([]);
   const shownAt = useRef(0);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // 초록을 치는 손은 대개 한 번 더 튄다 — 그 두 번째 탭이 판을 하나 더 기록했다
+  const done = useRef(false);
   const pulse = useSharedValue(1);
 
   // 초록이 뜨는 순간 화면이 한 번 튀어야 "지금"이 눈에 박힌다.
@@ -38,6 +37,7 @@ export default function ReactionGame({ onFinish }: GameProps) {
   }
 
   function tap() {
+    if (done.current) return;
     if (state === 'wait') {
       arm();
       return;
@@ -51,18 +51,12 @@ export default function ReactionGame({ onFinish }: GameProps) {
   }
 
   function record(ms: number) {
-    const next = [...times, ms];
-    setTimes(next);
-    if (next.length >= ROUNDS) {
-      onFinish(Math.round(next.reduce((a, b) => a + b, 0) / next.length));
-      return;
-    }
-    setState('wait');
+    done.current = true;
+    onFinish(ms);
   }
 
   const bg = state === 'now' ? color.greenCore : state === 'ready' ? color.danger : color.surface2;
-  const label =
-    state === 'now' ? '지금!' : state === 'ready' ? '기다려…' : `탭해서 시작 (${times.length + 1}/${ROUNDS})`;
+  const label = state === 'now' ? '지금!' : state === 'ready' ? '기다려…' : '탭해서 시작';
 
   return (
     <Animated.View style={surface}>
@@ -81,13 +75,17 @@ export default function ReactionGame({ onFinish }: GameProps) {
         <Text style={{ fontFamily: typeface, fontWeight: '800', fontSize: 22, color: color.white }}>
           {label}
         </Text>
-        {times.length > 0 && (
-          <Text style={{ fontFamily: typeface, color: color.white, marginTop: space[3] }}>
-            {times[times.length - 1] === PENALTY_MS
-              ? '너무 빨라요 (+1000ms)'
-              : `${times[times.length - 1]}ms`}
-          </Text>
-        )}
+        <Text
+          style={{
+            fontFamily: typeface,
+            color: color.white,
+            opacity: 0.8,
+            marginTop: space[3],
+            fontSize: 13,
+          }}
+        >
+          한 판에 한 번
+        </Text>
       </Pressable>
     </Animated.View>
   );
