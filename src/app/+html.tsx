@@ -30,11 +30,39 @@ export default function Root({ children }: PropsWithChildren) {
             __html:
               'html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }' +
               'body { touch-action: manipulation; }' +
-              'body { background-color: #121212; }',
+              'body { background-color: #121212; }' +
+              /*
+                번들을 받는 동안의 스플래시 — 웹에는 네이티브 스플래시가 없어서, BrandSplash가
+                마운트되기 전(번들 다운로드·실행)에는 배경색만 남은 검은 화면이 이어진다.
+                마크를 HTML로 그려 첫 페인트에 띄우고, React가 뜨면 _layout.tsx가 이 노드를
+                지운다. 좌표·크기는 BrandSplash의 MARK_SIZE 100 / DodoriMark 지오메트리와
+                같은 값이라 교대하는 순간 그림이 안 바뀐다. (public/index.html과 같은 내용)
+              */
+              '#boot-splash { position: fixed; top: 0; left: 0; right: 0; height: 100%;' +
+              /* 높이는 #root와 같은 규칙 — 고정 위치의 기준(큰 뷰포트)으로 두면 주소창이 보이는 동안 높이가 달라 마크가 튄다 */
+              ' height: 100dvh; display: flex; align-items: center; justify-content: center;' +
+              ' background-color: #121212; pointer-events: none; }' +
+              '#boot-splash .mark { position: relative; width: 80px; height: 100px; }' +
+              '#boot-splash span { position: absolute; background-color: #1ed760; }' +
+              '#boot-splash .bar-a { left: 0; width: 22px; height: 100px; border-radius: 3px; }' +
+              '#boot-splash .bar-b { left: 33px; width: 8.5px; height: 100px; border-radius: 3px; }' +
+              '#boot-splash .dot { left: 54px; width: 26px; height: 26px; border-radius: 13px; }' +
+              '#boot-splash .dot-up { top: 17px; }' +
+              '#boot-splash .dot-low { top: 57px; }',
           }}
         />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <div id="boot-splash" aria-hidden="true">
+          <div className="mark">
+            <span className="bar-a" />
+            <span className="bar-b" />
+            <span className="dot dot-up" />
+            <span className="dot dot-low" />
+          </div>
+        </div>
+      </body>
     </html>
   );
 }

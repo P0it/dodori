@@ -67,6 +67,13 @@ function RootLayout() {
   const onSplashDone = useCallback(() => setSplashDone(true), []);
 
   useEffect(() => {
+    /*
+      웹의 부트 스플래시(index.html에 HTML로 박아 둔 마크)를 치운다 — 웹에는 네이티브
+      스플래시가 없어 번들 받는 동안 그게 대신 서 있다. 자식 effect가 먼저 도니 이 시점엔
+      BrandSplash가 이미 같은 자리에 같은 마크를 그린 뒤다(BrandSplash를 건너뛰는
+      isWebAuthReturn도 여기서 함께 치워진다). 이 줄이 없으면 앱 위에 계속 덮여 있다.
+    */
+    if (Platform.OS === 'web') document.getElementById('boot-splash')?.remove();
     // BrandSplash를 띄우지 않으므로 네이티브 스플래시도 여기서 내린다
     if (isWebAuthReturn) SplashScreen.hideAsync();
     SystemUI.setBackgroundColorAsync(color.bg);

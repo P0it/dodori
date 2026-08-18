@@ -79,11 +79,78 @@
       [data-safe-top] {
         padding-top: env(safe-area-inset-top);
       }
+      /*
+        번들을 받는 동안의 화면 — 웹에는 네이티브 스플래시가 없다. BrandSplash는 React
+        컴포넌트라 4MB짜리 번들을 다 받아 실행한 뒤에야 나타나고, 그 전까지는 배경색만 남은
+        검은 화면이 몇 초씩 이어진다 (폰에서 "스플래시가 늦게 뜬다"로 보이던 구간).
+        그래서 마크(𝄆)를 HTML로 직접 그려 첫 페인트에 띄운다. 크기·좌표는 BrandSplash의
+        MARK_SIZE 100과 DodoriMark 지오메트리에서 그대로 뽑은 값이라, React가 마운트되며
+        이 노드를 지울 때(_layout.tsx) 같은 자리에 같은 그림이 있어 이음매가 안 보인다.
+        색은 토큰(color.bg·color.greenBright)과 같은 값을 손으로 적었다 — HTML은 토큰을 못 읽는다.
+      */
+      /*
+        높이는 #root와 같은 규칙으로 잡는다 — `inset: 0`(고정 위치의 기준은 큰 뷰포트)으로 두면
+        사파리 주소창이 보이는 동안 #root의 100dvh보다 커서, 교대할 때 마크가 그 차이의 절반만큼 튄다
+      */
+      #boot-splash {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 100%;
+        height: 100dvh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #121212;
+        pointer-events: none;
+      }
+      #boot-splash .mark {
+        position: relative;
+        width: 80px;
+        height: 100px;
+      }
+      #boot-splash span {
+        position: absolute;
+        background-color: #1ed760;
+      }
+      #boot-splash .bar-a {
+        left: 0;
+        width: 22px;
+        height: 100px;
+        border-radius: 3px;
+      }
+      #boot-splash .bar-b {
+        left: 33px;
+        width: 8.5px;
+        height: 100px;
+        border-radius: 3px;
+      }
+      #boot-splash .dot {
+        left: 54px;
+        width: 26px;
+        height: 26px;
+        border-radius: 13px;
+      }
+      #boot-splash .dot-up {
+        top: 17px;
+      }
+      #boot-splash .dot-low {
+        top: 57px;
+      }
     </style>
   </head>
 
   <body>
     <noscript>이 앱을 실행하려면 자바스크립트를 켜야 합니다.</noscript>
     <div id="root"></div>
+    <div id="boot-splash" aria-hidden="true">
+      <div class="mark">
+        <span class="bar-a"></span>
+        <span class="bar-b"></span>
+        <span class="dot dot-up"></span>
+        <span class="dot dot-low"></span>
+      </div>
+    </div>
   </body>
 </html>
