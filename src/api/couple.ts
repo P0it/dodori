@@ -69,13 +69,18 @@ export interface CoupleProfiles {
  * nickname은 표시용으로 성을 뗀 이름 — UI 카피는 전부 이름만 쓴다 (givenName)
  */
 export function useCoupleProfiles() {
-  const couple = useMyCouple();
+  const session = useSession();
+  const uid = session.data?.user.id;
   return useQuery({
-    enabled: !!couple.data,
-    queryKey: ['couple', 'profiles'],
+    /*
+      커플 조회를 기다리지 않는다 — 아바타는 거의 모든 화면에 있어서 여기가 밀리면
+      화면마다 사람 자리가 비어 보인다. RLS(profiles)가 어차피 우리 둘로 좁힌다.
+      uid도 auth.getUser()로 다시 묻지 않는다 — 그건 매번 `GET /auth/v1/user` 왕복이라
+      queryFn 안에 왕복이 하나 더 생긴다. 세션에 이미 들어 있는 값을 쓴다.
+    */
+    enabled: !!uid,
+    queryKey: ['couple', 'profiles', uid],
     queryFn: async (): Promise<CoupleProfiles> => {
-      const { data: userData } = await supabase.auth.getUser();
-      const uid = userData.user?.id;
       const { data, error } = await supabase
         .from('profiles')
         .select('id, nickname, birthday, avatar_url');

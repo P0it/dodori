@@ -61,6 +61,8 @@ export function SongCard({ song }: { song: Song }) {
       <View style={{ flexDirection: 'row', gap: space[4], marginTop: space[3] }}>
         <Image
           source={{ uri: song.artworkUrl }}
+          cachePolicy="memory-disk"
+          recyclingKey={song.artworkUrl}
           style={{
             width: artSize,
             height: artSize,

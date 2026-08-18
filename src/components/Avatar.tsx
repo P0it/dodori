@@ -14,6 +14,10 @@ export function Avatar({ url, name, size }: Props) {
     return (
       <Image
         source={{ uri: url }}
+        // 아바타는 거의 모든 목록의 셀마다 있다 — 기본 'disk'로 두면 셀이 재활용될 때마다
+        // 디스크에서 다시 읽고 다시 디코드한다 (components/Photo의 같은 이유)
+        cachePolicy="memory-disk"
+        recyclingKey={url}
         style={{
           width: size,
           height: size,

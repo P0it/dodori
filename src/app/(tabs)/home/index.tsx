@@ -1,4 +1,5 @@
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
+import { useEffect } from 'react';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { color, typeface } from '@/theme/tokens';
 import { todayKST } from '@/lib/date';
@@ -15,8 +16,13 @@ import { Eyebrow } from '@/components/Eyebrow';
 import { SongCard } from '@/components/SongCard';
 import { StoryRing } from '@/components/story/StoryRing';
 import { GameCard } from '@/components/game/GameCard';
+import { Skeleton } from '@/components/Skeleton';
+import { prefetchPhotos } from '@/components/Photo';
 
 const WEEKDAY = ['일', '월', '화', '수', '목', '금', '토'];
+
+/** 링을 눌러 볼 스토리 — 나·상대 것 몇 장이면 충분하다 */
+const PREFETCH_STORIES = 4;
 
 /** 오늘 탭 — 오늘의 추천곡(히어로) + 오늘의 주제. 투표·토론은 상세(topic/[id])에서 */
 export default function Today() {
@@ -30,14 +36,6 @@ export default function Today() {
   const week = useWeekOutcomes();
 
   const partnerName = profiles.data?.partner?.nickname || '상대';
-
-  if (!topic.data) {
-    return (
-      <View style={{ flex: 1, backgroundColor: color.bg, alignItems: 'center', justifyContent: 'center' }}>
-        {topic.isError ? <Meta>주제를 불러오지 못했어요</Meta> : <ActivityIndicator color={color.sub} />}
-      </View>
-    );
-  }
 
   const today = todayKST();
   const [, m, d] = today.split('-').map(Number);
@@ -89,8 +87,36 @@ export default function Today() {
       {song && <SongCard song={song} />}
 
       {/* 오늘의 주제 — 추천곡 아래 보조 항목 */}
+      {!topic.data ? (
+        /*
+          주제 하나 때문에 화면 전체를 스피너로 덮지 않는다 — 그러면 스토리 링·추천곡·게임까지
+          같이 기다리게 되고, 다 온 뒤에 한꺼번에 튀어나온다. 이 카드 자리만 비워 둔다.
+        */
+        <View
+          style={{
+            marginTop: 16,
+            borderRadius: 20,
+            paddingHorizontal: 16,
+            paddingVertical: 14,
+            backgroundColor: color.surface1,
+            borderWidth: 1,
+            borderColor: color.surface2,
+          }}
+        >
+          <Eyebrow>오늘의 주제</Eyebrow>
+          {topic.isError ? (
+            <Meta style={{ marginTop: 10 }}>주제를 불러오지 못했어요</Meta>
+          ) : (
+            <>
+              <Skeleton style={{ height: 15, marginTop: 12, borderRadius: 4 }} />
+              <Skeleton style={{ height: 15, marginTop: 8, width: '62%', borderRadius: 4 }} />
+              <Skeleton style={{ height: 12, marginTop: 14, width: '45%', borderRadius: 4 }} />
+            </>
+          )}
+        </View>
+      ) : (
       <Pressable
-        onPress={() => router.push(`/topic/${topic.data!.id}`)}
+        onPress={() => router.push(`/topic/${topic.data.id}`)}
         style={({ pressed }) => ({
           marginTop: 16,
           borderRadius: 20,
@@ -145,6 +171,7 @@ export default function Today() {
           {mine !== null && <Meta style={{ fontSize: 12.5 }}>대화 {talkCount}</Meta>}
         </View>
       </Pressable>
+      )}
 
       {/* 오늘의 게임 — 내가 한 판이라도 마쳐야 상대 점수가 열린다 (서버 RLS가 강제) */}
       <GameCard
@@ -181,6 +208,15 @@ function StoryRings() {
   const uid = session.data?.user.id ?? '';
   const all = stories.data ?? [];
   const live = liveStories(all);
+
+  // 링을 누르면 바로 볼 사진 — 뷰어가 열린 뒤에 받기 시작하면 첫 칸이 빈 화면으로 열린다
+  useEffect(() => {
+    prefetchPhotos(
+      liveStories(stories.data ?? [])
+        .slice(0, PREFETCH_STORIES)
+        .map((s) => s.photo?.thumbUrl),
+    );
+  }, [stories.data]);
 
   const open = (authorId: string) => {
     const first = live.find((s) => s.authorId === authorId && s.seenAt === null)

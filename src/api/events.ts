@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from './supabase';
 import { useMyCouple } from './couple';
+import { useSession } from './auth';
 import { upsertPlace, type SearchPlace } from './places';
 import type { Database } from '@/types/database.types';
 import type { EventColorKey } from '@/theme/tokens';
@@ -35,9 +36,11 @@ async function resolvePlaceId(input: EventInput): Promise<string | null> {
 
 /** 월 범위 events 조회 (KST 월 경계, 뷰 경유) */
 export function useMonthEvents(monthKey: string) {
-  const couple = useMyCouple();
+  const session = useSession();
   return useQuery({
-    enabled: !!couple.data,
+    // 커플 조회를 기다리지 않는다 — 기다리면 왕복이 직렬로 붙어 화면이 그만큼 늦게 찬다.
+    // 어차피 RLS가 내 커플 것만 돌려준다.
+    enabled: !!session.data,
     queryKey: ['events', monthKey],
     queryFn: async (): Promise<VisibleEvent[]> => {
       // KST 월 경계 → UTC: KST 1일 00:00 = 전날 15:00Z

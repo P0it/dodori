@@ -2,8 +2,8 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import { Linking, Pressable, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Image } from 'expo-image';
 import BottomSheet, { BottomSheetFlatList } from '@gorhom/bottom-sheet';
+import { Photo } from '@/components/Photo';
 import { color, typeface, eventColor, toEventColor, DEFAULT_EVENT_COLOR } from '@/theme/tokens';
 import { withCoords, boundsOf, naverMapUrl } from '@/lib/map';
 import { linkKind } from '@/lib/link';
@@ -166,7 +166,7 @@ export default function CustomPlaylist() {
         }}
       >
         {pl.photoThumbs[0] ? (
-          <Image source={pl.photoThumbs[0]} style={{ width: 52, height: 52, borderRadius: 8 }} contentFit="cover" />
+          <Photo url={pl.photoThumbs[0]} style={{ width: 52, height: 52, borderRadius: 8 }} contentFit="cover" />
         ) : (
           <PlaceKindTile category={pl.category} size={52} />
         )}
