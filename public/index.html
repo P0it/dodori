@@ -4,12 +4,13 @@
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <!--
-      user-scalable=no가 없으면 스토리 캔버스에서 사진을 오므릴 때 브라우저가 그 핀치를
-      페이지 줌으로 가로채 앱 화면 전체가 확대·축소된다.
+      브라우저 확대(핀치)는 열어 둔다 — 폰 웹에서 피드 사진을 자세히 보는 수단이 이것뿐이다
+      (앱 안에서 핀치를 붙이면 RNGH가 touch-action: none을 걸어 그 영역 스크롤이 죽는다).
+      앱 안에서 핀치를 쓰는 곳(스토리 캔버스·게시물 크롭)은 자기 화면에서만 페이지 줌을 막는다.
     -->
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
     />
     <title>dodori</title>
 
@@ -56,6 +57,8 @@
       body {
         overflow: hidden;
         background-color: #121212;
+        /* 더블탭 확대만 끈다 — 핀치 확대는 남기고 탭이 한 박자 늦는 것만 없앤다 */
+        touch-action: manipulation;
       }
       #root {
         display: flex;

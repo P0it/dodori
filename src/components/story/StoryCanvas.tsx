@@ -66,9 +66,10 @@ export function StoryCanvas({
   const floor = minScale;
 
   /*
-    iOS Safari는 `user-scalable=no`를 무시하고 두 손가락을 페이지 줌(gesture* 이벤트)으로
-    가져가 버린다 — 그러면 사진은 그대로고 앱 화면만 커진다. 이 캔버스가 떠 있는 동안만 막는다.
-    (`touch-action: none`만으로는 사파리에서 부족하다.) 웹 전용 — 네이티브에는 이 이벤트가 없다
+    웹은 브라우저 확대를 열어 두었다(피드 사진을 자세히 보는 수단) — 그래서 두 손가락을
+    페이지 줌에 뺏기지 않게 막는 일이 이 캔버스 몫이다. 안 막으면 사진은 그대로고 앱 화면만 커진다.
+    아래 View의 `touch-action: none`이 크롬을 막고, iOS 사파리는 그것만으로 부족해
+    gesture* 이벤트까지 막는다. 이 캔버스가 떠 있는 동안만. 웹 전용 — 네이티브엔 이 이벤트가 없다
   */
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof document === 'undefined') return;
