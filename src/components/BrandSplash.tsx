@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, Platform, StyleSheet, Text, View } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import { color, typeface } from '@/theme/tokens';
 import { DodoriMark, MARK_LOWER_DOT, WORD } from './DodoriMark';
@@ -56,8 +56,11 @@ const SETTLE_DURATION = 250;
 const CONDENSE_DURATION = 200;
 /** 겹쳐 선 뒤 공만 사라지는 시간 — 자리도 크기도 같으니 짧게 */
 const HANDOFF_DURATION = 120;
-/** 안착 후 머무는 시간 */
-const HOLD_DURATION = 1050;
+/**
+ * 안착 후 머무는 시간 — 웹은 짧다. 웹에는 네이티브 스플래시가 없어서 번들을 받는 동안
+ * 셸 HTML의 마크(#boot-splash)를 이미 몇 초 보고 있고, 여기서 또 머물면 그 시간이 더해진다.
+ */
+const HOLD_DURATION = Platform.OS === 'web' ? 300 : 1050;
 
 type Box = { x: number; y: number };
 type LetterBox = { x: number; width: number };
