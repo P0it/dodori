@@ -10,9 +10,13 @@ import { Meta } from '@/components/Meta';
 import { chooseDialog } from '@/components/dialog';
 import { Photo } from '@/components/Photo';
 
-/** 사진 전체 갤러리 (목업 15) — 탭: 슬라이드쇼, 길게: 커버 지정/삭제 */
+/**
+ * 사진 전체 갤러리 (목업 15) — 탭: 슬라이드쇼, 길게: 커버 지정/삭제.
+ * `pick=cover`로 들어오면 **커버 고르기 모드** — 탭이 곧 커버 지정이다 (앨범 상세에서 보낸다).
+ */
 export default function Gallery() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, pick } = useLocalSearchParams<{ id: string; pick?: string }>();
+  const picking = pick === 'cover';
   const router = useRouter();
   const track = useTrack(id);
   const update = useUpdateTrack(id!);
@@ -38,12 +42,29 @@ export default function Gallery() {
     }
   };
 
+  // 스토리에서 흘러온 사진은 커버로 못 쓴다 (롱프레스와 같은 규칙) — 고르기 모드에선 흐리게 둔다
+  const pickable = (p: (typeof photos)[number]) => !picking || !p.storyId;
+
+  const onPress = (p: (typeof photos)[number], index: number) => {
+    if (picking) {
+      update.mutate({ coverPhotoId: p.id });
+      router.back();
+      return;
+    }
+    router.push({
+      pathname: '/track/[id]/player',
+      params: { id: String(id), start: String(index) },
+    });
+  };
+
   return (
     <View style={{ flex: 1, backgroundColor: color.bg }}>
-      <TopBar title={track.data?.title ?? '갤러리'} />
+      <TopBar title={picking ? '커버 고르기' : (track.data?.title ?? '갤러리')} />
       <View style={{ paddingHorizontal: 16, paddingBottom: 10 }}>
         <Meta style={{ fontSize: 12.5 }}>
-          사진 {photos.length} · 탭하면 슬라이드쇼 · 길게 누르면 커버 지정
+          {picking
+            ? '커버로 쓸 사진을 고르세요'
+            : `사진 ${photos.length} · 탭하면 슬라이드쇼 · 길게 누르면 커버 지정·삭제`}
         </Meta>
       </View>
       <FlashList
@@ -53,14 +74,17 @@ export default function Gallery() {
         contentContainerStyle={{ paddingHorizontal: 14, paddingBottom: 24 }}
         renderItem={({ item: p, index }) => (
           <Pressable
-            onPress={() =>
-              router.push({
-                pathname: '/track/[id]/player',
-                params: { id: String(id), start: String(index) },
-              })
-            }
+            onPress={() => onPress(p, index)}
             onLongPress={() => onLongPress(p)}
-            style={{ flex: 1, aspectRatio: 1, margin: 2, borderRadius: 3, overflow: 'hidden' }}
+            disabled={!pickable(p)}
+            style={{
+              flex: 1,
+              aspectRatio: 1,
+              margin: 2,
+              borderRadius: 3,
+              overflow: 'hidden',
+              opacity: pickable(p) ? 1 : 0.35,
+            }}
           >
             <Photo url={p.thumbUrl} style={{ width: '100%', height: '100%' }} contentFit="cover" />
             {track.data?.coverPhotoId === p.id && (

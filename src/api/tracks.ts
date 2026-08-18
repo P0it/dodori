@@ -312,23 +312,26 @@ export function useCreateTrack() {
 }
 
 /**
- * 지금 커버가 표지 전용 사진이면 지운다 (행 + 스토리지).
+ * 지금 커버가 표지 전용 사진이면 그 행 — 아니면 null.
  *
  * 표지 전용은 아카이브에 안 보이므로 사용자가 지울 길이 없다 — 커버가 바뀌거나 해제되는
- * 순간 쓰임이 사라지니 여기서 함께 치운다. 그날 사진을 커버로 쓰던 경우는 건드리지 않는다.
+ * 순간 쓰임이 사라지니 호출한 쪽이 치운다. 그날 사진을 커버로 쓰던 경우는 건드리지 않는다.
  */
-async function discardCoverOnlyPhoto(trackId: string) {
+async function coverOnlyPhoto(trackId: string) {
   const { data: t } = await supabase
     .from('tracks')
     .select('cover:photos!tracks_cover_photo_fk(id, storage_path, renditions, cover_only)')
     .eq('id', trackId)
     .single();
-  const old = t?.cover;
-  if (!old?.cover_only) return;
-  await supabase.from('photos').delete().eq('id', old.id);
+  return t?.cover?.cover_only ? t.cover : null;
+}
+
+/** 사진 한 장 치우기 (행 + 스토리지) — 커버 자리에서 밀려난 표지 전용 사진용 */
+async function discardPhoto(p: { id: string; storage_path: string; renditions: boolean }) {
+  await supabase.from('photos').delete().eq('id', p.id);
   await supabase.storage
     .from('photos')
-    .remove(storagePathsFor({ storagePath: old.storage_path, renditions: old.renditions }));
+    .remove(storagePathsFor({ storagePath: p.storage_path, renditions: p.renditions }));
 }
 
 export function useUpdateTrack(id: string) {
@@ -339,9 +342,9 @@ export function useUpdateTrack(id: string) {
       coverPhotoId?: string | null;
       date?: ISODate;
     }) => {
-      // 커버가 바뀌는 갱신이면 먼저 옛 표지를 치운다 (cover_photo_id는 on delete set null이 아니라
-      // 지운 뒤에 새 값을 넣어야 순서가 안전하다)
-      if (patch.coverPhotoId !== undefined) await discardCoverOnlyPhoto(id);
+      // 커버가 바뀌는 갱신이면 밀려날 옛 표지를 미리 기억해 둔다 — 치우는 건 갱신이 성공한 뒤다.
+      // 먼저 지우면 갱신이 실패했을 때 커버만 사라진다 (FK는 on delete set null).
+      const oldCover = patch.coverPhotoId !== undefined ? await coverOnlyPhoto(id) : null;
       const { error } = await supabase
         .from('tracks')
         .update({
@@ -351,6 +354,7 @@ export function useUpdateTrack(id: string) {
         })
         .eq('id', id);
       if (error) throw error;
+      if (oldCover) await discardPhoto(oldCover);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['track', id] });
@@ -375,13 +379,25 @@ export function useSetTrackCover(trackId: string) {
     mutationFn: async (photo: PickedPhoto) => {
       const coupleId = couple.data?.coupleId;
       if (!coupleId) throw new Error('연결이 필요해요');
-      await discardCoverOnlyPhoto(trackId);
+      const oldCover = await coverOnlyPhoto(trackId);
       const [photoId] = await uploadPhotos({ trackId }, coupleId, [photo], { coverOnly: true });
       const { error } = await supabase
         .from('tracks')
         .update({ cover_photo_id: photoId })
         .eq('id', trackId);
-      if (error) throw error;
+      // 방금 올린 표지를 되돌린다 — 표지 전용은 어느 목록에도 안 보여서, 아무도 가리키지 않은 채
+      // 남으면 사용자가 지울 길 없이 스토리지 쿼터만 먹는다
+      if (error) {
+        const { data: orphan } = await supabase
+          .from('photos')
+          .select('id, storage_path, renditions')
+          .eq('id', photoId)
+          .single();
+        if (orphan) await discardPhoto(orphan);
+        throw error;
+      }
+      // 옛 표지는 새 커버가 자리를 잡은 뒤에 치운다
+      if (oldCover) await discardPhoto(oldCover);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['track', trackId] });

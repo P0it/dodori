@@ -36,7 +36,7 @@ import { Dday } from '@/components/Dday';
 import { TrackCover } from '@/components/TrackCover';
 import { Avatar } from '@/components/Avatar';
 import { PlaceKindTile } from '@/components/PlaceKindTile';
-import { alertDialog, confirmDialog } from '@/components/dialog';
+import { alertDialog, chooseDialog, confirmDialog } from '@/components/dialog';
 import { CloseGlyph, GripGlyph } from '@/components/glyphs';
 import { Photo } from '@/components/Photo';
 
@@ -127,7 +127,30 @@ function TrackBody({ t }: { t: TrackDetail }) {
     }
   };
 
+  /**
+   * 커버 지정 진입점 — 여기 하나로 모은다.
+   * 올린 사진 중에서 고르는 게 기본이고, 표지용 이미지를 새로 올리는 길은 남긴다:
+   * 아직 안 온 데이트는 그날 사진이 없어도 자켓을 정할 수 있어야 한다.
+   * 고를 사진이 없으면 시트를 건너뛰고 곧장 피커로 간다.
+   */
   const onSetCover = async () => {
+    if (t.photos.length) {
+      const choices: { label: string; destructive?: boolean }[] = [
+        { label: '우리 사진에서 고르기' },
+        { label: '새 이미지 올리기' },
+      ];
+      if (t.coverPhotoId) choices.push({ label: '커버 해제', destructive: true });
+      const picked = await chooseDialog('커버', choices);
+      if (picked === -1) return;
+      if (picked === 0) {
+        router.push({ pathname: '/track/[id]/gallery', params: { id: t.id, pick: 'cover' } });
+        return;
+      }
+      if (picked === 2) {
+        update.mutate({ coverPhotoId: null });
+        return;
+      }
+    }
     try {
       const picked = await pickPhotos(1);
       if (picked.length) await setCover.mutateAsync(picked[0]);
