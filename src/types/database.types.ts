@@ -326,6 +326,59 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          actor_id: string
+          comment_id: string | null
+          couple_id: string
+          created_at: string
+          id: string
+          kind: string
+          preview: string | null
+          pushed_at: string | null
+          read_at: string | null
+          recipient_id: string
+          target_id: string
+          target_kind: string
+        }
+        Insert: {
+          actor_id: string
+          comment_id?: string | null
+          couple_id: string
+          created_at?: string
+          id?: string
+          kind: string
+          preview?: string | null
+          pushed_at?: string | null
+          read_at?: string | null
+          recipient_id: string
+          target_id: string
+          target_kind: string
+        }
+        Update: {
+          actor_id?: string
+          comment_id?: string | null
+          couple_id?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          preview?: string | null
+          pushed_at?: string | null
+          read_at?: string | null
+          recipient_id?: string
+          target_id?: string
+          target_kind?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       photos: {
         Row: {
           bytes: number
@@ -662,6 +715,36 @@ export type Database = {
           id?: string
           nickname?: string
           push_token?: string | null
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          failed_at: string | null
+          id: string
+          p256dh: string
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          failed_at?: string | null
+          id?: string
+          p256dh: string
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          failed_at?: string | null
+          id?: string
+          p256dh?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -1084,6 +1167,7 @@ export type Database = {
       has_voted: { Args: { p_topic_id: string }; Returns: boolean }
       invoke_daily_release: { Args: never; Returns: undefined }
       invoke_sync_holidays: { Args: never; Returns: undefined }
+      kick_notification_worker: { Args: never; Returns: undefined }
       my_couple_id: { Args: never; Returns: string }
       partner_voted: { Args: { p_topic_id: string }; Returns: boolean }
       storage_used_bytes: { Args: never; Returns: number }

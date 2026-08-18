@@ -152,6 +152,17 @@ Windows 작업 트리에서는 iOS 빌드가 불가능하다. 맥미니에 같�
   한도에 닿아도 **기존 사진·영상은 지우지 않고 열람도 계속 된다**(새 업로드만 막는다).
   업로드가 중간에 실패하면 그 항목이 올린 파일을 되돌린다 — 스토리지 업로드가 insert보다 먼저라
   트리거가 거부하면 파일만 남았다
+- **알림**(2026-08-18): 상대가 스토리·게시물·댓글을 남기면 `notifications` 행이 생기고 푸시가 나간다.
+  행 생성은 **Postgres 트리거**(`enqueue_notification`)가 단일 진실 — 클라이언트가 부르면 앱이 죽었을 때
+  유실되고 배지 숫자가 곧 틀어진다. `pushed_at is null`이 미발송 큐고, 발송은 **Vercel Function**
+  (`api/notifications/deliver.ts`)이 한다 — Edge Function을 새로 늘리지 않는다.
+  DB의 kicker(`kick_notification_worker`, pg_net)는 "지금 깨워달라" 신호일 뿐이라 **실패해도 되고,
+  Supabase를 떠나면 cron 폴링으로 갈아끼우면 된다** (유일한 벤더 락인을 여기 가뒀다).
+  `kind`(무슨 일)와 `target_kind`(스토리냐 게시물이냐)는 직교한다 — 댓글 알림은 둘 다에 달리므로
+  `kind`만으로는 갈 경로를 못 정한다. 문구·경로는 `lib/notifications.ts`(순수함수)를 앱과 워커가 함께 쓴다.
+  서비스워커(`public/sw.js`)는 DB를 못 읽으니 **배지 숫자는 서버가 payload에 실어 보낸다**.
+  iOS는 홈 화면에 설치된 PWA에서만 되고, 권한 요청은 반드시 사용자 제스처 안에서 해야 한다.
+  설계: `docs/superpowers/specs/2026-08-18-web-push-notifications-design.md`
 - 게시물 사진 프레임은 `lib/posts.ts`의 `postFrameRatio`(가로 16:9 ~ 세로 4:5 클램프) 하나로
   업로드 크롭(`PostCropSheet`)과 피드 표시(`PostCard`)가 같은 값을 쓴다 — 한쪽만 바꾸면 어긋난다.
   크롭 제스처는 스토리 편집기의 `StoryCanvas`·`cropToCanvas` 재사용(게시물은 `minScale=1`)
@@ -164,6 +175,8 @@ Windows 작업 트리에서는 iOS 빌드가 불가능하다. 맥미니에 같�
 - [x] 커플 아케이드 — 홈의 '오늘의 게임' (하루 한 종목·3판 최고점·내가 마쳐야 상대 공개)
 - [ ] 동영상 업로드 + 바이트 쿼터 — 코드·마이그레이션은 끝, **기기 검증 남음**:
       `react-native-compressor` × RN 0.86 실동작(0단계 스파이크)과 웹 패스가 미검증이다
+- [ ] 웹 푸시 알림 + 아이콘 배지 — 코드·마이그레이션은 끝, **VAPID 키 발급·환경변수·Vault 설정과
+      기기 2대 검증이 남음** (아래 "배포 후 1회 수동 설정")
 - [ ] 베타 배포(EAS/TestFlight) → M6 스토어 준비
 
 ## 배포 후 1회 수동 설정
@@ -178,3 +191,10 @@ Windows 작업 트리에서는 iOS 빌드가 불가능하다. 맥미니에 같�
 - **공공데이터포털 키** (미설정 시 임시공휴일·선거일만 캘린더에 안 뜸 — 일반 공휴일은 계산되므로 정상) —
   한국천문연구원 특일정보 API 활용신청 후 `npx supabase secrets set DATA_GO_KR_KEY=...`
 - **카카오 Android 키 해시** — 첫 빌드 후 debug keystore 해시를 카카오 콘솔 플랫폼 키에 등록
+- **웹 푸시(VAPID)** — `npx web-push generate-vapid-keys`로 키쌍 1회 생성.
+  Vercel 환경변수: `VAPID_PUBLIC_KEY` `VAPID_PRIVATE_KEY` `VAPID_SUBJECT` `NOTIFY_WORKER_SECRET`
+  `SUPABASE_URL` `SUPABASE_SERVICE_ROLE_KEY`. 앱에는 공개키만 `EXPO_PUBLIC_VAPID_PUBLIC_KEY`로.
+  그리고 SQL Editor에서 (⚠️ 자리표시자 말고 **실제 값**으로):
+  `select vault.create_secret('https://<vercel-domain>/api/notifications/deliver', 'notify_worker_url');`
+  `select vault.create_secret('<NOTIFY_WORKER_SECRET>', 'notify_worker_secret');`
+  미설정이면 알림 행은 쌓이지만 푸시가 안 나간다(앱 안 종 아이콘·목록은 정상 동작).

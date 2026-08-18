@@ -7,12 +7,13 @@ import { color, radius, typeface } from '@/theme/tokens';
 import { daysSince } from '@/lib/date';
 import { useMyCouple, useCoupleProfiles } from '@/api/couple';
 import { usePosts } from '@/api/posts';
+import { useAppBadgeSync, useUnreadCount } from '@/api/notifications';
 import { prefetchPhotos } from '@/components/Photo';
 import { SkeletonGrid } from '@/components/Skeleton';
 import { Meta } from '@/components/Meta';
 import { Eyebrow } from '@/components/Eyebrow';
 import { DodoriMark } from '@/components/DodoriMark';
-import { PlusGlyph, MenuGlyph, HeartGlyph } from '@/components/glyphs';
+import { PlusGlyph, MenuGlyph, HeartGlyph, BellGlyph } from '@/components/glyphs';
 import { PostGridCell } from '@/components/feed/PostGridCell';
 
 /** 상세로 들어갈 가능성이 높은 위쪽 몇 개 — 화면에 보이는 만큼이면 충분하다 */
@@ -154,6 +155,7 @@ function AccountHeader() {
           paddingHorizontal: 6,
         }}
       >
+        <NotificationBell />
         <Pressable hitSlop={10} onPress={() => router.push('/feed/settings')}>
           <MenuGlyph size={21} />
         </Pressable>
@@ -278,3 +280,39 @@ function CoupleAvatar({
   );
 }
 
+
+/**
+ * 알림 입구 — 안 읽은 게 있으면 점이 켜진다.
+ * 여기서 앱 아이콘 배지도 맞춰 둔다: 푸시가 올 때는 서비스워커가 찍지만,
+ * 다른 기기에서 읽었거나 앱 안에서 읽은 경우는 이쪽이 유일한 갱신 지점이다.
+ */
+function NotificationBell() {
+  const router = useRouter();
+  const unread = useUnreadCount();
+  useAppBadgeSync(unread.data);
+
+  return (
+    <Pressable
+      accessibilityLabel="알림"
+      hitSlop={10}
+      onPress={() => router.push('/feed/notifications')}
+    >
+      <BellGlyph size={21} />
+      {!!unread.data && (
+        <View
+          style={{
+            position: 'absolute',
+            top: -1,
+            right: -1,
+            width: 9,
+            height: 9,
+            borderRadius: 5,
+            backgroundColor: color.accent,
+            borderWidth: 1.5,
+            borderColor: color.bg,
+          }}
+        />
+      )}
+    </Pressable>
+  );
+}

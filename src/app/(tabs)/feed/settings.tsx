@@ -3,13 +3,21 @@ import { useRouter } from 'expo-router';
 import { color, tintBg, typeface } from '@/theme/tokens';
 import { useCoupleProfiles, useStorageQuota } from '@/api/couple';
 import { useAnniversaries } from '@/api/anniversaries';
+import { useDisableWebPush, useEnableWebPush, useWebPushState } from '@/api/webPush';
 import { formatBytes } from '@/lib/media';
 import { signOut } from '@/api/auth';
 import { TopBar } from '@/components/TopBar';
 import { Meta } from '@/components/Meta';
 import { Divider } from '@/components/Divider';
 import { Avatar } from '@/components/Avatar';
-import { StarGlyph, StoryGlyph, StackGlyph, LogoutGlyph, ChevronGlyph } from '@/components/glyphs';
+import {
+  StarGlyph,
+  StoryGlyph,
+  StackGlyph,
+  LogoutGlyph,
+  ChevronGlyph,
+  BellGlyph,
+} from '@/components/glyphs';
 import { confirmDialog } from '@/components/dialog';
 
 /** 스튜디오 관리 — 기념일·연결·로그아웃 (계정 화면에서 분리) */
@@ -59,6 +67,8 @@ export default function StudioSettings() {
         />
 
         <Divider style={{ marginTop: 20 }} />
+        <PushRow />
+        <Divider />
         <LinkRow
           icon={<StoryGlyph size={18} />}
           label="스토리 보관함"
@@ -201,5 +211,47 @@ function LinkRow({
       </View>
       {onPress && <ChevronGlyph size={18} />}
     </Pressable>
+  );
+}
+
+/**
+ * 알림 켜기 — 브라우저 권한 요청은 **반드시 이 onPress 안에서** 일어나야 한다.
+ * iOS Safari는 사용자 제스처 밖의 requestPermission()을 거부한다.
+ */
+function PushRow() {
+  const state = useWebPushState();
+  const enable = useEnableWebPush();
+  const disable = useDisableWebPush();
+  const busy = enable.isPending || disable.isPending;
+
+  const sub = () => {
+    if (busy) return '잠시만요…';
+    switch (state.data) {
+      case 'on':
+        return '켜짐 · 이 기기에서 알림을 받아요';
+      case 'off':
+        return '상대가 올리거나 댓글을 달면 알려드려요';
+      case 'needs-install':
+        return '공유 → "홈 화면에 추가" 후 켤 수 있어요';
+      case 'denied':
+        return '브라우저 설정에서 알림을 허용해 주세요';
+      default:
+        return '이 기기에서는 알림을 켤 수 없어요';
+    }
+  };
+
+  const canToggle = state.data === 'on' || state.data === 'off';
+
+  return (
+    <LinkRow
+      icon={<BellGlyph size={18} color={state.data === 'on' ? color.accent : color.white} />}
+      label={state.data === 'on' ? '알림 끄기' : '알림 켜기'}
+      sub={sub()}
+      onPress={
+        canToggle && !busy
+          ? () => (state.data === 'on' ? disable.mutate() : enable.mutate())
+          : undefined
+      }
+    />
   );
 }

@@ -623,3 +623,18 @@ export function LinkKindGlyph({ kind, size = 16 }: { kind: LinkKind; size?: numb
   }
   return <LinkGlyph size={size} color={color.sub} />;
 }
+
+/** 알림 (종) — 피드 헤더의 알림 목록 입구 */
+export function BellGlyph({ size = 22, color: fg = color.white }: GlyphProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M12 3a6 6 0 0 0-6 6c0 3.2-.7 5-1.5 6.1-.4.5 0 1.2.6 1.2h13.8c.6 0 1-.7.6-1.2C18.7 14 18 12.2 18 9a6 6 0 0 0-6-6Z"
+        stroke={fg}
+        strokeWidth={1.7}
+        strokeLinejoin="round"
+      />
+      <Path d="M10 19.5a2 2 0 0 0 4 0" stroke={fg} strokeWidth={1.7} strokeLinecap="round" />
+    </Svg>
+  );
+}

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Platform, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -57,6 +57,7 @@ function AuthBridge() {
   useCoupleRealtime();
   useQueryFocus();
   usePushRegistration();
+  useNotificationClickRouting();
   return null;
 }
 
@@ -129,3 +130,23 @@ function RootLayout() {
 
 // Sentry.wrap — 렌더 트리에서 터진 에러를 잡아 보고한다
 export default Sentry.wrap(RootLayout);
+
+/**
+ * 푸시 알림을 탭했을 때의 이동 — 앱이 **이미 열려 있는 경우**만 여기로 온다.
+ * 닫혀 있으면 서비스워커가 openWindow(url)로 바로 그 경로를 열기 때문에 할 일이 없다.
+ * (public/sw.js의 notificationclick 참조)
+ */
+function useNotificationClickRouting() {
+  const router = useRouter();
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof navigator === 'undefined') return;
+    if (!('serviceWorker' in navigator)) return;
+    const onMessage = (e: MessageEvent) => {
+      if (e.data?.type === 'notification-click' && typeof e.data.url === 'string') {
+        router.push(e.data.url as never);
+      }
+    };
+    navigator.serviceWorker.addEventListener('message', onMessage);
+    return () => navigator.serviceWorker.removeEventListener('message', onMessage);
+  }, [router]);
+}
