@@ -192,8 +192,9 @@ Windows 작업 트리에서는 iOS 빌드가 불가능하다. 맥미니에 같�
   한국천문연구원 특일정보 API 활용신청 후 `npx supabase secrets set DATA_GO_KR_KEY=...`
 - **카카오 Android 키 해시** — 첫 빌드 후 debug keystore 해시를 카카오 콘솔 플랫폼 키에 등록
 - **웹 푸시(VAPID)** — `npx web-push generate-vapid-keys`로 키쌍 1회 생성.
-  Vercel 환경변수: `VAPID_PUBLIC_KEY` `VAPID_PRIVATE_KEY` `VAPID_SUBJECT` `NOTIFY_WORKER_SECRET`
-  `SUPABASE_URL` `SUPABASE_SERVICE_ROLE_KEY`. 앱에는 공개키만 `EXPO_PUBLIC_VAPID_PUBLIC_KEY`로.
+  Vercel에 추가할 변수는 4개: `EXPO_PUBLIC_VAPID_PUBLIC_KEY`(앱·워커 공용) `VAPID_PRIVATE_KEY`
+  `NOTIFY_WORKER_SECRET` `SUPABASE_SERVICE_ROLE_KEY`. URL은 기존 `EXPO_PUBLIC_SUPABASE_URL`을
+  워커가 재사용한다 — 같은 값을 두 이름으로 두면 한쪽만 바뀌었을 때 조용히 어긋난다.
   그리고 SQL Editor에서 (⚠️ 자리표시자 말고 **실제 값**으로):
   `select vault.create_secret('https://<vercel-domain>/api/notifications/deliver', 'notify_worker_url');`
   `select vault.create_secret('<NOTIFY_WORKER_SECRET>', 'notify_worker_secret');`

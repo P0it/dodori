@@ -48,9 +48,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(401).json({ error: 'unauthorized' });
   }
 
-  const url = process.env.SUPABASE_URL;
+  // URL·공개키는 앱 빌드가 이미 쓰는 변수를 그대로 재사용한다 — 같은 값을 두 이름으로
+  // 관리하면 한쪽만 바뀌었을 때 조용히 어긋난다 (둘 다 공개값이라 감출 이유도 없다).
+  const url = process.env.SUPABASE_URL ?? process.env.EXPO_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const vapidPublic = process.env.VAPID_PUBLIC_KEY;
+  const vapidPublic = process.env.VAPID_PUBLIC_KEY ?? process.env.EXPO_PUBLIC_VAPID_PUBLIC_KEY;
   const vapidPrivate = process.env.VAPID_PRIVATE_KEY;
   if (!url || !serviceKey || !vapidPublic || !vapidPrivate) {
     return res.status(500).json({ error: 'missing env' });
