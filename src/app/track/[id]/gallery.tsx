@@ -1,6 +1,5 @@
 import { Pressable, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Image } from 'expo-image';
 import { FlashList } from '@shopify/flash-list';
 import { color, typeface } from '@/theme/tokens';
 import { useTrack, useUpdateTrack } from '@/api/tracks';
@@ -9,7 +8,7 @@ import { useSession } from '@/api/auth';
 import { TopBar } from '@/components/TopBar';
 import { Meta } from '@/components/Meta';
 import { chooseDialog } from '@/components/dialog';
-import { photoSource } from '@/lib/photoSource';
+import { Photo } from '@/components/Photo';
 
 /** 사진 전체 갤러리 (목업 15) — 탭: 슬라이드쇼, 길게: 커버 지정/삭제 */
 export default function Gallery() {
@@ -63,7 +62,7 @@ export default function Gallery() {
             onLongPress={() => onLongPress(p)}
             style={{ flex: 1, aspectRatio: 1, margin: 2, borderRadius: 3, overflow: 'hidden' }}
           >
-            <Image source={photoSource(p.thumbUrl)} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+            <Photo url={p.thumbUrl} style={{ width: '100%', height: '100%' }} contentFit="cover" />
             {track.data?.coverPhotoId === p.id && (
               <View
                 style={{

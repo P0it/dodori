@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
-import { Image, type ImageContentFit, type ImageSource } from 'expo-image';
+import { type ImageContentFit } from 'expo-image';
+import { Photo } from '@/components/Photo';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Gesture, GestureDetector, type GestureType } from 'react-native-gesture-handler';
 import Animated, {
@@ -16,7 +17,7 @@ const SNAP_MS = 180;
 const MAX_SCALE = 4;
 
 type Frame = { x: number; y: number; width: number; height: number };
-type Target = Frame & { source: ImageSource | string; contentFit: ImageContentFit };
+type Target = Frame & { url: string; contentFit: ImageContentFit };
 
 type ZoomCtx = {
   scale: SharedValue<number>;
@@ -69,8 +70,8 @@ export function PhotoZoomHost({ children }: { children: ReactNode }) {
               photoStyle,
             ]}
           >
-            <Image
-              source={target.source}
+            <Photo
+              url={target.url}
               style={{ width: '100%', height: '100%' }}
               contentFit={target.contentFit}
             />
@@ -82,7 +83,7 @@ export function PhotoZoomHost({ children }: { children: ReactNode }) {
 }
 
 type ZoomableProps = {
-  source: ImageSource | string;
+  url: string;
   style: StyleProp<ViewStyle>;
   contentFit: ImageContentFit;
   transition?: number;
@@ -99,7 +100,7 @@ type ZoomableProps = {
  * 두 손가락일 때만 반응하므로 한 손가락 스와이프(캐러셀 넘기기·세로 스크롤)는 그대로다.
  * 호스트 없이 쓰면 그냥 사진이다 — 확대가 필요 없는 화면에서도 같은 컴포넌트를 쓸 수 있다.
  */
-export function ZoomableImage({ source, style, contentFit, transition, simultaneousGestures }: ZoomableProps) {
+export function ZoomableImage({ url, style, contentFit, transition, simultaneousGestures }: ZoomableProps) {
   const zoom = useContext(Ctx);
   const ref = useRef<View>(null);
   // 손가락 중심의 출발점 — 여기서 얼마나 움직였는지가 곧 사진이 따라갈 거리다
@@ -108,9 +109,9 @@ export function ZoomableImage({ source, style, contentFit, transition, simultane
 
   const begin = useCallback(() => {
     ref.current?.measureInWindow((x, y, width, height) => {
-      zoom?.show({ x, y, width, height, source, contentFit });
+      zoom?.show({ x, y, width, height, url, contentFit });
     });
-  }, [zoom, source, contentFit]);
+  }, [zoom, url, contentFit]);
 
   const end = useCallback(() => zoom?.hide(), [zoom]);
 
@@ -147,8 +148,8 @@ export function ZoomableImage({ source, style, contentFit, transition, simultane
   return (
     <GestureDetector gesture={gesture}>
       <View ref={ref} collapsable={false} style={style}>
-        <Image
-          source={source}
+        <Photo
+          url={url}
           style={{ width: '100%', height: '100%' }}
           contentFit={contentFit}
           transition={transition}

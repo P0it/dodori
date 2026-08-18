@@ -1,7 +1,6 @@
 import { Text, View, type ViewStyle, type StyleProp } from 'react-native';
-import { Image } from 'expo-image';
 import { color, typeface } from '@/theme/tokens';
-import { photoSource } from '@/lib/photoSource';
+import { Photo } from '@/components/Photo';
 
 type Props = {
   size?: number;
@@ -20,7 +19,7 @@ export function AnnivCover({ size = 56, big, small, photo, style }: Props) {
   if (photo) {
     return (
       <View style={[{ width: size, height: size, borderRadius: rad, overflow: 'hidden' }, style]}>
-        <Image source={photoSource(photo)} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+        <Photo url={photo} style={{ width: '100%', height: '100%' }} contentFit="cover" />
       </View>
     );
   }

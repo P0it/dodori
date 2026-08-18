@@ -1,6 +1,5 @@
 import { Linking, Pressable, ScrollView, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Image } from 'expo-image';
 import { color, typeface } from '@/theme/tokens';
 import { formatDday, isReleased } from '@/lib/date';
 import { naverMapUrl } from '@/lib/map';
@@ -10,7 +9,7 @@ import { usePlaceDetail } from '@/api/playlists';
 import { TopBar } from '@/components/TopBar';
 import { Meta } from '@/components/Meta';
 import { Eyebrow } from '@/components/Eyebrow';
-import { photoSource } from '@/lib/photoSource';
+import { Photo } from '@/components/Photo';
 
 /** 장소 상세 — 우리 데이터만 (목업 P2) */
 export default function PlaceDetail() {
@@ -24,7 +23,7 @@ export default function PlaceDetail() {
       {/* 히어로 */}
       <View style={{ height: 200 }}>
         {p?.photoThumbs[0] ? (
-          <Image source={photoSource(p.photoThumbs[0])} style={{ position: 'absolute', width: '100%', height: '100%' }} contentFit="cover" />
+          <Photo url={p.photoThumbs[0]} style={{ position: 'absolute', width: '100%', height: '100%' }} contentFit="cover" />
         ) : (
           <View style={{ position: 'absolute', width: '100%', height: '100%', backgroundColor: color.surface1 }} />
         )}
@@ -102,7 +101,7 @@ export default function PlaceDetail() {
           </View>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4 }}>
             {(p?.photoThumbs ?? []).map((u, i) => (
-              <Image key={i} source={photoSource(u)} style={{ width: '32%', aspectRatio: 1, borderRadius: 4 }} contentFit="cover" />
+              <Photo key={i} url={u} style={{ width: '32%', aspectRatio: 1, borderRadius: 4 }} contentFit="cover" />
             ))}
             {(p?.photoThumbs.length ?? 0) === 0 && <Meta>아직 이 장소의 사진이 없어요</Meta>}
           </View>

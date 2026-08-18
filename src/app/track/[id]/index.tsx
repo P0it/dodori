@@ -9,7 +9,6 @@ import {
   View,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { color, heroScrim, HERO_SCRIM_STOPS, typeface } from '@/theme/tokens';
 import { isReleased, formatDday, weekdayKo } from '@/lib/date';
@@ -39,7 +38,7 @@ import { Avatar } from '@/components/Avatar';
 import { PlaceKindTile } from '@/components/PlaceKindTile';
 import { alertDialog, confirmDialog } from '@/components/dialog';
 import { CloseGlyph, GripGlyph } from '@/components/glyphs';
-import { photoSource } from '@/lib/photoSource';
+import { Photo } from '@/components/Photo';
 
 /** 코스 한 행의 고정 높이 — 드래그 재정렬(절대배치)이 기준으로 삼는다 */
 const COURSE_ROW_H = 62;
@@ -669,7 +668,7 @@ function PhotoStrip({
           onPress={() => router.push(`/track/${trackId}/gallery`)}
           style={{ width: '32%', aspectRatio: 1, borderRadius: 4, overflow: 'hidden' }}
         >
-          <Image source={photoSource(p.thumbUrl)} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+          <Photo url={p.thumbUrl} style={{ width: '100%', height: '100%' }} contentFit="cover" />
           {i === photos.length - 1 && total > photos.length && (
             <View
               style={{

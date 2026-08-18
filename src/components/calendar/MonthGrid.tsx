@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
-import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { color, eventColor, typeface, type EventColorKey } from '@/theme/tokens';
 import { AlbumJacket } from '@/components/AlbumJacket';
@@ -8,7 +7,7 @@ import type { DayCell } from '@/lib/calendar';
 import { laneCounts, rowBudget, type SpanSegment } from '@/lib/span';
 import { shortHolidayName } from '@/lib/holidays';
 import { StarGlyph } from '@/components/glyphs';
-import { photoSource } from '@/lib/photoSource';
+import { Photo } from '@/components/Photo';
 
 /** 여러 날 일정 막대 한 토막 — 주 경계에서 끊긴 조각 하나가 항목 하나다 */
 export interface DaySpan {
@@ -263,7 +262,7 @@ function DayCellView({
       {date && (
         <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 7, overflow: 'hidden' }}>
           {date.thumb ? (
-            <Image source={photoSource(date.thumb)} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+            <Photo url={date.thumb} style={{ width: '100%', height: '100%' }} contentFit="cover" />
           ) : (
             <AlbumJacket seed={date.id} />
           )}

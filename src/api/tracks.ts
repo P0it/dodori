@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from './supabase';
 import { useMyCouple } from './couple';
+import { useSession } from './auth';
 import { signedThumbUrl, signedThumbUrls, uploadPhotos, type PickedPhoto } from './photos';
 import { storagePathsFor } from '@/lib/media';
 import { todayKST, type ISODate } from '@/lib/date';
@@ -14,9 +15,11 @@ export interface MonthTrack {
 
 /** 월의 tracks (+커버 썸네일) — 캘린더 마커·월 플레이리스트 공용 */
 export function useMonthTracks(monthKey: string) {
-  const couple = useMyCouple();
+  const session = useSession();
   return useQuery({
-    enabled: !!couple.data,
+    // 커플 조회를 기다리지 않는다 — 기다리면 왕복이 직렬로 붙어 사진이 그만큼 늦게 뜬다.
+    // 어차피 RLS가 내 커플 것만 돌려주므로 로그인만 됐으면 바로 나가도 된다.
+    enabled: !!session.data,
     queryKey: ['tracks', 'month', monthKey],
     queryFn: async (): Promise<MonthTrack[]> => {
       const [y, m] = monthKey.split('-').map(Number);
@@ -62,6 +65,11 @@ export function useMonthTracks(monthKey: string) {
 }
 
 export interface TrackListItem extends MonthTrack {
+  /**
+   * 같은 커버의 grid(360) — 캐러셀 자켓은 feed(1080)라 처음 볼 때 통째로 기다리게 된다.
+   * 360은 캘린더·월 목록에서 이미 받아 둔 것이라 대개 캐시에 있어 즉시 뜬다 (Photo의 lowUrl).
+   */
+  coverLowUrl: string | null;
   photoCount: number;
   noteCount: number;
   placeCount: number;
@@ -69,9 +77,11 @@ export interface TrackListItem extends MonthTrack {
 
 /** 전체 트랙 (최신순) — 플레이리스트 루트·월별 그룹·Favorites 공용 */
 export function useAllTracks() {
-  const couple = useMyCouple();
+  const session = useSession();
   return useQuery({
-    enabled: !!couple.data,
+    // 커플 조회를 기다리지 않는다 — 기다리면 왕복이 직렬로 붙어 사진이 그만큼 늦게 뜬다.
+    // 어차피 RLS가 내 커플 것만 돌려주므로 로그인만 됐으면 바로 나가도 된다.
+    enabled: !!session.data,
     queryKey: ['tracks', 'all'],
     queryFn: async (): Promise<TrackListItem[]> => {
       const { data, error } = await supabase
@@ -89,18 +99,21 @@ export function useAllTracks() {
         const own = (t.photos ?? []).filter((p) => !p.cover_only);
         return { row: t, own, cover: t.cover ?? own[0] ?? null };
       });
-      // 캐러셀 자켓이 화면 폭의 2/3까지 커져서 grid(360)로는 확대돼 보인다 — 커버만 feed(1080)
-      const urls = await signedThumbUrls(
-        picked.flatMap((p) =>
-          p.cover ? [{ storagePath: p.cover.storage_path, renditions: p.cover.renditions }] : [],
-        ),
-        'feed',
+      // 캐러셀 자켓이 화면 폭의 2/3까지 커져서 grid(360)로는 확대돼 보인다 — 커버는 feed(1080).
+      // 다만 1080을 기다리는 동안 자리가 비므로 360도 같이 받아 먼저 깔아 둔다(같은 왕복 안에서).
+      const coverRefs = picked.flatMap((p) =>
+        p.cover ? [{ storagePath: p.cover.storage_path, renditions: p.cover.renditions }] : [],
       );
+      const [urls, lowUrls] = await Promise.all([
+        signedThumbUrls(coverRefs, 'feed'),
+        signedThumbUrls(coverRefs, 'grid'),
+      ]);
       return picked.map(({ row: t, own, cover }) => ({
         id: t.id,
         title: t.title,
         date: t.date,
         coverThumbUrl: cover ? (urls.get(cover.storage_path) ?? null) : null,
+        coverLowUrl: cover ? (lowUrls.get(cover.storage_path) ?? null) : null,
         photoCount: own.length,
         noteCount: t.notes?.length ?? 0,
         placeCount: t.track_places?.length ?? 0,
@@ -111,9 +124,11 @@ export function useAllTracks() {
 
 /** 오늘(KST) 날짜의 트랙 — 스토리가 앨범에 자동으로 얹히는 기준 */
 export function useTodayTrack() {
-  const couple = useMyCouple();
+  const session = useSession();
   return useQuery({
-    enabled: !!couple.data,
+    // 커플 조회를 기다리지 않는다 — 기다리면 왕복이 직렬로 붙어 사진이 그만큼 늦게 뜬다.
+    // 어차피 RLS가 내 커플 것만 돌려주므로 로그인만 됐으면 바로 나가도 된다.
+    enabled: !!session.data,
     queryKey: ['tracks', 'today', todayKST()],
     queryFn: async (): Promise<{ id: string; title: string } | null> => {
       const { data, error } = await supabase

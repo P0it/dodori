@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Image } from 'expo-image';
 import { color, typeface } from '@/theme/tokens';
 import { useTrack } from '@/api/tracks';
 import { signedThumbUrl } from '@/api/photos';
 import { Eyebrow } from '@/components/Eyebrow';
 import { Meta } from '@/components/Meta';
-import { photoSource } from '@/lib/photoSource';
+import { Photo } from '@/components/Photo';
 
 const SLIDE_MS = 3000;
 
@@ -82,8 +81,8 @@ export default function Player() {
 
       {/* 사진 — 탭 좌/우 내비 */}
       <View style={{ flex: 1, marginHorizontal: 16, marginVertical: 10, borderRadius: 10, overflow: 'hidden' }}>
-        <Image
-          source={photoSource(fullUrl ?? current.thumbUrl)}
+        <Photo
+          url={fullUrl ?? current.thumbUrl}
           style={{ width: '100%', height: '100%' }}
           contentFit="cover"
           transition={300}

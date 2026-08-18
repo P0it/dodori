@@ -8,19 +8,20 @@ import {
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from 'react-native';
-import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { color, typeface } from '@/theme/tokens';
 import { formatDday, isReleased, weekdayKo } from '@/lib/date';
 import { AlbumJacket } from '@/components/AlbumJacket';
 import { Dday } from '@/components/Dday';
-import { photoSource } from '@/lib/photoSource';
+import { Photo } from '@/components/Photo';
 
 export type CarouselAlbum = {
   id: string;
   title: string;
   date: string;
   coverThumbUrl: string | null;
+  /** 저해상도 커버 — 본체(1080)가 오기 전에 깔아 둔다 */
+  coverLowUrl?: string | null;
 };
 
 /** 카드 최대 폭 — 좁은 기기에선 화면 비율로 줄인다 */
@@ -119,7 +120,12 @@ export function AlbumCarousel({
               >
                 <View style={{ width: '100%', height: '100%', borderRadius: 6, overflow: 'hidden' }}>
                   {a.coverThumbUrl ? (
-                    <Image source={photoSource(a.coverThumbUrl)} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+                    <Photo
+                      url={a.coverThumbUrl}
+                      lowUrl={a.coverLowUrl}
+                      style={{ width: '100%', height: '100%' }}
+                      contentFit="cover"
+                    />
                   ) : (
                     <AlbumJacket seed={a.id} />
                   )}

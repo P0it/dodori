@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
-import { Image, type ImageContentFit } from 'expo-image';
+import { type ImageContentFit } from 'expo-image';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import { color, radius } from '@/theme/tokens';
 import { PlayGlyph } from '@/components/glyphs';
+import { Photo } from '@/components/Photo';
 
 /**
  * 피드 캐러셀 한 칸의 동영상 — 탭해야 재생한다 (자동재생은 범위 밖).
@@ -58,8 +59,8 @@ export function PostVideo({
         />
       ) : (
         <>
-          <Image
-            source={{ uri: posterUrl }}
+          <Photo
+            url={posterUrl}
             style={{ width, height }}
             contentFit={contentFit}
             transition={160}

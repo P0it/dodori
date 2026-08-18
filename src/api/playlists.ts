@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from './supabase';
 import { useMyCouple } from './couple';
+import { useSession } from './auth';
 import { upsertPlace, type SearchPlace } from './places';
 import { signedThumbUrls, type PhotoRef } from './photos';
 
@@ -15,9 +16,11 @@ export interface PlaylistSummary {
 }
 
 export function usePlaylists() {
-  const couple = useMyCouple();
+  const session = useSession();
   return useQuery({
-    enabled: !!couple.data,
+    // 커플 조회를 기다리지 않는다 — 기다리면 왕복이 직렬로 붙어 사진이 그만큼 늦게 뜬다.
+    // 어차피 RLS가 내 커플 것만 돌려주므로 로그인만 됐으면 바로 나가도 된다.
+    enabled: !!session.data,
     queryKey: ['playlists'],
     queryFn: async (): Promise<PlaylistSummary[]> => {
       const { data, error } = await supabase
@@ -370,9 +373,11 @@ export interface SavedPlaceItem {
 
 /** 모든 플레이리스트(찜 + 테마)의 장소를 평탄화 — 장소 피커·추천이 함께 쓴다 */
 export function useSavedPlaces() {
-  const couple = useMyCouple();
+  const session = useSession();
   return useQuery({
-    enabled: !!couple.data,
+    // 커플 조회를 기다리지 않는다 — 기다리면 왕복이 직렬로 붙어 사진이 그만큼 늦게 뜬다.
+    // 어차피 RLS가 내 커플 것만 돌려주므로 로그인만 됐으면 바로 나가도 된다.
+    enabled: !!session.data,
     queryKey: ['savedPlaces'],
     queryFn: async (): Promise<SavedPlaceItem[]> => {
       const { data, error } = await supabase

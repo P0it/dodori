@@ -1,5 +1,4 @@
 import { Pressable, ScrollView, Text, View } from 'react-native';
-import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { color, eventColor, toEventColor, typeface } from '@/theme/tokens';
 import { formatDday, todayKST } from '@/lib/date';
@@ -14,7 +13,7 @@ import { Avatar } from '@/components/Avatar';
 import { Dday } from '@/components/Dday';
 import { PinGlyph } from '@/components/glyphs';
 import { AnnivCover } from '@/components/AnnivCover';
-import { photoSource } from '@/lib/photoSource';
+import { Photo } from '@/components/Photo';
 
 type Props = {
   date: string;
@@ -127,8 +126,8 @@ export function DayAgenda({ date, events, tracks, annivs, name, avatarUrl, holid
               style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 11 }}
             >
               {t.coverThumbUrl ? (
-                <Image
-                  source={photoSource(t.coverThumbUrl)}
+                <Photo
+                  url={t.coverThumbUrl}
                   style={{ width: 44, height: 44, borderRadius: 8, backgroundColor: color.surface2 }}
                   contentFit="cover"
                   transition={160}

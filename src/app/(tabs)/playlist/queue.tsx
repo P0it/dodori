@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Image } from 'expo-image';
 import { color, typeface } from '@/theme/tokens';
 import { formatDday, isReleased, todayKST } from '@/lib/date';
 import { useAllTracks } from '@/api/tracks';
@@ -12,7 +11,7 @@ import { Eyebrow } from '@/components/Eyebrow';
 import { Divider } from '@/components/Divider';
 import { Dday } from '@/components/Dday';
 import { AnnivCover } from '@/components/AnnivCover';
-import { photoSource } from '@/lib/photoSource';
+import { Photo } from '@/components/Photo';
 
 /** Queue — 다가오는 데이트·기념일 (목업 10) */
 export default function Queue() {
@@ -62,7 +61,7 @@ export default function Queue() {
               >
                 <View style={{ width: 50, height: 50, borderRadius: 8, overflow: 'hidden', backgroundColor: color.surface2 }}>
                   {t.coverThumbUrl && (
-                    <Image source={photoSource(t.coverThumbUrl)} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+                    <Photo url={t.coverThumbUrl} style={{ width: '100%', height: '100%' }} contentFit="cover" />
                   )}
                 </View>
                 <View style={{ flex: 1 }}>

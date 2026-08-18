@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from './supabase';
 import { useMyCouple } from './couple';
+import { useSession } from './auth';
 import {
   signedSourceUrls,
   signedThumbUrls,
@@ -119,9 +120,11 @@ function toPost(
 
 /** 커플 게시물 전체 (최신순) — 계정 그리드·피드 공용 */
 export function usePosts() {
-  const couple = useMyCouple();
+  const session = useSession();
   return useQuery({
-    enabled: !!couple.data,
+    // 커플 조회를 기다리지 않는다 — 기다리면 왕복이 직렬로 붙어 사진이 그만큼 늦게 뜬다.
+    // 어차피 RLS가 내 커플 것만 돌려주므로 로그인만 됐으면 바로 나가도 된다.
+    enabled: !!session.data,
     queryKey: ['posts'],
     queryFn: async (): Promise<Post[]> => {
       const { data, error } = await supabase

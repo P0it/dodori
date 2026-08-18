@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Pressable, RefreshControl, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { FlashList } from '@shopify/flash-list';
@@ -6,16 +7,29 @@ import { color, radius, typeface } from '@/theme/tokens';
 import { daysSince } from '@/lib/date';
 import { useMyCouple, useCoupleProfiles } from '@/api/couple';
 import { usePosts } from '@/api/posts';
+import { prefetchPhotos } from '@/components/Photo';
+import { SkeletonGrid } from '@/components/Skeleton';
 import { Meta } from '@/components/Meta';
 import { Eyebrow } from '@/components/Eyebrow';
 import { DodoriMark } from '@/components/DodoriMark';
 import { PlusGlyph, MenuGlyph, HeartGlyph } from '@/components/glyphs';
 import { PostGridCell } from '@/components/feed/PostGridCell';
 
+/** 상세로 들어갈 가능성이 높은 위쪽 몇 개 — 화면에 보이는 만큼이면 충분하다 */
+const PREFETCH_POSTS = 9;
+
 /** 스튜디오 = 우리 계정 (목업 25 + 게시물 그리드) — 셀 탭 → 세로 스크롤 피드 */
 export default function Studio() {
   const router = useRouter();
   const posts = usePosts();
+
+  /*
+    그리드는 360을, 상세는 본체(1080)를 쓴다 — 셀을 누른 뒤에 1080을 받기 시작하면
+    상세가 열리는 동안 사진 자리가 비어 있다. 첫 화면분의 본체를 미리 받아 둔다.
+  */
+  useEffect(() => {
+    prefetchPhotos((posts.data ?? []).slice(0, PREFETCH_POSTS).map((p) => p.photos[0]?.thumbUrl));
+  }, [posts.data]);
 
   return (
     <View style={{ flex: 1, backgroundColor: color.bg }}>
@@ -34,10 +48,12 @@ export default function Studio() {
           />
         }
         ListHeaderComponent={<AccountHeader />}
-        // 로딩 중에는 빈 화면을 보여주지 않는다 — "첫 피드를 올려보세요"가 떴다가
-        // 1~2초 뒤 목록으로 바뀌면 아무것도 없다가 생긴 것처럼 보인다
+        // 로딩 중에는 "첫 피드를 올려보세요"를 띄우지 않는다 — 그게 떴다가 1~2초 뒤 목록으로
+        // 바뀌면 아무것도 없다가 생긴 것처럼 보인다. 대신 올 자리를 스켈레톤으로 잡아 둔다
         ListEmptyComponent={
-          posts.isPending ? null : (
+          posts.isPending ? (
+            <SkeletonGrid count={12} />
+          ) : (
             <EmptyPosts onPress={() => router.push('/modals/create-post')} />
           )
         }

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from './supabase';
 import { useMyCouple } from './couple';
+import { useSession } from './auth';
 import {
   signedSourceUrls,
   signedThumbUrls,
@@ -140,9 +141,11 @@ function toStory(
  * 만료 개념이 "링에서 내려간다"뿐이라 같은 데이터를 두 번 받아올 이유가 없다.
  */
 export function useStories() {
-  const couple = useMyCouple();
+  const session = useSession();
   return useQuery({
-    enabled: !!couple.data,
+    // 커플 조회를 기다리지 않는다 — 기다리면 왕복이 직렬로 붙어 사진이 그만큼 늦게 뜬다.
+    // 어차피 RLS가 내 커플 것만 돌려주므로 로그인만 됐으면 바로 나가도 된다.
+    enabled: !!session.data,
     queryKey: ['stories'],
     queryFn: async (): Promise<Story[]> => {
       const { data, error } = await supabase

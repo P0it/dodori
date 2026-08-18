@@ -12,6 +12,7 @@ import { useAddSavedPlaceToTrack } from '@/api/places';
 import { Meta } from '@/components/Meta';
 import { Eyebrow } from '@/components/Eyebrow';
 import { AlbumCarousel } from '@/components/AlbumCarousel';
+import { Skeleton } from '@/components/Skeleton';
 import { RecommendStrip } from '@/components/playlist/RecommendStrip';
 import { PlaylistTile } from '@/components/playlist/PlaylistTile';
 import { ChevronGlyph } from '@/components/glyphs';
@@ -84,7 +85,17 @@ export default function PlaylistRoot() {
     <View style={{ flex: 1, backgroundColor: color.bg }}>
     <ScrollView style={{ backgroundColor: color.bg }} contentContainerStyle={{ paddingBottom: 24 }}>
       {/* 화면 제목("라이브러리")은 달지 않는다 — 탭바가 이미 어느 탭인지 말하고, 섹션 헤더가 바로 이어진다 */}
-      {noTracks ? (
+      {tracks.isPending ? (
+        /* 아직 모른다 — 빈 캐러셀("새 데이트" 한 칸만)을 보여주면 앨범이 없는 것처럼 읽힌다 */
+        <>
+          <SectionHeader title="플레이리스트" onAdd={() => router.push('/modals/create-track')} />
+          <View style={{ flexDirection: 'row', gap: 12, paddingHorizontal: 20, paddingTop: 12 }}>
+            {[0, 1, 2].map((i) => (
+              <Skeleton key={i} style={{ flex: 1, aspectRatio: 1, borderRadius: 6 }} />
+            ))}
+          </View>
+        </>
+      ) : noTracks ? (
         <FirstTrackHero onPress={() => router.push('/modals/create-track')} />
       ) : (
         /* 앨범 캐러셀 — 과거·미래를 한 줄에, 오늘 최근접이 포커스 */

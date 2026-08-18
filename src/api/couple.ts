@@ -30,19 +30,19 @@ export function useMyCouple() {
     enabled: !!uid,
     queryFn: async (): Promise<MyCouple | null> => {
       if (!uid) return null;
-      // 연결 후엔 멤버 행이 2개 보이므로 반드시 본인 행으로 한정
-      const { data: membership, error } = await supabase
+      /*
+        멤버 행을 **한 번에** 가져온다 — 앱을 여는 길목이라 여기서 왕복을 한 번 더 하면
+        사진 쿼리가 통째로 그만큼 밀린다 (사진이 늦게 뜨던 원인 중 하나).
+        필터를 걸지 않아도 RLS(couple_members_select: couple_id = my_couple_id())가
+        내 커플의 멤버 행만 돌려주므로, 행 수가 곧 인원수고 그중 내 행이 멤버십이다.
+      */
+      const { data: rows, error } = await supabase
         .from('couple_members')
-        .select('couple_id, couples(started_at, invite_code, created_at)')
-        .eq('user_id', uid)
-        .maybeSingle();
+        .select('couple_id, user_id, couples(started_at, invite_code, created_at)');
       if (error) throw error;
+      const membership = (rows ?? []).find((r) => r.user_id === uid);
       if (!membership) return null;
-      const { count, error: countError } = await supabase
-        .from('couple_members')
-        .select('*', { count: 'exact', head: true })
-        .eq('couple_id', membership.couple_id);
-      if (countError) throw countError;
+      const count = (rows ?? []).filter((r) => r.couple_id === membership.couple_id).length;
       return {
         coupleId: membership.couple_id,
         startedAt: membership.couples?.started_at ?? null,

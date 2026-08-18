@@ -1,9 +1,8 @@
 import { Text, View, type ViewStyle, type StyleProp } from 'react-native';
-import { Image } from 'expo-image';
 import { color, typeface } from '@/theme/tokens';
 import { resolveCover } from '@/lib/cover';
 import { AlbumJacket } from '@/components/AlbumJacket';
-import { photoSource } from '@/lib/photoSource';
+import { Photo } from '@/components/Photo';
 
 type Props = {
   /** 서명 썸네일 URL — 비공개 버킷이라 경로가 아니라 완성된 URL을 받는다 (api/에서 서명) */
@@ -39,7 +38,7 @@ export function TrackCover({
   let inner;
   if (plan.kind === 'photo') {
     inner = (
-      <Image source={photoSource(plan.path)} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+      <Photo url={plan.path} style={{ width: '100%', height: '100%' }} contentFit="cover" />
     );
   } else if (plan.kind === 'collage') {
     const cells = [plan.paths[0], plan.paths[1], plan.paths[2], plan.paths[3]];
@@ -47,7 +46,7 @@ export function TrackCover({
       <View style={{ width: '100%', height: '100%', flexDirection: 'row', flexWrap: 'wrap' }}>
         {cells.map((p, i) =>
           p ? (
-            <Image key={i} source={photoSource(p)} style={{ width: '50%', height: '50%' }} contentFit="cover" />
+            <Photo key={i} url={p} style={{ width: '50%', height: '50%' }} contentFit="cover" />
           ) : (
             <View key={i} style={{ width: '50%', height: '50%', backgroundColor: color.surface2 }} />
           ),

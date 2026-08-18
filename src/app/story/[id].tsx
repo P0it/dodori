@@ -9,7 +9,6 @@ import {
   View,
   type ViewStyle,
 } from 'react-native';
-import { Image } from 'expo-image';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -37,7 +36,7 @@ import { HeartGlyph } from '@/components/glyphs';
 import { StoryProgress } from '@/components/story/StoryProgress';
 import { StoryTextLayer } from '@/components/story/StoryTextLayer';
 import { StoryCommentBubble } from '@/components/story/StoryCommentBubble';
-import { photoSource } from '@/lib/photoSource';
+import { Photo, prefetchPhotos } from '@/components/Photo';
 
 /** 한 칸이 머무는 시간 */
 const STEP_MS = 5000;
@@ -153,8 +152,7 @@ export default function StoryViewer() {
 
   // 다음 칸 사진을 미리 받아 둔다 — 넘긴 뒤에 받기 시작하면 그 몇 백 ms가 빈 화면이 된다
   useEffect(() => {
-    const next = list[index + 1]?.photo?.thumbUrl;
-    if (next) Image.prefetch(next);
+    prefetchPhotos([list[index + 1]?.photo?.thumbUrl]);
   }, [list, index]);
 
   // 칸이 바뀌면 처음부터 — 멈췄다 푸는 것과 구분해야 이어보기가 성립한다
@@ -276,9 +274,9 @@ export default function StoryViewer() {
               />
             ) : (
               // key가 없으면 컴포넌트가 재사용돼 새 사진을 받는 동안 '이전 스토리 사진'이 그대로 남는다
-              <Image
+              <Photo
                 key={current.photo.id}
-                source={photoSource(current.photo.thumbUrl)}
+                url={current.photo.thumbUrl}
                 style={{ width: '100%', height: '100%' }}
                 contentFit="contain"
                 transition={120}

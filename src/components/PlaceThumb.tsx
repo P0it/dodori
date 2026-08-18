@@ -1,9 +1,8 @@
 import { Text } from 'react-native';
-import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { color, coverPalette, typeface } from '@/theme/tokens';
 import { coverSeedIndex } from '@/lib/cover';
-import { photoSource } from '@/lib/photoSource';
+import { Photo } from '@/components/Photo';
 
 /**
  * 장소 썸네일 — 다녀온 곳은 그 데이트 사진, 안 가본 곳은 생성 자켓.
@@ -22,8 +21,8 @@ export function PlaceThumb({
 }) {
   if (thumbUrl) {
     return (
-      <Image
-        source={photoSource(thumbUrl)}
+      <Photo
+        url={thumbUrl}
         style={{ width: size, height: size, borderRadius: 8, backgroundColor: color.surface2 }}
         contentFit="cover"
       />

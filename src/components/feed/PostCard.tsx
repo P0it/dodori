@@ -18,7 +18,6 @@ import { Meta } from '@/components/Meta';
 import { CommentGlyph, HeartGlyph, MoreGlyph } from '@/components/glyphs';
 import { CommentList } from './CommentList';
 import type { Post } from '@/api/posts';
-import { photoSource } from '@/lib/photoSource';
 
 type Props = {
   post: Post;
@@ -89,7 +88,7 @@ export function PostCard({
     ) : (
       <ZoomableImage
         key={p.id}
-        source={photoSource(p.thumbUrl)}
+        url={p.thumbUrl}
         style={{ width, height: carouselH, backgroundColor: color.bg }}
         contentFit={postContentFit(p, frameRatio)}
         transition={160}
