@@ -1,14 +1,12 @@
 import { Text, View, type ViewStyle, type StyleProp } from 'react-native';
 import { color, typeface } from '@/theme/tokens';
-import { resolveCover } from '@/lib/cover';
 import { AlbumJacket } from '@/components/AlbumJacket';
 import { Photo } from '@/components/Photo';
 
 type Props = {
   /** 서명 썸네일 URL — 비공개 버킷이라 경로가 아니라 완성된 URL을 받는다 (api/에서 서명) */
   coverThumbUrl: string | null;
-  photoThumbUrls: string[];
-  /** 주면 사진이 하나도 없을 때 그라디언트 자켓으로 채운다 (트랙 id). 없으면 '커버 없음' */
+  /** 주면 커버가 없을 때 그라디언트 자켓으로 채운다 (트랙 id). 없으면 '커버 없음' */
   seed?: string;
   size?: number;
   /** 정사각이 아닐 때 — 히어로처럼 폭·높이를 따로 줄 때만 */
@@ -20,10 +18,14 @@ type Props = {
   style?: StyleProp<ViewStyle>;
 };
 
-/** 트랙 커버 — §6.4 fallback: 지정 커버 → 콜라주(2+) → 1장 → 자켓/플레이스홀더 */
+/**
+ * 트랙 커버 — 지정한 커버 한 장, 없으면 자켓.
+ *
+ * 여러 장을 콜라주로 붙이던 폴백은 걷어냈다: 사진을 올릴수록 히어로가 조각보가 돼서
+ * "배경에 사진 한 장"이라는 의도와 어긋났다. 커버는 고르는 것이고, 고르기 전엔 자켓이다.
+ */
 export function TrackCover({
   coverThumbUrl,
-  photoThumbUrls,
   seed,
   size = 168,
   width,
@@ -32,27 +34,11 @@ export function TrackCover({
   glow = true,
   style,
 }: Props) {
-  const plan = resolveCover(coverThumbUrl, photoThumbUrls);
   const rad = radius ?? (size > 90 ? 6 : 5);
 
   let inner;
-  if (plan.kind === 'photo') {
-    inner = (
-      <Photo url={plan.path} style={{ width: '100%', height: '100%' }} contentFit="cover" />
-    );
-  } else if (plan.kind === 'collage') {
-    const cells = [plan.paths[0], plan.paths[1], plan.paths[2], plan.paths[3]];
-    inner = (
-      <View style={{ width: '100%', height: '100%', flexDirection: 'row', flexWrap: 'wrap' }}>
-        {cells.map((p, i) =>
-          p ? (
-            <Photo key={i} url={p} style={{ width: '50%', height: '50%' }} contentFit="cover" />
-          ) : (
-            <View key={i} style={{ width: '50%', height: '50%', backgroundColor: color.surface2 }} />
-          ),
-        )}
-      </View>
-    );
+  if (coverThumbUrl) {
+    inner = <Photo url={coverThumbUrl} style={{ width: '100%', height: '100%' }} contentFit="cover" />;
   } else if (seed) {
     inner = <AlbumJacket seed={seed} />;
   } else {

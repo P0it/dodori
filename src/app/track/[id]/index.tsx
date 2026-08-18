@@ -108,7 +108,6 @@ function TrackBody({ t }: { t: TrackDetail }) {
   // 좌표 있는 장소가 하나라도 있어야 지도로 볼 수 있다
   const hasPins = useMemo(() => pinnablePlaces(t.places).length >= 1, [t.places]);
 
-  const photoThumbUrls = t.photos.map((p) => p.thumbUrl);
   const nameOf = (userId: string) =>
     userId === uid
       ? profiles.data?.me?.nickname || '나'
@@ -143,7 +142,7 @@ function TrackBody({ t }: { t: TrackDetail }) {
       const picked = await chooseDialog('커버', choices);
       if (picked === -1) return;
       if (picked === 0) {
-        router.push({ pathname: '/track/[id]/gallery', params: { id: t.id, pick: 'cover' } });
+        router.push({ pathname: '/track/[id]/gallery', params: { id: t.id, edit: '1' } });
         return;
       }
       if (picked === 2) {
@@ -390,7 +389,6 @@ function TrackBody({ t }: { t: TrackDetail }) {
     >
       <TrackCover
         coverThumbUrl={t.coverThumbUrl}
-        photoThumbUrls={photoThumbUrls}
         seed={t.id}
         width={screenW}
         height={heroH}

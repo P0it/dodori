@@ -183,8 +183,8 @@ export interface TrackDetail {
   coverPhotoId: string | null;
   /**
    * 상세 히어로용 커버 — 화면 폭을 통째로 채우므로 grid(360)가 아니라 feed(1080)로 서명한다.
-   * 지정 커버가 없고 사진이 딱 한 장일 때도 여기서 채운다 (그 한 장이 곧 커버라서).
-   * 사진 2장 이상·커버 미지정은 null로 두고 콜라주 폴백(resolveCover)에 맡긴다 — 칸이 1/4이라 grid로 충분.
+   * **지정한 커버일 때만 채운다** — 없으면 null이고 히어로는 자켓을 깐다.
+   * 사진에서 아무거나 골라 깔지 않는 건, 배경이 앨범마다 제멋대로 바뀌지 않게 하려는 것이다.
    */
   coverThumbUrl: string | null;
   createdBy: string;
@@ -196,11 +196,8 @@ export interface TrackDetail {
 /** TrackDetail.coverThumbUrl 규칙 — 위 주석 참고 */
 async function heroCoverUrl(
   cover: { storage_path: string; renditions: boolean } | null,
-  photos: { storagePath: string; renditions: boolean }[],
 ): Promise<string | null> {
-  if (cover) return signedThumbUrl(cover.storage_path, 'feed', cover.renditions);
-  if (photos.length === 1) return signedThumbUrl(photos[0].storagePath, 'feed', photos[0].renditions);
-  return null;
+  return cover ? signedThumbUrl(cover.storage_path, 'feed', cover.renditions) : null;
 }
 
 export function useTrack(id: string | undefined) {
@@ -260,7 +257,7 @@ export function useTrack(id: string | undefined) {
         title: t.title,
         date: t.date,
         coverPhotoId: t.cover_photo_id,
-        coverThumbUrl: await heroCoverUrl(t.cover, photos),
+        coverThumbUrl: await heroCoverUrl(t.cover),
         createdBy: t.created_by,
         photos,
         places: (t.track_places ?? [])

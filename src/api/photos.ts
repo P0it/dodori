@@ -645,14 +645,24 @@ export function useUploadPhotos(parent: PhotoParent) {
   });
 }
 
-/** 본인 사진 삭제 (row + storage) */
-export function useDeletePhoto(trackId: string) {
+/**
+ * 본인 사진 삭제 (row + storage) — 갤러리에서 여러 장을 골라 한 번에 지운다.
+ *
+ * 행을 먼저 지우고 파일을 지운다. 순서를 뒤집으면 파일만 사라진 행이 남아 화면에 빈 칸이 뜬다.
+ */
+export function useDeletePhotos(trackId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (photo: { id: string; storagePath: string; renditions: boolean }) => {
-      const { error } = await supabase.from('photos').delete().eq('id', photo.id);
+    mutationFn: async (photos: { id: string; storagePath: string; renditions: boolean }[]) => {
+      const { error } = await supabase
+        .from('photos')
+        .delete()
+        .in(
+          'id',
+          photos.map((p) => p.id),
+        );
       if (error) throw error;
-      await supabase.storage.from('photos').remove(storagePathsFor(photo));
+      await supabase.storage.from('photos').remove(photos.flatMap(storagePathsFor));
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['track', trackId] });
