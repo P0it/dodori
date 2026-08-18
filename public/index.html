@@ -4,13 +4,13 @@
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <!--
-      브라우저 확대(핀치)는 열어 둔다 — 폰 웹에서 피드 사진을 자세히 보는 수단이 이것뿐이다
-      (앱 안에서 핀치를 붙이면 RNGH가 touch-action: none을 걸어 그 영역 스크롤이 죽는다).
-      앱 안에서 핀치를 쓰는 곳(스토리 캔버스·게시물 크롭)은 자기 화면에서만 페이지 줌을 막는다.
+      브라우저 확대(페이지 줌)는 끈다 — 이 문서는 스크롤하지 않고 안쪽 목록이 스크롤해서,
+      페이지가 확대되면 고정된 탭바·헤더와 안쪽 스크롤이 싸우며 화면이 흔들린다.
+      확대는 각 화면이 자기 사진만 키우는 쪽으로 간다 (feed/PhotoZoom, story/StoryCanvas).
     -->
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1, viewport-fit=cover"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
     />
     <title>dodori</title>
 
@@ -57,7 +57,7 @@
       body {
         overflow: hidden;
         background-color: #121212;
-        /* 더블탭 확대만 끈다 — 핀치 확대는 남기고 탭이 한 박자 늦는 것만 없앤다 */
+        /* 더블탭 확대를 막는다 — iOS 사파리는 user-scalable=no를 무시한다 */
         touch-action: manipulation;
       }
       #root {

@@ -1,4 +1,12 @@
-import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import { Platform, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { type ImageContentFit } from 'expo-image';
 import { Photo } from '@/components/Photo';
@@ -38,6 +46,18 @@ const Ctx = createContext<ZoomCtx | null>(null);
  */
 export function PhotoZoomHost({ children }: { children: ReactNode }) {
   const insets = useSafeAreaInsets();
+  /*
+    iOS 사파리는 `user-scalable=no`를 무시하고 두 손가락을 페이지 줌(gesture* 이벤트)으로
+    가져간다 — 그러면 사진은 그대로고 앱 화면만 커진다. 확대를 우리가 그리는 동안만 막는다.
+    (StoryCanvas와 같은 처방 — 웹 전용, 네이티브엔 이 이벤트가 없다)
+  */
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof document === 'undefined') return;
+    const stop = (e: Event) => e.preventDefault();
+    const types = ['gesturestart', 'gesturechange', 'gestureend'];
+    types.forEach((t) => document.addEventListener(t, stop, { passive: false }));
+    return () => types.forEach((t) => document.removeEventListener(t, stop));
+  }, []);
   const scale = useSharedValue(1);
   const tx = useSharedValue(0);
   const ty = useSharedValue(0);
@@ -61,7 +81,14 @@ export function PhotoZoomHost({ children }: { children: ReactNode }) {
         /* measureInWindow는 화면 좌표 — 이 오버레이는 상태바 아래에서 시작하므로 그만큼 올린다 */
         <View
           pointerEvents="none"
-          style={{ position: 'absolute', top: -insets.top, left: 0, right: 0, bottom: 0 }}
+          style={{
+            position: 'absolute',
+            // 웹의 좌표는 이미 뷰포트 기준이라 보정하지 않는다
+            top: Platform.OS === 'web' ? 0 : -insets.top,
+            left: 0,
+            right: 0,
+            bottom: 0,
+          }}
         >
           <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: '#000' }, dimStyle]} />
           <Animated.View
@@ -100,12 +127,95 @@ type ZoomableProps = {
  * 두 손가락일 때만 반응하므로 한 손가락 스와이프(캐러셀 넘기기·세로 스크롤)는 그대로다.
  * 호스트 없이 쓰면 그냥 사진이다 — 확대가 필요 없는 화면에서도 같은 컴포넌트를 쓸 수 있다.
  *
- * **웹에서는 확대하지 않는다.** RNGH가 웹에서 GestureDetector가 감싼 요소에
- * `touch-action: none`을 걸어 그 영역의 브라우저 스크롤이 통째로 죽는다 — 사진이 카드의
- * 대부분이라 피드가 안 움직이는 것처럼 보였다. 관계 설정으로 우회되는 문제가 아니다.
- * (인스타도 모바일 웹 피드에서는 인앱 핀치를 붙이지 않는다.)
+ * 웹과 네이티브는 손가락을 듣는 방법이 다르다 — 웹은 RNGH를 쓸 수 없어(감싸는 순간
+ * `touch-action: none`이 걸려 그 영역 스크롤이 죽는다) DOM 터치 이벤트로 직접 듣는다.
+ * 확대해서 그리는 부분(위 호스트)은 둘이 공유한다.
  */
-export function ZoomableImage({ url, style, contentFit, transition, simultaneousGestures }: ZoomableProps) {
+export function ZoomableImage(props: ZoomableProps) {
+  if (Platform.OS === 'web') return <WebZoomableImage {...props} />;
+  return <NativeZoomableImage {...props} />;
+}
+
+const gap = (t: TouchList) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+const midX = (t: TouchList) => (t[0].clientX + t[1].clientX) / 2;
+const midY = (t: TouchList) => (t[0].clientY + t[1].clientY) / 2;
+
+/**
+ * 웹의 확대 — DOM 터치 이벤트로 직접 듣는다.
+ *
+ * RNGH(GestureDetector)를 쓰면 감싼 요소에 `touch-action: none`이 걸려 그 영역의 스크롤이
+ * 통째로 죽는다. 그래서 여기서는 `touch-action: pan-x pan-y`로 **한 손가락은 브라우저에**
+ * (세로 피드·가로 캐러셀 그대로) 넘기고, **두 손가락만** 우리가 가져간다.
+ * 브라우저 페이지 줌은 이 값으로 이미 꺼진다 — 페이지가 통째로 확대되면 고정된 탭바와
+ * 안쪽 스크롤이 싸워 화면이 흔들렸다.
+ */
+function WebZoomableImage({ url, style, contentFit, transition }: ZoomableProps) {
+  const zoom = useContext(Ctx);
+  const ref = useRef<View>(null);
+
+  useEffect(() => {
+    // RN Web에서 View의 ref는 DOM 요소다. 리스너를 직접 달아야 preventDefault를 쓸 수 있다
+    // (React가 붙이는 touchmove는 passive라 막을 수 없다)
+    const el = ref.current as unknown as HTMLElement | null;
+    if (!el || !zoom) return;
+
+    let base = 0;
+    let originX = 0;
+    let originY = 0;
+    let snap: ReturnType<typeof setTimeout> | null = null;
+
+    const start = (e: TouchEvent) => {
+      if (e.touches.length !== 2) return;
+      if (snap) clearTimeout(snap);
+      base = gap(e.touches);
+      originX = midX(e.touches);
+      originY = midY(e.touches);
+      zoom.scale.value = 1;
+      zoom.tx.value = 0;
+      zoom.ty.value = 0;
+      const r = el.getBoundingClientRect();
+      zoom.show({ x: r.left, y: r.top, width: r.width, height: r.height, url, contentFit });
+    };
+
+    const move = (e: TouchEvent) => {
+      if (!base || e.touches.length !== 2) return;
+      e.preventDefault();
+      // 1 밑으로는 줄이지 않는다 — 원본보다 작아지면 겹쳐 둔 복사본 뒤가 비친다
+      zoom.scale.value = Math.min(MAX_SCALE, Math.max(1, gap(e.touches) / base));
+      zoom.tx.value = midX(e.touches) - originX;
+      zoom.ty.value = midY(e.touches) - originY;
+    };
+
+    const end = (e: TouchEvent) => {
+      if (!base || e.touches.length >= 2) return;
+      base = 0;
+      zoom.tx.value = withTiming(0, { duration: SNAP_MS });
+      zoom.ty.value = withTiming(0, { duration: SNAP_MS });
+      zoom.scale.value = withTiming(1, { duration: SNAP_MS });
+      snap = setTimeout(() => zoom.hide(), SNAP_MS);
+    };
+
+    el.addEventListener('touchstart', start, { passive: false });
+    el.addEventListener('touchmove', move, { passive: false });
+    el.addEventListener('touchend', end);
+    el.addEventListener('touchcancel', end);
+    return () => {
+      if (snap) clearTimeout(snap);
+      el.removeEventListener('touchstart', start);
+      el.removeEventListener('touchmove', move);
+      el.removeEventListener('touchend', end);
+      el.removeEventListener('touchcancel', end);
+    };
+  }, [zoom, url, contentFit]);
+
+  return (
+    <View ref={ref} style={[style, { touchAction: 'pan-x pan-y' } as object]}>
+      <Photo url={url} style={{ width: '100%', height: '100%' }} contentFit={contentFit} transition={transition} />
+    </View>
+  );
+}
+
+function NativeZoomableImage({ url, style, contentFit, transition, simultaneousGestures }: ZoomableProps) {
   const zoom = useContext(Ctx);
   const ref = useRef<View>(null);
   // 손가락 중심의 출발점 — 여기서 얼마나 움직였는지가 곧 사진이 따라갈 거리다
@@ -149,14 +259,6 @@ export function ZoomableImage({ url, style, contentFit, transition, simultaneous
   const gesture = simultaneousGestures?.length
     ? pinch.simultaneousWithExternalGesture(...simultaneousGestures)
     : pinch;
-
-  if (Platform.OS === 'web') {
-    return (
-      <View style={style}>
-        <Photo url={url} style={{ width: '100%', height: '100%' }} contentFit={contentFit} transition={transition} />
-      </View>
-    );
-  }
 
   return (
     <GestureDetector gesture={gesture}>

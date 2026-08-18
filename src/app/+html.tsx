@@ -4,10 +4,10 @@ import type { PropsWithChildren } from 'react';
 /**
  * 웹 셸 — 네이티브에는 영향이 없다.
  *
- * 브라우저 확대(핀치)는 열어 둔다 — 피드 사진을 자세히 보는 유일한 수단이 이것뿐이다.
- * 앱 안에서 핀치를 쓰는 곳(스토리 캔버스·게시물 크롭)은 자기 화면에서만 페이지 줌을 막는다
- * (`touch-action: none` + iOS Safari용 gesture* preventDefault — StoryCanvas 참고).
- * 대신 `touch-action: manipulation`으로 더블탭 확대만 끈다 — 확대는 남기고 탭 지연을 없앤다.
+ * 브라우저 확대(페이지 줌)는 끈다. 이 문서는 스크롤하지 않고(아래 overflow: hidden)
+ * 안쪽 목록이 스크롤하는 구조라, 페이지가 확대되면 고정된 탭바·헤더와 안쪽 스크롤이 서로 싸워
+ * 화면이 흔들린다. 확대가 필요한 곳은 각자 자기 사진만 키운다 (feed/PhotoZoom).
+ * `touch-action: manipulation`은 더블탭 확대까지 막는다 — iOS 사파리는 user-scalable을 무시한다.
  */
 export default function Root({ children }: PropsWithChildren) {
   return (
@@ -17,7 +17,7 @@ export default function Root({ children }: PropsWithChildren) {
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
         <meta
           name="viewport"
-          content="width=device-width, initial-scale=1, viewport-fit=cover"
+          content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
         />
         <ScrollViewStyleReset />
         {/*
