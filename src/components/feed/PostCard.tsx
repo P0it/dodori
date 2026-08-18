@@ -1,19 +1,18 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import {
   Pressable,
+  ScrollView,
   Text,
   View,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from 'react-native';
-import Animated from 'react-native-reanimated';
-import { Gesture, GestureDetector, type GestureType } from 'react-native-gesture-handler';
-import { ZoomableImage } from './PhotoZoom';
 import { PostVideo } from './PostVideo';
 import { color, radius, space, typeface } from '@/theme/tokens';
 import { formatRelative } from '@/lib/date';
 import { postContentFit, postFrameRatioOf, REACTIONS } from '@/lib/posts';
 import { Avatar } from '@/components/Avatar';
+import { Photo } from '@/components/Photo';
 import { Meta } from '@/components/Meta';
 import { CommentGlyph, HeartGlyph, MoreGlyph } from '@/components/glyphs';
 import { CommentList } from './CommentList';
@@ -29,8 +28,6 @@ type Props = {
   onAddComment: (body: string, parentId: string | null) => void;
   onDeleteComment: (commentId: string) => void;
   onDelete: () => void;
-  /** 피드 세로 리스트를 Gesture.Native()로 감싼 제스처 — 핀치와 동시 인식해 세로 스크롤을 살린다 */
-  outerGestures?: GestureType[];
 };
 
 const HEART = REACTIONS[0];
@@ -46,7 +43,6 @@ export function PostCard({
   onAddComment,
   onDeleteComment,
   onDelete,
-  outerGestures,
 }: Props) {
   const [page, setPage] = useState(0);
   const [expanded, setExpanded] = useState(false);
@@ -58,21 +54,8 @@ export function PostCard({
   const frameRatio = postFrameRatioOf(post.photos);
   const carouselH = Math.round(width * frameRatio);
 
-  /*
-    가로 캐러셀도 RNGH에 등록해 바깥 세로 리스트와 동시 인식시킨다.
-    등록하지 않으면 사진 위 세로 드래그를 안쪽 ScrollView가 먹고 리스트로 넘겨주지 않는다
-    (사진이 카드의 대부분이라 화면이 아예 안 움직이는 것처럼 보인다).
-  */
-  const carouselGesture = useMemo(() => {
-    const native = Gesture.Native();
-    return outerGestures?.length ? native.simultaneousWithExternalGesture(...outerGestures) : native;
-  }, [outerGestures]);
-  // 사진이 한 장이면 캐러셀 없이 그대로 그린다 — 중첩 스크롤 자체를 만들지 않는다
+  // 사진이 한 장이면 캐러셀을 만들지 않는다 — 중첩 스크롤 자체를 없앤다
   const single = post.photos.length === 1;
-  const photoGestures = useMemo(
-    () => (single ? outerGestures : [carouselGesture, ...(outerGestures ?? [])]),
-    [single, carouselGesture, outerGestures],
-  );
 
   const renderMedia = (p: Post['photos'][number], i: number) =>
     p.media === 'video' ? (
@@ -86,13 +69,12 @@ export function PostCard({
         active={page === i}
       />
     ) : (
-      <ZoomableImage
+      <Photo
         key={p.id}
         url={p.thumbUrl}
         style={{ width, height: carouselH, backgroundColor: color.bg }}
         contentFit={postContentFit(p, frameRatio)}
         transition={160}
-        simultaneousGestures={photoGestures}
       />
     );
 
@@ -143,18 +125,16 @@ export function PostCard({
           {single ? (
             renderMedia(post.photos[0], 0)
           ) : (
-            <GestureDetector gesture={carouselGesture}>
-              <Animated.ScrollView
-                horizontal
-                pagingEnabled
-                showsHorizontalScrollIndicator={false}
-                onScroll={onScroll}
-                scrollEventThrottle={16}
-                style={{ width, height: carouselH }}
-              >
-                {post.photos.map(renderMedia)}
-              </Animated.ScrollView>
-            </GestureDetector>
+            <ScrollView
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onScroll={onScroll}
+              scrollEventThrottle={16}
+              style={{ width, height: carouselH }}
+            >
+              {post.photos.map(renderMedia)}
+            </ScrollView>
           )}
 
           {/* n/m 카운터 */}

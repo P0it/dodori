@@ -1,7 +1,5 @@
-import { useMemo } from 'react';
 import { RefreshControl, useWindowDimensions, View } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useLocalSearchParams } from 'expo-router';
 import { color } from '@/theme/tokens';
 import { useSession } from '@/api/auth';
@@ -16,16 +14,12 @@ import {
 } from '@/api/posts';
 import { TopBar } from '@/components/TopBar';
 import { PostCard } from '@/components/feed/PostCard';
-import { PhotoZoomHost } from '@/components/feed/PhotoZoom';
 import { confirmDialog } from '@/components/dialog';
 
 /** 게시물 피드 — 그리드에서 탭한 게시물 위치부터 세로 스크롤 (인스타 동일) */
 export default function PostFeed() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { width } = useWindowDimensions();
-  // 피드 리스트를 네이티브 제스처로 등록 — 사진 핀치와 동시 인식시켜 사진 위 세로 스크롤을 살린다
-  const listGesture = useMemo(() => Gesture.Native(), []);
-  const outerGestures = useMemo(() => [listGesture], [listGesture]);
   const posts = usePosts();
   const session = useSession();
   const profiles = useCoupleProfiles();
@@ -54,10 +48,8 @@ export default function PostFeed() {
   };
 
   return (
-    <PhotoZoomHost>
     <View style={{ flex: 1, backgroundColor: color.bg }}>
       <TopBar title="피드" />
-      <GestureDetector gesture={listGesture}>
       <FlashList
         data={data}
         keyExtractor={(p) => p.id}
@@ -82,12 +74,9 @@ export default function PostFeed() {
             onAddComment={(body, parentId) => addComment.mutate({ postId: p.id, body, parentId })}
             onDeleteComment={(commentId) => deleteComment.mutate(commentId)}
             onDelete={() => onDelete(p)}
-            outerGestures={outerGestures}
           />
         )}
       />
-      </GestureDetector>
     </View>
-    </PhotoZoomHost>
   );
 }
