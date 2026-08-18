@@ -5,7 +5,6 @@ import { FlashList } from '@shopify/flash-list';
 import { color, typeface } from '@/theme/tokens';
 import { useTrack, useUpdateTrack } from '@/api/tracks';
 import { useDeletePhotos } from '@/api/photos';
-import { useSession } from '@/api/auth';
 import { TopBar } from '@/components/TopBar';
 import { Meta } from '@/components/Meta';
 import { alertDialog, confirmDialog } from '@/components/dialog';
@@ -15,7 +14,7 @@ import { Photo } from '@/components/Photo';
  * 사진 전체 갤러리 (목업 15).
  *
  * 조회가 기본 — 탭하면 큰 사진으로 본다. "수정"을 눌러야 선택이 열리고,
- * 고른 사진을 지우거나(내 사진만) 한 장일 때 커버로 지정한다. 앨범 상세와 같은 관례다.
+ * 고른 사진을 지우거나 한 장일 때 커버로 지정한다. 앨범 상세와 같은 관례다.
  * `edit=1`로 들어오면 수정 모드로 열린다 (앨범 상세의 '우리 사진에서 고르기').
  */
 export default function Gallery() {
@@ -24,8 +23,6 @@ export default function Gallery() {
   const track = useTrack(id);
   const update = useUpdateTrack(id!);
   const delPhotos = useDeletePhotos(id!);
-  const session = useSession();
-  const uid = session.data?.user.id;
 
   const [editing, setEditing] = useState(edit === '1');
   const [selected, setSelected] = useState<string[]>([]);
@@ -34,7 +31,6 @@ export default function Gallery() {
   // 스토리에서 흘러온 사진은 앨범이 빌려 보여줄 뿐 — 커버 지정·삭제는 스토리 뷰어에서
   const selectable = (p: (typeof photos)[number]) => !p.storyId;
   const picked = photos.filter((p) => selected.includes(p.id));
-  const mine = picked.length > 0 && picked.every((p) => p.uploaderId === uid);
   const coverPicked = picked.length === 1 && track.data?.coverPhotoId === picked[0].id;
 
   const leaveEdit = () => {
@@ -179,7 +175,7 @@ export default function Gallery() {
           );
         }}
       />
-      {/* 액션 바 — 고른 게 있을 때만. 커버는 한 장일 때만 뜻이 있고, 삭제는 내가 올린 사진만 */}
+      {/* 액션 바 — 고른 게 있을 때만. 커버는 한 장 골랐을 때만 뜻이 있다 */}
       {editing && picked.length > 0 && (
         <View
           style={{
@@ -200,9 +196,7 @@ export default function Gallery() {
               disabled={update.isPending}
             />
           )}
-          {mine && (
-            <ActionButton label="삭제" destructive onPress={onDelete} disabled={delPhotos.isPending} />
-          )}
+          <ActionButton label="삭제" destructive onPress={onDelete} disabled={delPhotos.isPending} />
         </View>
       )}
     </View>
