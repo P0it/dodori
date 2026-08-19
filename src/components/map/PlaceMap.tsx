@@ -8,7 +8,7 @@ import {
   type NaverMapViewRef,
 } from '@mj-studio/react-native-naver-map';
 import { color, typeface } from '@/theme/tokens';
-import type { MapRegion } from '@/lib/map';
+import { NAME_CHIP, nameChipSize, nameChipText, type MapRegion } from '@/lib/map';
 import { playlistIconShapes } from '@/lib/playlistIcons';
 
 export interface MapPin {
@@ -33,6 +33,8 @@ export interface PlaceMapProps {
   pinColor?: string;
   /** 핀 머리에 넣을 리스트 아이콘 키. label이 있으면 번호가 우선한다 */
   pinIcon?: string | null;
+  /** 핀 대신 상호명 이름표를 깐다 (찜 목록) */
+  showNames?: boolean;
 }
 
 /** 지도 카메라를 특정 핀으로 이동시키는 명령형 핸들 (하단 카드 스트립·시트가 호출) */
@@ -48,7 +50,16 @@ const SELECTED_SCALE = 1.3;
 /** 네이티브(iOS/Android) 장소 지도 — 네이버 지도 SDK. props-only. */
 export const PlaceMap = forwardRef<PlaceMapHandle, PlaceMapProps>(
   function PlaceMap(
-    { region, pins, onPinPress, showPath = false, selectedId = null, pinColor = color.accent, pinIcon = null },
+    {
+      region,
+      pins,
+      onPinPress,
+      showPath = false,
+      selectedId = null,
+      pinColor = color.accent,
+      pinIcon = null,
+      showNames = false,
+    },
     ref,
   ) {
     const mapRef = useRef<NaverMapViewRef>(null);
@@ -71,6 +82,50 @@ export const PlaceMap = forwardRef<PlaceMapHandle, PlaceMapProps>(
         )}
         {pins.map((p) => {
           const selected = p.placeId === selectedId;
+          if (showNames) {
+            const text = nameChipText(p.name);
+            const { width, height } = nameChipSize(text);
+            return (
+              <NaverMapMarkerOverlay
+                key={p.placeId}
+                latitude={p.lat}
+                longitude={p.lng}
+                // 이름표는 지점 위에 얹히는 상자다 — 아래 변이 지점을 가리키게 한다
+                anchor={{ x: 0.5, y: 1 }}
+                width={width}
+                height={height}
+                onTap={() => onPinPress(p.placeId)}
+              >
+                <View key={`${text}:${pinColor}:${selected}`} collapsable={false}>
+                  <View
+                    style={{
+                      width,
+                      height,
+                      borderRadius: height / 2,
+                      backgroundColor: selected ? color.white : pinColor,
+                      borderWidth: 1.5,
+                      borderColor: selected ? pinColor : color.white,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Text
+                      numberOfLines={1}
+                      style={{
+                        color: selected ? pinColor : color.white,
+                        fontFamily: typeface,
+                        fontWeight: '700',
+                        fontSize: NAME_CHIP.fontSize,
+                        lineHeight: NAME_CHIP.lineHeight,
+                      }}
+                    >
+                      {text}
+                    </Text>
+                  </View>
+                </View>
+              </NaverMapMarkerOverlay>
+            );
+          }
           const w = selected ? Math.round(PIN_W * SELECTED_SCALE) : PIN_W;
           const h = selected ? Math.round(PIN_H * SELECTED_SCALE) : PIN_H;
           return (

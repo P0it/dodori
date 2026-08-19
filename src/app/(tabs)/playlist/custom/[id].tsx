@@ -107,10 +107,9 @@ export default function CustomPlaylist() {
   );
   const region = useMemo(() => boundsOf(pins.map((pin) => ({ lat: pin.lat, lng: pin.lng }))), [pins]);
 
-  // 핀은 그 리스트의 색·아이콘을 쓴다 — 지도만 봐도 어느 리스트를 보고 있는지 알 수 있게.
-  // 수정 중엔 draft를 따라가 색·아이콘을 고르는 결과가 지도에도 바로 보인다
+  // 이름표는 그 리스트의 색을 쓴다 — 지도만 봐도 어느 리스트를 보고 있는지 알 수 있게.
+  // 수정 중엔 draft를 따라가 색을 고르는 결과가 지도에도 바로 보인다
   const pinColor = eventColor[toEventColor(look ? draft.color : (p?.color ?? null))].fg;
-  const pinIcon = look ? draft.icon : (p?.icon ?? null);
 
   // 핀 탭 — 그 핀으로 카메라를 옮기고, 시트를 접어 지도를 넓게 두고, 목록에서 그 행으로 스크롤·강조.
   // 목록 스크롤은 반대로 카메라를 움직이지 않는다 (스크롤마다 지도가 흔들리면 어지럽다)
@@ -213,7 +212,8 @@ export default function CustomPlaylist() {
             onPinPress={onPinPress}
             selectedId={selectedId}
             pinColor={pinColor}
-            pinIcon={pinIcon}
+            // 핀 아이콘 대신 상호명을 깐다 — 지도만 봐도 어떤 가게들인지 읽힌다
+            showNames
           />
         ) : (
           <View style={{ flex: 1, backgroundColor: color.surface1, alignItems: 'center', justifyContent: 'center' }}>

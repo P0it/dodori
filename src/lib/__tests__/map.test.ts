@@ -1,4 +1,13 @@
-import { withCoords, pinnablePlaces, boundsOf, naverMapUrl, type Coordinate, type Pinnable } from '../map';
+import {
+  withCoords,
+  pinnablePlaces,
+  boundsOf,
+  naverMapUrl,
+  nameChipText,
+  nameChipSize,
+  type Coordinate,
+  type Pinnable,
+} from '../map';
 
 const place = (over: Partial<Pinnable> & { sortOrder: number }): Pinnable => ({
   lat: 37.5,
@@ -120,5 +129,20 @@ describe('naverMapUrl (장소 → 네이버 지도)', () => {
     expect(naverMapUrl({ name: ' 서울 숲 & 카페 ', lat: null, lng: null })).toBe(
       'https://map.naver.com/p/search/%EC%84%9C%EC%9A%B8%20%EC%88%B2%20%26%20%EC%B9%B4%ED%8E%98',
     );
+  });
+});
+
+describe('이름표(nameChip)', () => {
+  it('긴 이름은 잘라내고 말줄임을 붙인다', () => {
+    expect(nameChipText('성수동 아주 긴 이름의 커피집')).toBe('성수동 아주 긴 이름…');
+    expect(nameChipText('  블루보틀  ')).toBe('블루보틀');
+  });
+
+  it('한글은 로마자보다 넓게 잡는다', () => {
+    expect(nameChipSize('가나다').width).toBeGreaterThan(nameChipSize('abc').width);
+  });
+
+  it('높이는 글자 수와 무관하게 같다', () => {
+    expect(nameChipSize('가').height).toBe(nameChipSize('가나다라마').height);
   });
 });

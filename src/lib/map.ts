@@ -83,3 +83,33 @@ export function boundsOf(points: LatLng[], padding: number = PADDING): MapRegion
     longitudeDelta: lngDelta,
   };
 }
+
+// 이름표 마커 — 핀 대신 상호명을 그대로 지도에 깐다(찜 목록처럼 순서가 없는 쪽).
+// 네이버 마커 오버레이는 네이티브·웹 모두 픽셀 크기를 미리 줘야 해서 글자 폭을 추정한다.
+export const NAME_CHIP = {
+  fontSize: 12,
+  padH: 9,
+  padV: 5,
+  lineHeight: 16,
+  /** 이 길이를 넘으면 잘라내고 말줄임 — 이름표가 지도를 덮지 않게 */
+  maxChars: 11,
+} as const;
+
+// 한글·한자·전각 문장부호는 폰트 크기와 폭이 거의 같고, 그 밖(로마자·숫자·공백)은 대략 그 절반.
+const WIDE = /[ᄀ-ᇿ　-〿㄰-㆏一-鿿가-힯＀-￯]/;
+
+/** 이름표에 실제로 그릴 문자열 */
+export function nameChipText(name: string): string {
+  const t = name.trim();
+  return t.length > NAME_CHIP.maxChars ? `${t.slice(0, NAME_CHIP.maxChars)}…` : t;
+}
+
+/** 이름표 상자 크기 (px) — nameChipText를 거친 문자열을 넘긴다 */
+export function nameChipSize(text: string): { width: number; height: number } {
+  let em = 0;
+  for (const ch of text) em += WIDE.test(ch) ? 1 : 0.56;
+  return {
+    width: Math.ceil(em * NAME_CHIP.fontSize) + NAME_CHIP.padH * 2,
+    height: NAME_CHIP.lineHeight + NAME_CHIP.padV * 2,
+  };
+}

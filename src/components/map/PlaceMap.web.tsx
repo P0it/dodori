@@ -2,7 +2,7 @@ import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 're
 import { View } from 'react-native';
 import { color, typeface } from '@/theme/tokens';
 import { Meta } from '@/components/Meta';
-import type { MapRegion } from '@/lib/map';
+import { NAME_CHIP, nameChipSize, nameChipText, type MapRegion } from '@/lib/map';
 import { playlistIconShapes } from '@/lib/playlistIcons';
 
 export interface MapPin {
@@ -27,6 +27,8 @@ export interface PlaceMapProps {
   pinColor?: string;
   /** 핀 머리에 넣을 리스트 아이콘 키. label이 있으면 번호가 우선한다 */
   pinIcon?: string | null;
+  /** 핀 대신 상호명 이름표를 깐다 (찜 목록) */
+  showNames?: boolean;
 }
 
 /** 지도 카메라를 특정 핀으로 이동시키는 명령형 핸들 (하단 카드 스트립·시트가 호출) */
@@ -84,9 +86,39 @@ function pinSvg(label: string | undefined, selected: boolean, pinColor: string, 
   </div>`;
 }
 
-/** 마커 아이콘 옵션 — 앵커는 뾰족한 끝(하단 중앙) */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function markerIcon(naver: any, pin: MapPin, selected: boolean, pinColor: string, pinIcon: string | null) {
+/** 상호명 이름표 — 네이티브 PlaceMap의 chip과 같은 크기·색 규칙 */
+function nameChipHtml(name: string, selected: boolean, pinColor: string): { html: string; w: number; h: number } {
+  const text = nameChipText(name);
+  const { width, height } = nameChipSize(text);
+  const bg = selected ? color.white : pinColor;
+  const fg = selected ? pinColor : color.white;
+  const border = selected ? pinColor : color.white;
+  const escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return {
+    w: width,
+    h: height,
+    html: `<div style="box-sizing:border-box;width:${width}px;height:${height}px;border-radius:${height / 2}px;background:${bg};border:1.5px solid ${border};color:${fg};font-family:${typeface},sans-serif;font-weight:700;font-size:${NAME_CHIP.fontSize}px;line-height:${height - 3}px;text-align:center;white-space:nowrap;filter:drop-shadow(0 2px 3px rgba(0,0,0,0.35));">${escaped}</div>`,
+  };
+}
+
+/** 마커 아이콘 옵션 — 이름표는 아래 변, 핀은 뾰족한 끝이 지점(하단 중앙) */
+function markerIcon(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  naver: any,
+  pin: MapPin,
+  selected: boolean,
+  pinColor: string,
+  pinIcon: string | null,
+  showNames: boolean,
+) {
+  if (showNames) {
+    const { html, w, h } = nameChipHtml(pin.name, selected, pinColor);
+    return {
+      content: html,
+      size: new naver.maps.Size(w, h),
+      anchor: new naver.maps.Point(w / 2, h),
+    };
+  }
   const w = selected ? Math.round(PIN_W * SELECTED_SCALE) : PIN_W;
   const h = selected ? Math.round(PIN_H * SELECTED_SCALE) : PIN_H;
   return {
@@ -99,7 +131,16 @@ function markerIcon(naver: any, pin: MapPin, selected: boolean, pinColor: string
 /** 웹 장소 지도 — 네이버 지도 JavaScript API v3. 네이티브 SDK가 없는 브라우저 프리뷰용. props-only. */
 export const PlaceMap = forwardRef<PlaceMapHandle, PlaceMapProps>(
   function PlaceMap(
-    { region, pins, onPinPress, showPath = false, selectedId = null, pinColor = color.accent, pinIcon = null },
+    {
+      region,
+      pins,
+      onPinPress,
+      showPath = false,
+      selectedId = null,
+      pinColor = color.accent,
+      pinIcon = null,
+      showNames = false,
+    },
     ref,
   ) {
     // RN Web에서 View는 DOM div로 렌더된다 — ref.current가 그 div. 타입 마찰을 피해 any로 받는다.
@@ -160,7 +201,7 @@ export const PlaceMap = forwardRef<PlaceMapHandle, PlaceMapProps>(
             const marker = new naver.maps.Marker({
               position: pos,
               map,
-              icon: markerIcon(naver, p, p.placeId === selectedIdRef.current, pinColor, pinIcon),
+              icon: markerIcon(naver, p, p.placeId === selectedIdRef.current, pinColor, pinIcon, showNames),
             });
             markersRef.current.set(p.placeId, marker);
             naver.maps.Event.addListener(marker, 'click', () => onPinPressRef.current(p.placeId));
@@ -193,7 +234,7 @@ export const PlaceMap = forwardRef<PlaceMapHandle, PlaceMapProps>(
       return () => {
         cancelled = true;
       };
-    }, [clientId, region, pins, showPath, pinColor, pinIcon]);
+    }, [clientId, region, pins, showPath, pinColor, pinIcon, showNames]);
 
     // 선택이 바뀌면 해당 마커 아이콘만 갈아끼운다 — 지도를 다시 만들면 카메라·줌이 초기화된다
     useEffect(() => {
@@ -202,9 +243,9 @@ export const PlaceMap = forwardRef<PlaceMapHandle, PlaceMapProps>(
       if (!naver || markersRef.current.size === 0) return;
       pins.forEach((p) => {
         const marker = markersRef.current.get(p.placeId);
-        if (marker) marker.setIcon(markerIcon(naver, p, p.placeId === selectedId, pinColor, pinIcon));
+        if (marker) marker.setIcon(markerIcon(naver, p, p.placeId === selectedId, pinColor, pinIcon, showNames));
       });
-    }, [selectedId, pins, pinColor, pinIcon]);
+    }, [selectedId, pins, pinColor, pinIcon, showNames]);
 
     if (error) {
       return <Meta style={{ textAlign: 'center', marginTop: 40 }}>{error}</Meta>;
