@@ -6,6 +6,7 @@ import { useTrack } from '@/api/tracks';
 import { signedThumbUrl } from '@/api/photos';
 import { Meta } from '@/components/Meta';
 import { Photo } from '@/components/Photo';
+import { CloseGlyph } from '@/components/glyphs';
 
 /** 사진 뷰어 (목업 14) — 큰 사진 한 장, 좌우를 눌러 넘긴다. 원본은 뷰어 전용 (§9) */
 export default function Viewer() {
@@ -56,13 +57,24 @@ export default function Viewer() {
           paddingBottom: 8,
         }}
       >
-        <Pressable hitSlop={10} onPress={() => router.back()}>
-          <Text style={{ fontFamily: typeface, color: color.white, fontSize: 20 }}>▾</Text>
+        <Pressable
+          hitSlop={10}
+          onPress={() => router.back()}
+          style={{
+            width: 32,
+            height: 32,
+            borderRadius: 16,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: 'rgba(255,255,255,0.12)',
+          }}
+        >
+          <CloseGlyph size={18} color={color.white} />
         </Pressable>
         <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 13, color: color.white }}>
           {track.data?.title}
         </Text>
-        <View style={{ width: 20 }} />
+        <View style={{ width: 32 }} />
       </View>
 
       {/* 사진 — 탭 좌/우 내비. contain으로 둔다: 뷰어에서까지 잘라 보여줄 이유가 없다 */}
@@ -83,19 +95,8 @@ export default function Viewer() {
         />
       </View>
 
-      {/* 하단 — 몇 번째인지와 찍은 시각만 */}
-      <View
-        style={{
-          paddingHorizontal: 24,
-          paddingBottom: 40,
-          flexDirection: 'row',
-          alignItems: 'baseline',
-          gap: 10,
-        }}
-      >
-        <Text style={{ fontFamily: typeface, fontWeight: '700', fontSize: 15, color: color.white }}>
-          {index + 1} / {photos.length}
-        </Text>
+      {/* 하단 — 찍은 시각만 */}
+      <View style={{ paddingHorizontal: 24, paddingBottom: 40 }}>
         {current.takenAt && <Meta style={{ fontSize: 12 }}>{current.takenAt.slice(11, 16)}</Meta>}
       </View>
     </View>

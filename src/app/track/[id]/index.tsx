@@ -493,13 +493,25 @@ function TrackBody({ t }: { t: TrackDetail }) {
           ) : undefined
         }
         right={
-          <Pressable hitSlop={8} onPress={editing ? save : startEdit}>
+          // 히어로 사진 위에 떠 있는 글자라 그냥 두면 배경에 묻힌다 — 옅은 알약을 깔아준다
+          <Pressable
+            hitSlop={8}
+            onPress={editing ? save : startEdit}
+            style={{
+              paddingHorizontal: 12,
+              paddingVertical: 6,
+              borderRadius: 999,
+              backgroundColor: 'rgba(0,0,0,0.45)',
+              borderWidth: 1,
+              borderColor: 'rgba(255,255,255,0.18)',
+            }}
+          >
             <Text
               style={{
                 fontFamily: typeface,
                 fontWeight: '700',
                 fontSize: 14,
-                color: editing ? color.accent : color.sub,
+                color: editing ? color.accent : color.white,
               }}
             >
               {editing ? '저장' : '수정'}
