@@ -72,7 +72,7 @@ export default function Demo() {
         <Pressable
           onPress={onStart}
           style={({ pressed }) => ({
-            alignSelf: 'stretch',
+            width: '100%',
             maxWidth: 420,
             alignItems: 'center',
             justifyContent: 'center',
