@@ -232,14 +232,20 @@ begin
 
   -- ---------- 스토리 ----------
   -- 스토리는 24시간이 지나면 홈 링에서 내려간다 (lib/stories.ts: STORY_TTL_MS).
-  -- 초기화는 04:00에 한 번뿐이라, "9시간 전"처럼 심으면 그날 저녁엔 이미 링에서 사라진다.
-  -- 그래서 전부 초기화 직후로 몰아 다음 초기화까지 살아 있게 하고,
-  -- 문구도 시간대를 못 박지 않는다 ('출근길'은 오후에 보면 어색하다).
+  -- 초기화는 하루 한 번(04:00)뿐이라 생성 시각을 앞당길수록 그만큼 일찍 링이 빈다.
+  -- "9시간 전"으로 심었을 땐 그날 저녁이면 이미 사라져 있었다.
+  --
+  -- 그래서 시드 시각에 딱 붙인다. 만료(생성+24h)가 다음 초기화 시각과 겹쳐,
+  -- 방문자가 몇 시에 들어와도 링에는 항상 스토리가 있다. 몇 분씩 어긋나게 둔 것은
+  -- 넷이 같은 시각이면 뷰어의 순서·경과시간 표시가 부자연스럽기 때문이고,
+  -- 가장 최근 것(s4)을 0으로 두어 마지막 한 개는 초기화 직전까지 살아남게 한다.
+  --
+  -- 문구는 시간대를 못 박지 않는다 — '출근길'을 오후에 보면 어색하다.
   insert into stories (id, couple_id, author_id, caption, created_at) values
-    (s1, v_couple, v_seoyeon, '오늘은 좀 걷고 싶은 날',   now() - interval '2 hours'),
-    (s2, v_couple, v_jiwoo,   '늦은 점심',               now() - interval '80 minutes'),
-    (s3, v_couple, v_seoyeon, '집 가는 길',              now() - interval '40 minutes'),
-    (s4, v_couple, v_jiwoo,   '디저트는 배가 따로 있음', now() - interval '10 minutes');
+    (s1, v_couple, v_seoyeon, '오늘은 좀 걷고 싶은 날',   now() - interval '3 minutes'),
+    (s2, v_couple, v_jiwoo,   '늦은 점심',               now() - interval '2 minutes'),
+    (s3, v_couple, v_seoyeon, '집 가는 길',              now() - interval '1 minute'),
+    (s4, v_couple, v_jiwoo,   '디저트는 배가 따로 있음', now());
 
   -- ---------- 사진 ----------
   -- 파일은 Storage에 미리 올려두었고 초기화해도 지우지 않는다 — 여기서는 행만 다시 심는다.
@@ -283,10 +289,10 @@ begin
     ('post',  p8, 'book1',   v_jiwoo,   '158 days'),
     ('post',  p9, 'park2',   v_jiwoo,   '986 days'),
     -- 스토리
-    ('story', s1, 'story1',  v_seoyeon, '2 hours'),
-    ('story', s2, 'story2',  v_jiwoo,   '80 minutes'),
-    ('story', s3, 'story3',  v_seoyeon, '40 minutes'),
-    ('story', s4, 'story4',  v_jiwoo,   '10 minutes')
+    ('story', s1, 'story1',  v_seoyeon, '3 minutes'),
+    ('story', s2, 'story2',  v_jiwoo,   '2 minutes'),
+    ('story', s3, 'story3',  v_seoyeon, '1 minute'),
+    ('story', s4, 'story4',  v_jiwoo,   '0 minutes')
   )
   insert into photos (couple_id, track_id, post_id, story_id, uploader_id,
                       storage_path, width, height, taken_at, created_at, renditions, bytes)
