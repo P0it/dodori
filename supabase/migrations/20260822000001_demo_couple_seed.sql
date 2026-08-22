@@ -60,6 +60,7 @@ declare
   c1 uuid := gen_random_uuid();
   -- 스토리
   s1 uuid := gen_random_uuid(); s2 uuid := gen_random_uuid(); s3 uuid := gen_random_uuid();
+  s4 uuid := gen_random_uuid();
   -- 장소
   pf text := public.demo_place_prefix();
 begin
@@ -230,24 +231,29 @@ begin
     (p1, v_seoyeon, '내일은 디카페인으로 가자', c1, now() - interval '2 days 18 hours');
 
   -- ---------- 스토리 ----------
+  -- 스토리는 24시간이 지나면 홈 링에서 내려간다 (lib/stories.ts: STORY_TTL_MS).
+  -- 초기화는 04:00에 한 번뿐이라, "9시간 전"처럼 심으면 그날 저녁엔 이미 링에서 사라진다.
+  -- 그래서 전부 초기화 직후로 몰아 다음 초기화까지 살아 있게 하고,
+  -- 문구도 시간대를 못 박지 않는다 ('출근길'은 오후에 보면 어색하다).
   insert into stories (id, couple_id, author_id, caption, created_at) values
-    (s1, v_couple, v_seoyeon, '출근길',           now() - interval '5 hours'),
-    (s2, v_couple, v_jiwoo,   '점심 뭐 먹지',     now() - interval '9 hours'),
-    (s3, v_couple, v_seoyeon, '퇴근하고 만나기~', now() - interval '20 hours');
+    (s1, v_couple, v_seoyeon, '오늘은 좀 걷고 싶은 날',   now() - interval '2 hours'),
+    (s2, v_couple, v_jiwoo,   '늦은 점심',               now() - interval '80 minutes'),
+    (s3, v_couple, v_seoyeon, '집 가는 길',              now() - interval '40 minutes'),
+    (s4, v_couple, v_jiwoo,   '디저트는 배가 따로 있음', now() - interval '10 minutes');
 
   -- ---------- 사진 ----------
   -- 파일은 Storage에 미리 올려두었고 초기화해도 지우지 않는다 — 여기서는 행만 다시 심는다.
   -- 경로 규칙은 lib/media.ts 그대로: 본체 {name}.jpg, 목록 {name}_360.jpg (renditions=true).
   -- width/height/bytes는 실제 파일에서 잰 값이다. bytes가 틀리면 용량 표시가 어긋난다.
   with meta(slot, w, h, b) as (values
-    ('cafe1',1080,760,146697), ('cafe2',1080,720,118130), ('cafe3',1080,720,202473),
-    ('food1',1080,720,180769), ('food2',1080,746,139121), ('river1',1080,720,238174),
-    ('river2',1080,720,214447), ('museum1',1080,701,118058), ('museum2',1080,779,57891),
-    ('beach1',1080,720,87978), ('beach2',1080,720,180355), ('hanok1',1080,720,209522),
-    ('night1',1080,608,183630), ('night2',1080,720,220511), ('book1',1080,720,211536),
-    ('alley1',1080,608,165530), ('park1',1080,810,364175), ('park2',1080,720,366432),
-    ('story1',1080,608,144310), ('story2',1080,720,224243), ('story3',1080,720,136986),
-    ('cover1',1080,720,144845)
+    ('alley1',1080,608,165530), ('beach1',1080,720,87978),  ('beach2',1080,720,180355),
+    ('book1',1080,720,269039),  ('cafe1',1080,720,245785),  ('cafe2',1080,1080,410492),
+    ('cafe3',1080,720,202473),  ('cover1',1080,720,49655),  ('food1',1080,720,79087),
+    ('food2',1080,720,255545),  ('hanok1',1080,720,231879), ('museum1',1080,810,103255),
+    ('museum2',1080,721,72346), ('night1',1080,721,183777), ('night2',1080,720,132867),
+    ('park1',1080,810,364175),  ('park2',1080,720,153468),  ('river1',1080,720,238174),
+    ('river2',1080,720,214447), ('story1',1080,608,144310), ('story2',1080,1080,258693),
+    ('story3',1080,720,136986), ('story4',1080,720,133185)
   ), plan(kind, pid, slot, uploader, ago) as (values
     -- 앨범 사진 (각 앨범의 첫 줄이 커버가 된다)
     ('track', t1, 'cafe1',   v_seoyeon, '3 days'),
@@ -277,9 +283,10 @@ begin
     ('post',  p8, 'book1',   v_jiwoo,   '158 days'),
     ('post',  p9, 'park2',   v_jiwoo,   '986 days'),
     -- 스토리
-    ('story', s1, 'story1',  v_seoyeon, '5 hours'),
-    ('story', s2, 'story2',  v_jiwoo,   '9 hours'),
-    ('story', s3, 'story3',  v_seoyeon, '20 hours')
+    ('story', s1, 'story1',  v_seoyeon, '2 hours'),
+    ('story', s2, 'story2',  v_jiwoo,   '80 minutes'),
+    ('story', s3, 'story3',  v_seoyeon, '40 minutes'),
+    ('story', s4, 'story4',  v_jiwoo,   '10 minutes')
   )
   insert into photos (couple_id, track_id, post_id, story_id, uploader_id,
                       storage_path, width, height, taken_at, created_at, renditions, bytes)
