@@ -22,6 +22,9 @@ import { usePushRegistration } from '@/api/notifications';
 // 네이티브 스플래시는 BrandSplash가 마운트된 뒤 직접 내린다 (워드마크 등장까지 이어붙이기)
 SplashScreen.preventAutoHideAsync();
 
+/** 웹에서 앱이 차지할 최대 가로폭 — 큰 폰(iPhone Pro Max 430pt) 기준 */
+const PHONE_MAX_WIDTH = 430;
+
 /**
  * 웹 카카오 OAuth는 페이지를 통째로 다시 로드하며 돌아온다 — 로그인 한 번에 스플래시를 두 번
  * 보게 되므로 복귀 로드에서는 건너뛴다. supabase가 URL의 인증 파라미터를 지우기 전에 읽어야 해서
@@ -76,7 +79,9 @@ function RootLayout() {
     if (Platform.OS === 'web') document.getElementById('boot-splash')?.remove();
     // BrandSplash를 띄우지 않으므로 네이티브 스플래시도 여기서 내린다
     if (isWebAuthReturn) SplashScreen.hideAsync();
-    SystemUI.setBackgroundColorAsync(color.bg);
+    // 웹에서는 body 배경을 index.html의 CSS가 맡는다 — 이 API는 body에 인라인 스타일을
+    // 박아 넣어서, 데스크톱 폭에서 앱 바깥을 어둡게 까는 미디어쿼리를 이겨 버린다
+    if (Platform.OS !== 'web') SystemUI.setBackgroundColorAsync(color.bg);
     // 카카오 JS SDK 초기화 — 네이티브 모듈은 dev client에서만 존재
     const kakaoKey = Constants.expoConfig?.extra?.kakaoNativeAppKey as string | null;
     if (kakaoKey && Platform.OS !== 'web') {
@@ -101,7 +106,21 @@ function RootLayout() {
     >
       <AuthBridge />
       <StatusBar style="light" />
-      <View style={{ flex: 1, backgroundColor: color.bg }}>
+      {/*
+        웹(데스크톱)에서는 앱을 폰 너비로 묶어 화면 가운데 세운다 — 이 앱의 모든 화면은
+        한 손 폭을 전제로 짜여 있어서, 브라우저 창만큼 늘어나면 카드가 가로로 벌어지고
+        글줄이 화면을 가로지른다. 폭을 여기 한 곳에서만 잠그면 화면들은 아무것도 모른 채
+        평소대로 그려진다.
+      */}
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: color.bg,
+          ...(Platform.OS === 'web'
+            ? { width: '100%', maxWidth: PHONE_MAX_WIDTH, alignSelf: 'center' }
+            : null),
+        }}
+      >
         {/*
           모든 화면이 시스템 상태바 아래에서 시작하도록 — 없으면 헤더가 상태바에 가려 터치도 먹지 않는다.
           웹은 인라인 padding 대신 index.html의 `[data-safe-top]`이 CSS env()로 그린다

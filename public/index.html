@@ -76,6 +76,16 @@
         padding-bottom: 12px;
         padding-bottom: max(12px, env(safe-area-inset-bottom));
       }
+      /*
+        데스크톱 브라우저에서는 앱이 폰 너비로 가운데 선다(_layout.tsx의 PHONE_MAX_WIDTH).
+        페이지 배경까지 앱과 같은 #121212면 어디까지가 앱인지 보이지 않아, 바깥쪽만 한 단계
+        어둡게 깔아 앱을 화면에서 떼어낸다.
+      */
+      @media (min-width: 560px) {
+        body {
+          background-color: #0A0A0A;
+        }
+      }
       [data-safe-top] {
         padding-top: env(safe-area-inset-top);
       }
