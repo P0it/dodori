@@ -58,10 +58,10 @@ export default function Today() {
         paddingHorizontal: 16,
         paddingTop: 12,
         paddingBottom: 32,
-        // 카드 높이는 고정이라 큰 폰에서는 아래가 빈다 — 남는 세로를 카드 사이 간격으로 흘려보낸다.
-        // 내용이 화면보다 길어지면 flexGrow는 아무 일도 하지 않고 평소처럼 스크롤된다.
+        // 카드 높이는 고정이라 큰 화면에서는 아래가 빈다 — 남는 세로를 <Gap/>으로 흘려보내되
+        // 상한을 둔다. space-between으로 전부 흘리면 데스크톱(폰보다 훨씬 긴 프레임)에서
+        // 카드가 뿔뿔이 흩어져 보인다. 내용이 화면보다 길면 Gap은 0이 되고 평소처럼 스크롤된다.
         flexGrow: 1,
-        justifyContent: 'space-between',
       }}
     >
       <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 10 }}>
@@ -81,11 +81,14 @@ export default function Today() {
         </Meta>
       </View>
 
+      <Gap />
       <StoryRings />
 
+      <Gap />
       {/* 오늘의 추천곡 — 화면의 주인공. 곡 풀이 비었거나 못 불러오면 조용히 생략 */}
       {song && <SongCard song={song} />}
 
+      <Gap />
       {/* 오늘의 주제 — 추천곡 아래 보조 항목 */}
       {!topic.data ? (
         /*
@@ -173,6 +176,7 @@ export default function Today() {
       </Pressable>
       )}
 
+      <Gap />
       {/* 오늘의 게임 — 내가 한 판이라도 마쳐야 상대 점수가 열린다 (서버 RLS가 강제) */}
       <GameCard
         gameName={game.name}
@@ -193,6 +197,11 @@ export default function Today() {
       />
     </ScrollView>
   );
+}
+
+/** 남는 세로를 나눠 갖는 여백 — 한 자리가 가져갈 수 있는 몫에 상한이 있다 */
+function Gap() {
+  return <View style={{ flexGrow: 1, maxHeight: 20 }} />;
 }
 
 /**
