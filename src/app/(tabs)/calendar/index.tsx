@@ -230,7 +230,12 @@ export default function Calendar() {
 
 function NavBtn({ dir, onPress }: { dir: 'prev' | 'next'; onPress: () => void }) {
   return (
-    <Pressable onPress={onPress} style={navBtnStyle({})}>
+    <Pressable
+      onPress={onPress}
+      style={navBtnStyle({})}
+      accessibilityRole="button"
+      accessibilityLabel={dir === 'next' ? '다음 달' : '지난 달'}
+    >
       <Svg
         width={18}
         height={18}

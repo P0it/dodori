@@ -122,7 +122,11 @@ export default function CreatePost() {
           {photos.map((p) => (
             <View key={p.uri}>
               {/* 영상은 자를 수 없다 — 화면에서 cover로 놓이므로 크롭 시트를 열지 않는다 */}
-              <Pressable onPress={() => !p.video && setCropping(p)}>
+              <Pressable
+                onPress={() => !p.video && setCropping(p)}
+                accessibilityRole="button"
+                accessibilityLabel={p.video ? '고른 동영상' : '사진 자르기'}
+              >
                 <Image
                   source={{ uri: p.video ? p.video.posterUri : p.uri }}
                   style={{ width: 88, height: 88, borderRadius: radius.coverSm }}
@@ -165,6 +169,8 @@ export default function CreatePost() {
           {photos.length < 10 && (
             <Pressable
               onPress={onPick}
+              accessibilityRole="button"
+              accessibilityLabel="사진·동영상 고르기"
               style={({ pressed }) => ({
                 width: 88,
                 height: 88,

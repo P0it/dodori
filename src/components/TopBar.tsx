@@ -28,7 +28,12 @@ export function TopBar({ title, onBack = true, left, right, tint = color.white }
       {left ? (
         left
       ) : onBack ? (
-        <Pressable hitSlop={8} onPress={() => router.back()}>
+        <Pressable
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="뒤로"
+          onPress={() => router.back()}
+        >
           <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
             <Path
               d="M15 5l-7 7 7 7"

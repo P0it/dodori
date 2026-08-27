@@ -187,7 +187,7 @@ function SectionHeader({ title, onAdd }: { title: string; onAdd?: () => void }) 
         {title}
       </Text>
       {onAdd && (
-        <Pressable onPress={onAdd} hitSlop={12}>
+        <Pressable onPress={onAdd} hitSlop={12} accessibilityRole="button" accessibilityLabel="추가">
           <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
             <Path d="M12 5v14M5 12h14" stroke={color.sub} strokeWidth={2} strokeLinecap="round" />
           </Svg>

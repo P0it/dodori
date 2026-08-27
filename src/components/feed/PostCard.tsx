@@ -146,7 +146,12 @@ export function PostCard({
           {name(post.authorId)}
         </Text>
         {mine && (
-          <Pressable onPress={onDelete} hitSlop={10}>
+          <Pressable
+            onPress={onDelete}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel="게시물 더보기"
+          >
             <MoreGlyph size={18} />
           </Pressable>
         )}

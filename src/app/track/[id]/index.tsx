@@ -220,6 +220,8 @@ function TrackBody({ t }: { t: TrackDetail }) {
       {editing && (
         <Pressable
           onPress={() => removePlace.mutate(p.placeId)}
+          accessibilityRole="button"
+          accessibilityLabel="코스에서 빼기"
           style={{ width: 40, height: 44, alignItems: 'center', justifyContent: 'center' }}
         >
           <CloseGlyph />

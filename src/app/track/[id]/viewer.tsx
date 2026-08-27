@@ -59,6 +59,8 @@ export default function Viewer() {
       >
         <Pressable
           hitSlop={10}
+          accessibilityRole="button"
+          accessibilityLabel="닫기"
           onPress={() => router.back()}
           style={{
             width: 32,

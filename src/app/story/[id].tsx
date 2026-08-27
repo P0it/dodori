@@ -436,6 +436,8 @@ export default function StoryViewer() {
             ) : (
               <Pressable
                 hitSlop={10}
+                accessibilityRole="button"
+                accessibilityLabel={hearted ? '좋아요 취소' : '좋아요'}
                 onPress={() =>
                   toggleReaction.mutate({ storyId: current.id, emoji: heart, on: !hearted })
                 }

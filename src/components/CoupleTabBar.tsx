@@ -54,6 +54,10 @@ export function CoupleTabBar({ state, navigation }: TabBarProps) {
               onPress={() => {
                 if (routeIndex >= 0 && !on) navigation.navigate(state.routes[routeIndex].name);
               }}
+              // 글자 라벨이 있어 이름은 읽히지만, 지금 어느 탭에 있는지는 색으로만 표시된다 —
+              // 선택 상태를 따로 알려주지 않으면 스크린리더로는 넷 다 똑같이 들린다
+              accessibilityRole="tab"
+              accessibilityState={{ selected: on }}
               style={{ alignItems: 'center', gap: 5, minWidth: 72 }}
             >
               <tab.Glyph size={23} filled={on} color={fg} />

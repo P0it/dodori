@@ -156,7 +156,12 @@ function AccountHeader() {
         }}
       >
         <NotificationBell />
-        <Pressable hitSlop={10} onPress={() => router.push('/feed/settings')}>
+        <Pressable
+          hitSlop={10}
+          accessibilityRole="button"
+          accessibilityLabel="관리"
+          onPress={() => router.push('/feed/settings')}
+        >
           <MenuGlyph size={21} />
         </Pressable>
       </View>

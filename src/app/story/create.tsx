@@ -486,6 +486,8 @@ export default function CreateStory() {
             <Pressable
               onPress={save}
               disabled={saving}
+              accessibilityRole="button"
+              accessibilityLabel="스토리 올리기"
               style={({ pressed }) => ({
                 width: 52,
                 height: 52,

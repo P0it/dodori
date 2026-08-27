@@ -178,6 +178,8 @@ export default function CustomPlaylist() {
         {editing ? (
           <Pressable
             onPress={() => removePlace.mutate(pl.placeId)}
+            accessibilityRole="button"
+            accessibilityLabel="목록에서 빼기"
             style={{ width: 40, height: 44, alignItems: 'center', justifyContent: 'center' }}
           >
             <CloseGlyph />
@@ -227,6 +229,8 @@ export default function CustomPlaylist() {
           수정 중에도 그대로 둔다 — 저장 전에 나가면 이름·색·아이콘 변경은 버려진다 */}
       <Pressable
         onPress={() => router.back()}
+        accessibilityRole="button"
+        accessibilityLabel="뒤로"
         // top은 safe-area를 더하지 않는다 — app/_layout.tsx가 이미 모든 화면에 paddingTop: insets.top을
         // 주므로 여기 좌표계는 상태바 아래에서 시작한다. 더하면 상태바 높이만큼 이중으로 밀린다
         style={[FLOAT, { position: 'absolute', left: 12, top: 8, width: 40, height: 40, borderRadius: 20 }]}

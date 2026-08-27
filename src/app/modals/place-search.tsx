@@ -198,6 +198,8 @@ export default function PlaceSearch() {
                     <Pressable
                       disabled={!trackId && !playlistId}
                       onPress={() => toggleSearch(p)}
+                      accessibilityRole="button"
+                      accessibilityLabel={added ? '담기 취소' : '담기'}
                       style={{
                         width: 34,
                         height: 34,
@@ -246,6 +248,8 @@ export default function PlaceSearch() {
                   <Pressable
                     disabled={existingPlaceIds.has(p.placeId) || !trackId}
                     onPress={() => toggleSaved(p)}
+                    accessibilityRole="button"
+                    accessibilityLabel={added ? '담기 취소' : '담기'}
                     style={{
                       width: 34,
                       height: 34,
