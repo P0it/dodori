@@ -134,7 +134,16 @@ Windows 작업 트리에서는 iOS 빌드가 불가능하다. 맥미니에 같�
 - **오늘의 게임**: 홈 카드 → `/game`. 종목 7개는 요일 고정(`lib/games.ts`, epochDay+3 → 월=0),
   3판 상한·최고점·"내가 마쳐야 상대 공개"는 전부 서버(`submit_game_round` RPC + `has_played` RLS)가 강제
 - Edge Functions: `claim-invite` / `search-places` / `daily-release` / `generate-anniversaries` / `sync-holidays` / `notify-game`
+  / `leave-couple` / `delete-account`
 - `couple_members.user_id`는 unique(유저당 커플 1개), RLS 공통 술어는 `public.my_couple_id()`
+- **탈퇴·연결 해제**(2026-08-27): 정책은 "마지막 한 명이 나갈 때 파기" — 한 사람이 나가도 커플 기록은
+  남고, 두 번째가 나가는 순간 파일까지 전부 지운다. 이 정책 때문에 **작성자 FK가 `auth.users`가 아니라
+  `profiles`를 가리키고, `profiles`는 `auth.users`와 FK로 묶여 있지 않다** — 탈퇴하면 auth 계정만 사라지고
+  profiles는 이름을 지운 껍데기로 남아 작성자 자리를 지킨다. 바꾸기 전엔 cascade가 걸린 테이블은 탈퇴 시
+  기록이 통째로 사라졌고, 안 걸린 테이블은 FK 위반으로 `deleteUser`가 아예 실패했다.
+  새 테이블의 작성자 컬럼도 `references public.profiles (id)`로 달 것 (계정 부속물인 `notifications`·
+  `push_subscriptions`·`couple_members`만 `auth.users` cascade가 맞다).
+  파기 순서는 **파일 먼저, DB 행 나중**(`_shared/leave.ts`) — 뒤집으면 경로를 잃어 고아 파일이 남는다
 - **사진은 렌디션 2종**: 업로드할 때 기기에서 1080(본체)·360(목록)을 만들어 함께 올린다
   (`api/photos.ts`의 `RENDITION`). **서버 이미지 변환은 쓰지 않는다** — Pro 무료분이 원본 100장뿐이라
   Spend Cap에 걸리면 앱 전체 사진이 안 보인다. `renditions=false`인 옛 사진만 폴백으로 변환을 쓴다.
@@ -162,6 +171,8 @@ Windows 작업 트리에서는 iOS 빌드가 불가능하다. 맥미니에 같�
   `kind`만으로는 갈 경로를 못 정한다. 문구·경로는 `lib/notifications.ts`(순수함수)를 앱과 워커가 함께 쓴다.
   서비스워커(`public/sw.js`)는 DB를 못 읽으니 **배지 숫자는 서버가 payload에 실어 보낸다**.
   iOS는 홈 화면에 설치된 PWA에서만 되고, 권한 요청은 반드시 사용자 제스처 안에서 해야 한다.
+  kicker가 유일한 신호였던 탓에 http_post 한 번이 유실되면 푸시가 조용히 사라졌다 — `notify-sweep`
+  cron(매분, 미발송 행이 있을 때만)이 놓친 것을 주워 담는다(2026-08-27).
   설계: `docs/superpowers/specs/2026-08-18-web-push-notifications-design.md`
 - 게시물 사진 프레임은 `lib/posts.ts`의 `postFrameRatio`(가로 16:9 ~ 세로 4:5 클램프) 하나로
   업로드 크롭(`PostCropSheet`)과 피드 표시(`PostCard`)가 같은 값을 쓴다 — 한쪽만 바꾸면 어긋난다.
@@ -177,6 +188,8 @@ Windows 작업 트리에서는 iOS 빌드가 불가능하다. 맥미니에 같�
       `react-native-compressor` × RN 0.86 실동작(0단계 스파이크)과 웹 패스가 미검증이다
 - [ ] 웹 푸시 알림 + 아이콘 배지 — 코드·마이그레이션은 끝, **VAPID 키 발급·환경변수·Vault 설정과
       기기 2대 검증이 남음** (아래 "배포 후 1회 수동 설정")
+- [x] 출시 요건(2026-08-27): 이용약관·개인정보 처리방침(`/terms`·`/privacy`), 계정 삭제·연결 해제,
+      알림 큐 폴백 cron, 쿼터 서버 검증 — **기능 검증은 남음**(탈퇴·연결 해제를 실제 계정 2개로 확인할 것)
 - [ ] 베타 배포(EAS/TestFlight) → M6 스토어 준비
 
 ## 배포 후 1회 수동 설정
