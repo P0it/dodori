@@ -1,7 +1,7 @@
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { color, tintBg, typeface } from '@/theme/tokens';
-import { useCoupleProfiles, useStorageQuota } from '@/api/couple';
+import { useCoupleProfiles, useDeleteAccount, useLeaveCouple, useStorageQuota } from '@/api/couple';
 import { useAnniversaries } from '@/api/anniversaries';
 import { useDisableWebPush, useEnableWebPush, useWebPushState } from '@/api/webPush';
 import { formatBytes } from '@/lib/media';
@@ -17,8 +17,11 @@ import {
   LogoutGlyph,
   ChevronGlyph,
   BellGlyph,
+  DocGlyph,
+  LinkOffGlyph,
+  TrashGlyph,
 } from '@/components/glyphs';
-import { confirmDialog } from '@/components/dialog';
+import { alertDialog, confirmDialog } from '@/components/dialog';
 
 /** 스튜디오 관리 — 기념일·연결·로그아웃 (계정 화면에서 분리) */
 export default function StudioSettings() {
@@ -26,6 +29,8 @@ export default function StudioSettings() {
   const profiles = useCoupleProfiles();
   const annivs = useAnniversaries();
   const quota = useStorageQuota();
+  const leave = useLeaveCouple();
+  const remove = useDeleteAccount();
 
   const me = profiles.data?.me;
   const partner = profiles.data?.partner;
@@ -35,6 +40,43 @@ export default function StudioSettings() {
     if (!(await confirmDialog('로그아웃', '다시 로그인하면 기록은 그대로예요.', '로그아웃'))) return;
     await signOut();
     router.replace('/(auth)/login');
+  };
+
+  /**
+   * 연결 해제 — 기록이 어떻게 되는지를 누르기 전에 알려준다.
+   * 상대가 있으면 기록은 남고, 나 혼자면 이 순간 전부 파기된다. 두 경우의 무게가 완전히 다르다.
+   */
+  const onLeave = async () => {
+    if (leave.isPending) return;
+    const message = partner
+      ? '함께 쌓은 기록은 상대에게 그대로 남아요. 나는 더 이상 볼 수 없어요.'
+      : '지금 나가면 이 공간의 사진·게시물·일정이 모두 지워져요. 되돌릴 수 없어요.';
+    if (!(await confirmDialog('연결을 해제할까요?', message, '연결 해제'))) return;
+    try {
+      await leave.mutateAsync();
+      router.replace('/');
+    } catch (e) {
+      alertDialog('연결 해제 실패', e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  /**
+   * 계정 삭제 — 되돌릴 수 없어서 두 번 묻는다.
+   * 첫 번째는 무슨 일이 일어나는지, 두 번째는 정말인지.
+   */
+  const onDeleteAccount = async () => {
+    if (remove.isPending) return;
+    const aftermath = partner
+      ? '내 계정과 프로필은 지워지고, 함께 쌓은 기록은 상대에게 남아요.'
+      : '내 계정과 이 공간의 사진·게시물·일정이 모두 지워져요.';
+    if (!(await confirmDialog('정말 탈퇴할까요?', aftermath, '계속'))) return;
+    if (!(await confirmDialog('되돌릴 수 없어요', '지금 탈퇴하면 복구할 방법이 없어요.', '탈퇴'))) return;
+    try {
+      await remove.mutateAsync();
+      router.replace('/(auth)/login');
+    } catch (e) {
+      alertDialog('탈퇴 실패', e instanceof Error ? e.message : String(e));
+    }
   };
 
   return (
@@ -95,10 +137,38 @@ export default function StudioSettings() {
         />
         <Divider />
         <LinkRow
+          icon={<DocGlyph size={17} />}
+          label="이용약관"
+          onPress={() => router.push('/terms')}
+        />
+        <Divider />
+        <LinkRow
+          icon={<DocGlyph size={17} />}
+          label="개인정보 처리방침"
+          onPress={() => router.push('/privacy')}
+        />
+        <Divider />
+        <LinkRow
           icon={<LogoutGlyph size={18} />}
           label="로그아웃"
           danger
           onPress={onSignOut}
+        />
+        <Divider />
+        <LinkRow
+          icon={<LinkOffGlyph size={18} color={color.danger} />}
+          label="연결 해제"
+          sub={partner ? `${partner.nickname || '상대'}님과의 연결을 끊어요` : undefined}
+          danger
+          onPress={onLeave}
+        />
+        <Divider />
+        <LinkRow
+          icon={<TrashGlyph size={17} color={color.danger} />}
+          label="계정 삭제"
+          sub="탈퇴하면 되돌릴 수 없어요"
+          danger
+          onPress={onDeleteAccount}
         />
       </ScrollView>
     </View>

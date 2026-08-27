@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.17"
   }
   graphql_public: {
     Tables: {
@@ -189,6 +189,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "events_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "events_place_id_fkey"
             columns: ["place_id"]
             isOneToOne: false
@@ -223,6 +230,13 @@ export type Database = {
           id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "game_comments_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "game_comments_couple_id_fkey"
             columns: ["couple_id"]
@@ -274,6 +288,13 @@ export type Database = {
             referencedRelation: "couples"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "game_scores_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       holidays_extra: {
@@ -317,6 +338,13 @@ export type Database = {
           track_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "notes_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "notes_track_id_fkey"
             columns: ["track_id"]
@@ -463,6 +491,13 @@ export type Database = {
             referencedRelation: "tracks"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "photos_uploader_id_fkey"
+            columns: ["uploader_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       places: {
@@ -521,6 +556,13 @@ export type Database = {
           playlist_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "playlist_places_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "playlist_places_place_id_fkey"
             columns: ["place_id"]
@@ -586,6 +628,13 @@ export type Database = {
             referencedRelation: "photos"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "playlists_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       post_comments: {
@@ -614,6 +663,13 @@ export type Database = {
           post_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "post_comments_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "post_comments_parent_id_fkey"
             columns: ["parent_id"]
@@ -657,6 +713,13 @@ export type Database = {
             referencedRelation: "posts"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "post_reactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       posts: {
@@ -682,6 +745,13 @@ export type Database = {
           id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "posts_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "posts_couple_id_fkey"
             columns: ["couple_id"]
@@ -820,6 +890,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "stories_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "stories_couple_id_fkey"
             columns: ["couple_id"]
             isOneToOne: false
@@ -859,6 +936,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "story_comments_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "story_comments_story_id_fkey"
             columns: ["story_id"]
             isOneToOne: false
@@ -894,6 +978,13 @@ export type Database = {
             referencedRelation: "stories"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "story_reactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       topic_comments: {
@@ -925,6 +1016,13 @@ export type Database = {
           topic_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "topic_comments_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "topic_comments_couple_id_fkey"
             columns: ["couple_id"]
@@ -985,6 +1083,13 @@ export type Database = {
             referencedRelation: "topics"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "topic_votes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       topics: {
@@ -1037,6 +1142,13 @@ export type Database = {
           visit_time?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "track_places_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "track_places_place_id_fkey"
             columns: ["place_id"]
@@ -1099,6 +1211,13 @@ export type Database = {
             referencedRelation: "photos"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "tracks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
     }
@@ -1152,6 +1271,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "events_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "events_place_id_fkey"
             columns: ["place_id"]
             isOneToOne: false
@@ -1162,14 +1288,24 @@ export type Database = {
       }
     }
     Functions: {
+      anonymize_profile: { Args: { p_user: string }; Returns: undefined }
+      couple_storage_paths: { Args: { p_couple: string }; Returns: string[] }
       create_couple: { Args: { p_invite_code: string }; Returns: string }
+      demo_couple_id: { Args: never; Returns: string }
+      demo_place_prefix: { Args: never; Returns: string }
+      demo_user_jiwoo: { Args: never; Returns: string }
+      demo_user_seoyeon: { Args: never; Returns: string }
+      gen_invite_code: { Args: { p_len?: number }; Returns: string }
       has_played: { Args: { p_date: string }; Returns: boolean }
       has_voted: { Args: { p_topic_id: string }; Returns: boolean }
       invoke_daily_release: { Args: never; Returns: undefined }
       invoke_sync_holidays: { Args: never; Returns: undefined }
       kick_notification_worker: { Args: never; Returns: undefined }
+      leave_couple: { Args: { p_user: string }; Returns: number }
       my_couple_id: { Args: never; Returns: string }
       partner_voted: { Args: { p_topic_id: string }; Returns: boolean }
+      reset_demo_couple: { Args: never; Returns: undefined }
+      seed_demo_couple: { Args: never; Returns: undefined }
       storage_used_bytes: { Args: never; Returns: number }
       submit_game_round: {
         Args: {
@@ -1196,6 +1332,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      user_avatar_paths: { Args: { p_user: string }; Returns: string[] }
     }
     Enums: {
       [_ in never]: never

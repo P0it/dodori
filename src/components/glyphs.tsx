@@ -638,3 +638,34 @@ export function BellGlyph({ size = 22, color: fg = color.white }: GlyphProps) {
     </Svg>
   );
 }
+
+/** 문서 (약관·방침) — 관리 화면의 정책 링크 */
+export function DocGlyph({ size = 18, color: fg = color.white }: GlyphProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M6 3.5h7.5L18 8v12.5H6V3.5Z"
+        stroke={fg}
+        strokeWidth={1.7}
+        strokeLinejoin="round"
+      />
+      <Path d="M13.2 3.6V8.2H17.8" stroke={fg} strokeWidth={1.7} strokeLinejoin="round" />
+      <Path d="M9 12.5h6M9 16h4" stroke={fg} strokeWidth={1.7} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+/** 연결 끊기 — 고리 두 개가 갈라진 모양 (LinkGlyph의 반대) */
+export function LinkOffGlyph({ size = 20, color: fg = color.white }: GlyphProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M9.5 14.5 7.6 16.4a3.5 3.5 0 0 1-5-5l1.9-1.9M14.5 9.5l1.9-1.9a3.5 3.5 0 0 1 5 5l-1.9 1.9"
+        stroke={fg}
+        strokeWidth={1.8}
+        strokeLinecap="round"
+      />
+      <Path d="M4 4l16 16" stroke={fg} strokeWidth={1.8} strokeLinecap="round" />
+    </Svg>
+  );
+}

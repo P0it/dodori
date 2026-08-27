@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Crypto from 'expo-crypto';
 import { supabase } from './supabase';
-import { useSession } from './auth';
+import { signOut, useSession } from './auth';
 import { givenName } from '@/lib/name';
 
 /** 초대 코드 생성 — nanoid(10) 동급, 혼동 문자(0/O, 1/l/I) 제외 알파벳 */
@@ -241,5 +241,47 @@ export function useStorageQuota() {
         full: usedBytes >= quotaBytes,
       };
     },
+  });
+}
+
+/**
+ * Edge Function이 4xx·5xx로 보낸 한국어 메시지를 꺼낸다.
+ * supabase-js는 본문을 error.message에 담아주지 않아서, 이걸 안 하면 사용자에게
+ * "Edge Function returned a non-2xx status code"만 보인다.
+ */
+async function edgeError(error: unknown): Promise<Error> {
+  const body = await (error as { context?: Response }).context?.json?.().catch(() => null);
+  return new Error(body?.error ?? (error as Error).message);
+}
+
+/**
+ * 연결 해제 — 상대와의 연결을 끊는다. 계정은 그대로 남는다.
+ * 함께 쌓은 기록은 남은 사람이 계속 볼 수 있고, 두 사람이 모두 나가면 그때 파기된다.
+ */
+export function useLeaveCouple() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke('leave-couple', { body: {} });
+      if (error) throw await edgeError(error);
+      return data as { remaining: number };
+    },
+    // 커플이 통째로 바뀌었다 — 캐시를 무효화가 아니라 비운다.
+    // 지난 커플의 사진·일정이 잠깐이라도 남아 보이면 안 된다.
+    onSuccess: () => qc.clear(),
+  });
+}
+
+/** 계정 삭제(탈퇴) — 되돌릴 수 없다. 성공하면 세션도 끊는다 */
+export function useDeleteAccount() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.functions.invoke('delete-account', { body: {} });
+      if (error) throw await edgeError(error);
+      // 서버에서 계정이 사라졌으므로 기기에 남은 토큰·서명 URL도 함께 버린다
+      await signOut();
+    },
+    onSuccess: () => qc.clear(),
   });
 }
