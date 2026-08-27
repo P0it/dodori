@@ -101,6 +101,8 @@ UI의 "가보고 싶은 곳" = 코드의 `playlists`(테이블·훅·라우트) 
 
 - `npm test` — lib 단위 테스트 (date/D-day/기념일 — 유일한 테스트 대상)
 - `npm run typecheck` — tsc strict
+- `npm run lint` — eslint (`eslint.config.js`). design-mockup·supabase/functions는 대상 밖이고,
+  Reanimated `.value`를 오탐하는 React Compiler 규칙 셋(refs·immutability·purity)은 꺼져 있다
 - **원격 Supabase에 바로 붙어서 작업한다 — 로컬 스택(`npx supabase start`)은 쓰지 않는다.**
   `.env`의 `EXPO_PUBLIC_SUPABASE_URL`은 원격(`https://iyqttrufrjeytntinsrb.supabase.co`),
   CLI는 같은 프로젝트에 link돼 있다. Docker Desktop이 부팅과 함께 뜨면 옛 `supabase_*_dodori`
