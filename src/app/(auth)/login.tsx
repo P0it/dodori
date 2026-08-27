@@ -45,6 +45,10 @@ export default function Login() {
       </View>
       <View style={{ gap: 12, paddingBottom: 48 }}>
         <KakaoButton onPress={onKakao} />
+        {/*
+          문구만 두고 문서가 없으면 동의를 받은 게 아니다 — 두 링크는 앱 안에서도 웹에서도
+          같은 원문(src/lib/legal.ts)을 연다. 스토어·카카오 검수에 제출하는 주소이기도 하다.
+        */}
         <Text
           style={{
             textAlign: 'center',
@@ -54,7 +58,23 @@ export default function Login() {
             lineHeight: 17,
           }}
         >
-          계속하면 이용약관과 개인정보 처리방침에{'\n'}동의하는 것으로 간주돼요.
+          계속하면{' '}
+          <Text
+            accessibilityRole="link"
+            style={{ color: color.sub, textDecorationLine: 'underline' }}
+            onPress={() => router.push('/terms')}
+          >
+            이용약관
+          </Text>
+          과{' '}
+          <Text
+            accessibilityRole="link"
+            style={{ color: color.sub, textDecorationLine: 'underline' }}
+            onPress={() => router.push('/privacy')}
+          >
+            개인정보 처리방침
+          </Text>
+          에{'\n'}동의하는 것으로 간주돼요.
         </Text>
         {devLoginEnabled && <DevEmailSignIn />}
       </View>
