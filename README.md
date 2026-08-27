@@ -34,7 +34,7 @@ iOS·안드로이드 앱과 웹이 같은 코드로 돌아가고, 웹은 홈 화
 ## 스택
 
 Expo SDK 57 · React Native 0.86 · TypeScript(strict) · expo-router
-· Supabase(Auth/Postgres/Storage/Realtime/Edge Functions) · TanStack Query · Vercel · Sentry
+· Supabase(Auth/Postgres/Storage/Realtime/Edge Functions) · TanStack Query · Vercel
 
 백엔드 서버는 따로 없습니다. 규칙은 Postgres(RLS·트리거·RPC)와 Edge Function이 들고 있고,
 앱은 그 앞단입니다. 스타일은 RN `style` + 토큰(`src/theme/tokens.ts`) — 색은 전부 토큰 참조입니다.

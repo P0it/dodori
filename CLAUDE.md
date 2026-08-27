@@ -28,7 +28,10 @@ UI의 "가보고 싶은 곳" = 코드의 `playlists`(테이블·훅·라우트) 
 - 스타일은 RN `style` + 토큰(`src/theme/tokens.ts`) — NativeWind 미사용
 - Supabase: Auth·Postgres·Storage·Realtime·Edge Functions (별도 백엔드 없음)
 - TanStack Query(+AsyncStorage persist) / Zustand(최소) / FlashList / expo-image
-- Sentry(@sentry/react-native), 카카오: `@react-native-kakao/{core,user}`
+- 카카오: `@react-native-kakao/{core,user}`
+- **원격 에러 리포팅 없음** — Sentry는 2026-08-27에 걷어냈다(볼 사람이 없는 대시보드를 위해
+  위탁·국외이전 고지와 빌드 단계를 지불할 이유가 없었다). 렌더 에러는 `app/_layout.tsx`의
+  `ErrorBoundary`가 화면으로 보여주고 원인은 `__DEV__`에서만 표시한다
 
 ### 라이브러리 교체 기록 (PRD §1 규칙)
 

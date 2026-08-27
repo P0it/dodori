@@ -5,7 +5,7 @@ tagline: 커플 둘이 매일 여는 하나의 공용 공간
 year: "2026"
 logo_bg: "#121212"
 logo_file: ./logo.png
-stack: [Expo, React Native, TypeScript, Supabase, PostgreSQL, TanStack Query, Vercel, Sentry]
+stack: [Expo, React Native, TypeScript, Supabase, PostgreSQL, TanStack Query, Vercel]
 url: https://dodori.vercel.app
 host: vercel
 status: 운영중

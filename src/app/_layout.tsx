@@ -7,7 +7,6 @@ import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import * as SystemUI from 'expo-system-ui';
 import Constants from 'expo-constants';
-import * as Sentry from '@sentry/react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { QueryClient } from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
@@ -34,13 +33,6 @@ const isWebAuthReturn =
   Platform.OS === 'web' &&
   typeof window !== 'undefined' &&
   /[?#].*(code=|access_token=|error=)/.test(window.location.href);
-
-// 크래시·에러 리포팅. DSN은 공개값이라 클라이언트에 박혀도 된다.
-// DSN이 없는 환경(DSN 미설정 로컬)에서는 초기화를 건너뛴다 — Sentry 없이도 앱은 떠야 한다.
-const sentryDsn = process.env.EXPO_PUBLIC_SENTRY_DSN;
-if (sentryDsn) {
-  Sentry.init({ dsn: sentryDsn });
-}
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -154,8 +146,7 @@ function RootLayout() {
   );
 }
 
-// Sentry.wrap — 렌더 트리에서 터진 에러를 잡아 보고한다
-export default Sentry.wrap(RootLayout);
+export default RootLayout;
 
 /**
  * 푸시 알림을 탭했을 때의 이동 — 앱이 **이미 열려 있는 경우**만 여기로 온다.
@@ -180,16 +171,15 @@ function useNotificationClickRouting() {
 /**
  * 렌더 트리에서 에러가 터졌을 때 사용자가 보는 화면.
  *
- * Sentry.wrap은 **보고만** 한다 — 폴백을 주지 않으면 프로덕션에서는 아무것도 그려지지 않은
- * 검은 화면이 남고, 사용자는 앱이 죽었는지 로딩 중인지 알 수 없다.
- * expo-router가 이 이름의 export를 앱 전체의 경계로 쓰고 retry까지 쥐여 준다.
- * 보고는 여기서 명시적으로 한다 — 경계가 에러를 삼키면 Sentry.wrap까지 올라가지 않는다.
+ * 폴백이 없으면 프로덕션에서는 아무것도 그려지지 않은 검은 화면이 남고, 사용자는 앱이
+ * 죽었는지 로딩 중인지 알 수 없다. expo-router가 이 이름의 export를 앱 전체의 경계로 쓰고
+ * retry까지 쥐여 준다.
+ *
+ * 원격 에러 리포팅(Sentry)은 2026-08-27에 걷어냈다 — 둘이 쓰는 앱이라 볼 사람이 없는
+ * 대시보드를 위해 위탁·국외이전 고지와 빌드 단계를 지불할 이유가 없었다.
+ * 그래서 여기가 에러를 처리하는 **유일한** 자리다: 삼키지 말고 화면으로 보여준다.
  */
 export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
-  useEffect(() => {
-    Sentry.captureException(error);
-  }, [error]);
-
   return (
     <View
       style={{
@@ -207,6 +197,16 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
       <Text style={{ fontSize: 14, lineHeight: 22, color: color.sub, textAlign: 'center' }}>
         잠시 후 다시 시도해 주세요. 계속 이러면 앱을 완전히 껐다가 열어주세요.
       </Text>
+      {/*
+        원인은 개발 중에만 보여준다. 원격 리포팅을 걷어낸 뒤로 이 자리가 유일한 단서라
+        없으면 재현 화면을 보고도 무엇이 터졌는지 알 수 없다.
+        사용자에게는 스택을 보여줄 이유가 없다.
+      */}
+      {__DEV__ && (
+        <Text style={{ fontSize: 12, lineHeight: 18, color: color.muted, textAlign: 'center' }}>
+          {error.message}
+        </Text>
+      )}
       <Pressable
         accessibilityRole="button"
         onPress={() => retry()}
