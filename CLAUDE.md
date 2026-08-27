@@ -11,7 +11,10 @@ UI의 "가보고 싶은 곳" = 코드의 `playlists`(테이블·훅·라우트) 
 표기 규칙: 한글 표기는 **"도돌이"**(런처 앱 이름·app.json `name`), 로마자·인앱 워드마크·웹 타이틀은
 **소문자 dodori**(`web.name`·`web.shortName`). "도도리"는 폐기 — 마크의 유래인 음악 기호 "도돌이표"와 결이 맞는 쪽으로 돌아왔다.
 2026-08-04에 첫 글자 대문자(Dodori)를 시도했다가 **눈으로 보고 소문자로 되돌렸다** — 다시 제안하지 말 것.
-`web.shortName`을 비우면 Safari "홈 화면에 추가" 기본값이 `name`(도돌이)으로 폴백한다.
+웹 빌드에서 실제로 쓰이는 매니페스트는 **`public/manifest.json`**이다 — `expo export`가 그대로 복사해
+`app.json`의 `web.name`·`web.shortName`은 웹에서 아무 효과가 없다(확인: dist/manifest.json == public/manifest.json).
+거기 `name`·`short_name`은 **홈 화면 아이콘 이름**이라 한글 "도돌이"가 맞고(런처 규칙), 브라우저 탭 제목
+(`public/index.html`의 `<title>`)만 소문자 dodori다. 이름을 바꾸려면 app.json이 아니라 이 두 파일을 고칠 것.
 
 ## 사양의 출처 (순서대로)
 
