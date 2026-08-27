@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Platform, View } from 'react-native';
+import { Platform, Pressable, Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useRouter, type ErrorBoundaryProps } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -175,4 +175,51 @@ function useNotificationClickRouting() {
     navigator.serviceWorker.addEventListener('message', onMessage);
     return () => navigator.serviceWorker.removeEventListener('message', onMessage);
   }, [router]);
+}
+
+/**
+ * 렌더 트리에서 에러가 터졌을 때 사용자가 보는 화면.
+ *
+ * Sentry.wrap은 **보고만** 한다 — 폴백을 주지 않으면 프로덕션에서는 아무것도 그려지지 않은
+ * 검은 화면이 남고, 사용자는 앱이 죽었는지 로딩 중인지 알 수 없다.
+ * expo-router가 이 이름의 export를 앱 전체의 경계로 쓰고 retry까지 쥐여 준다.
+ * 보고는 여기서 명시적으로 한다 — 경계가 에러를 삼키면 Sentry.wrap까지 올라가지 않는다.
+ */
+export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
+  useEffect(() => {
+    Sentry.captureException(error);
+  }, [error]);
+
+  return (
+    <View
+      style={{
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: color.bg,
+        paddingHorizontal: 32,
+        gap: 12,
+      }}
+    >
+      <Text style={{ fontWeight: '700', fontSize: 16, color: color.white, textAlign: 'center' }}>
+        문제가 생겼어요
+      </Text>
+      <Text style={{ fontSize: 14, lineHeight: 22, color: color.sub, textAlign: 'center' }}>
+        잠시 후 다시 시도해 주세요. 계속 이러면 앱을 완전히 껐다가 열어주세요.
+      </Text>
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => retry()}
+        style={{
+          marginTop: 8,
+          paddingHorizontal: 24,
+          paddingVertical: 12,
+          borderRadius: 999,
+          backgroundColor: color.accent,
+        }}
+      >
+        <Text style={{ fontWeight: '700', fontSize: 14, color: color.onPrimary }}>다시 시도</Text>
+      </Pressable>
+    </View>
+  );
 }

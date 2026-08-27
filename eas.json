@@ -10,7 +10,8 @@
       "environment": "development",
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://iyqttrufrjeytntinsrb.supabase.co",
-        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_CQlUpp7YpKXB7HyH7mfc_g_3Ru3AbRs"
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_CQlUpp7YpKXB7HyH7mfc_g_3Ru3AbRs",
+        "EXPO_PUBLIC_WEB_URL": "https://dodori.vercel.app"
       }
     },
     "preview": {
@@ -21,7 +22,8 @@
       },
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://iyqttrufrjeytntinsrb.supabase.co",
-        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_CQlUpp7YpKXB7HyH7mfc_g_3Ru3AbRs"
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_CQlUpp7YpKXB7HyH7mfc_g_3Ru3AbRs",
+        "EXPO_PUBLIC_WEB_URL": "https://dodori.vercel.app"
       }
     },
     "production": {
@@ -29,7 +31,8 @@
       "environment": "production",
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://iyqttrufrjeytntinsrb.supabase.co",
-        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_CQlUpp7YpKXB7HyH7mfc_g_3Ru3AbRs"
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_CQlUpp7YpKXB7HyH7mfc_g_3Ru3AbRs",
+        "EXPO_PUBLIC_WEB_URL": "https://dodori.vercel.app"
       }
     }
   },
