@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from './supabase';
-import { useMyCouple } from './couple';
 import { useSession } from './auth';
 import { nextOccurrence } from '@/lib/anniversaries';
 import type { ISODate } from '@/lib/date';

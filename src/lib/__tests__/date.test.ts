@@ -8,7 +8,6 @@ import {
   isISODate,
   isReleased,
   monthKey,
-  todayKST,
   toKSTDate,
 } from '../date';
 

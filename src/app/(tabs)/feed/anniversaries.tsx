@@ -17,7 +17,6 @@ import { supabase } from '@/api/supabase';
 import { TopBar } from '@/components/TopBar';
 import { Meta } from '@/components/Meta';
 import { Eyebrow } from '@/components/Eyebrow';
-import { Divider } from '@/components/Divider';
 import { Dday } from '@/components/Dday';
 import { DatePicker, initialMonth } from '@/components/DatePicker';
 import { AnnivCover } from '@/components/AnnivCover';

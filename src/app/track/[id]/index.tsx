@@ -30,7 +30,6 @@ import { useSession } from '@/api/auth';
 import { useCoupleProfiles } from '@/api/couple';
 import { TopBar } from '@/components/TopBar';
 import { Meta } from '@/components/Meta';
-import { Eyebrow } from '@/components/Eyebrow';
 import { Divider } from '@/components/Divider';
 import { Dday } from '@/components/Dday';
 import { TrackCover } from '@/components/TrackCover';
