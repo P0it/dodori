@@ -45,3 +45,6 @@ example
 .env.*
 !.env.example
 supabase/functions/.env
+
+# Vercel CLI (vercel link가 만드는 프로젝트 연결 정보)
+.vercel
