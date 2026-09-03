@@ -49,7 +49,12 @@ export function AlbumCarousel({
   onCreate: () => void;
 }) {
   const ref = useRef<ScrollView>(null);
-  const { width: screen } = useWindowDimensions();
+  // 창 폭이 아니라 캐러셀이 실제로 받은 폭 — 웹에서는 앱이 PHONE_MAX_WIDTH로 묶여 있어
+  // 창 폭으로 잡으면 side·step·centerX가 전부 어긋나 활성 카드가 화면 밖에 선다.
+  // 측정 전 첫 프레임만 창 폭으로 대신한다.
+  const { width: win } = useWindowDimensions();
+  const [measured, setMeasured] = useState(0);
+  const screen = measured || win;
   const [active, setActive] = useState(focusIndex);
   // 앨범들 뒤에 "새 데이트" 빈 슬롯 한 장 — 마지막 칸은 앨범이 아니다
   const total = albums.length + 1;
@@ -72,7 +77,7 @@ export function AlbumCarousel({
   };
 
   return (
-    <View>
+    <View onLayout={(e) => setMeasured(e.nativeEvent.layout.width)}>
       {/* contentContainerStyle 세로 여백을 넉넉히 — 활성 카드 글로우가 스크롤뷰 경계에서 잘리지 않게 */}
       <ScrollView
         ref={ref}
